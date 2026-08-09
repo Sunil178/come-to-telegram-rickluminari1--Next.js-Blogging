@@ -6,7 +6,7 @@ import styles from '@/styles/post.module.css'
 
 export default async function Article(props) {
   const params = await props.params;
-  const content = await fetchPost(params.slug)
+  const content = await fetchPost(params.slug);
   return (
       <div className={styles.container}>
         <div dangerouslySetInnerHTML={{__html: content}}></div>

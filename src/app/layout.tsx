@@ -8,6 +8,8 @@ import "@fontsource/roboto/400.css";
 import "@/styles/custom.css";
 import "@/styles/post-tags.css";
 
+import "@/../public/assets/libs/tinymce/skins/ui/oxide/content.min.css";
+
 import "@/styles/prism.js/prism-tomorrow-night.css";
 import "@/styles/prism.js/prism-line-numbers.min.css";
 import "highlight.js/styles/default.css";
@@ -32,6 +34,24 @@ export default function RootLayout({
     return (
         <SessionWrapper>
             <html lang="en">
+                <head>
+                    <link
+                        rel="stylesheet"
+                        href="/assets/libs/tinymce/skins/ui/oxide/content.min.css"
+                    />
+                    <script
+                        src="/assets/libs/tinymce/tinymce.min.js"
+                        defer
+                    ></script>
+                    <script
+                        src="/assets/libs/prism.js/prism-tomorrow-night.js"
+                        defer
+                    ></script>
+                    <script
+                        src="/assets/libs/prism.js/prism-line-numbers.min.js"
+                        defer
+                    ></script>
+                </head>
                 <body>
                     <AntdRegistry>
                         <GlobalLoader />
