@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import SessionWrapper from "@/components/SessionWrapper";
 import GlobalLoader from "@/components/GlobalLoader";
@@ -61,7 +62,9 @@ export default function RootLayout({
                 <body>
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                         <AntdRegistry>
-                            <GlobalLoader />
+                            <Suspense fallback={null}>
+                                <GlobalLoader />
+                            </Suspense>
                             <Navbar />
                             {children}
                         </AntdRegistry>

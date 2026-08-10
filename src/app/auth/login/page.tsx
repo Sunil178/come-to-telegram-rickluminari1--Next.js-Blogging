@@ -3,10 +3,18 @@
 import Link from 'next/link';
 import styles from '@/styles/login.module.css';
 import { signIn } from "next-auth/react";
-import { useState, SubmitEvent } from 'react';
+import { Suspense, useState, SubmitEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function Login() {
+    return (
+        <Suspense fallback={null}>
+            <LoginForm />
+        </Suspense>
+    );
+}
+
+function LoginForm() {
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const router = useRouter();
