@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";           // Register User model
 import Category from "@/models/Category";   // Register Category model
 import Post from "@/models/Post";
+import { withApiGuard } from "@/libs/api-guard";
 
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: posts, total, message: "Success" });
 }
-export async function POST(request: NextRequest) {
+export const POST = withApiGuard(async (request, { session }) => {
     try {
         const body = await request.formData();
         if (!body.has('post_data')) {
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
         }
 
         await Post.create({
+            'userId': session.user.id,
             'slug': body.get('slug'),
             'title': body.get('title'),
             'titleDescription': body.get('titleDescription'),
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
         })
         return NextResponse.redirect(new URL('/posts', request.url))
     } catch (error) {
-        return NextResponse.json({ data: error, message: 'Something went wrong' }, { status: 500 });
+        console.error('Failed to create post:', error);
+        return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
-}
+});
