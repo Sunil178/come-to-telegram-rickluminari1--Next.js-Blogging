@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import SessionWrapper from "@/components/SessionWrapper";
 import GlobalLoader from "@/components/GlobalLoader";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
-import "@fontsource/roboto/400.css";
-// import '@/styles/globals.css'
+import "./globals.css";
 import "@/styles/custom.css";
 import "@/styles/post-tags.css";
 
@@ -19,6 +19,12 @@ import Navbar from "@/components/Navbar";
 
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
+
 config.autoAddCss = false;
 
 export const metadata: Metadata = {
@@ -33,7 +39,7 @@ export default function RootLayout({
 }>) {
     return (
         <SessionWrapper>
-            <html lang="en">
+            <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
                 <head>
                     <link
                         rel="stylesheet"
@@ -53,11 +59,13 @@ export default function RootLayout({
                     ></script>
                 </head>
                 <body>
-                    <AntdRegistry>
-                        <GlobalLoader />
-                        <Navbar />
-                        {children}
-                    </AntdRegistry>
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                        <AntdRegistry>
+                            <GlobalLoader />
+                            <Navbar />
+                            {children}
+                        </AntdRegistry>
+                    </ThemeProvider>
                 </body>
             </html>
         </SessionWrapper>
