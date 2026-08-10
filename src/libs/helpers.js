@@ -1,17 +1,5 @@
 import NextImage from 'next/image'
 
-const convertToNextClassName = {
-    styles: null,
-    classes: function (styles) {
-        convertToNextClassName.styles = styles;
-        const classes = function (classNames) {
-            if (!convertToNextClassName.styles) return '';
-            return classNames.split(' ').map(c => convertToNextClassName.styles[c]).join(' ');
-        }
-        return classes;
-    }
-}
-
 const Image = ({
     src,
     alt,
@@ -66,4 +54,4 @@ function isValidLink(urlString) {
     return regex.test(urlString);
 }
 
-export { convertToNextClassName, Image, fetchRequest, isValidLink };
+export { Image, fetchRequest, isValidLink };

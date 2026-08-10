@@ -1,17 +1,10 @@
 'use client'
 import { Editor } from "@tinymce/tinymce-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { TinyOptions } from '@/components/tinymce-constants';
 
 export function TinyMCEEditor(props) {
   const editorRef = useRef(null);
-  const log = () => {
-    if (editorRef.current) {
-      console.log(editorRef.current.getContent());
-    }
-  };
-
-  const [text, setText] = useState('');
   return <>
       <Editor
         id="my-editor"
@@ -69,14 +62,9 @@ export function TinyMCEEditor(props) {
           image_advtab: true,
           image_uploadtab: true,
 
-          // init_instance_callback: (editor) => {console.log(editor);return editor.setContent(props.content)},
           file_picker_callback: TinyOptions.file_picker_callback,
           content_style: "body { font-family:Helvetica,Arial,sans-serif; font-size:14px; background-color: #fdfdfd;}",
         }}
-        /* onEditorChange={(newValue, editor) => {
-          console.log("Value", newValue);
-          setText(editor.getContent({format: 'text'}));
-        }} */
       />
   </>;
 }

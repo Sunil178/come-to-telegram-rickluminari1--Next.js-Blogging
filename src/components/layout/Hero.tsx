@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Button, Typography } from "antd";
-import GlobalLoader from "../GlobalLoader";
 const { Title, Paragraph } = Typography;
 
 export default function Hero() {
