@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import LogoutButton from "@/components/auth/LogoutButton";
+import Wordmark from "@/components/marginalia/Wordmark";
 
 interface MobileNavProps {
     links: { href: string; label: string }[];
@@ -48,7 +49,7 @@ export default function MobileNav({ links, user }: MobileNavProps) {
             <SheetContent>
                 <SheetHeader>
                     <SheetTitle>
-                        Vede<span className="text-primary">.</span>Guru
+                        <Wordmark className="text-xl" />
                     </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 px-4">
@@ -56,7 +57,7 @@ export default function MobileNav({ links, user }: MobileNavProps) {
                         <SheetClose asChild key={link.href}>
                             <Link
                                 href={link.href}
-                                className="rounded-md px-2 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                className="rounded-md px-2 py-2 font-mono text-xs tracking-widest text-foreground uppercase hover:bg-muted"
                             >
                                 {link.label}
                             </Link>
@@ -66,7 +67,7 @@ export default function MobileNav({ links, user }: MobileNavProps) {
                         <SheetClose asChild>
                             <Link
                                 href="/dashboard"
-                                className="flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                                className="flex items-center gap-1.5 rounded-md px-2 py-2 font-mono text-xs tracking-widest text-foreground uppercase hover:bg-muted"
                             >
                                 <LayoutDashboard className="size-4" />
                                 Dashboard

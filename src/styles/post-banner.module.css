@@ -50,6 +50,12 @@
     margin: auto;
 }
 
+.bannerError {
+    margin-top: 0.5rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
 .bannerDeleteBtn {
     width: 34px;
     height: 34px;

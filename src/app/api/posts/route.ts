@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";           // Register User model
 import Category from "@/models/Category";   // Register Category model
-import Post from "@/models/Post";
+import Post, { ApprovalStatus } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
+import { escapeRegExp } from "@/libs/search-query";
+import { slugify } from "@/libs/slug";
 
-export async function GET(request: NextRequest) {
+export const GET = withApiGuard(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
 
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -18,28 +20,31 @@ export async function GET(request: NextRequest) {
     const filter: any = {};
 
     if (search) {
-        filter.title = { $regex: search, $options: "i" };
+        filter.title = { $regex: escapeRegExp(search), $options: "i" };
     }
 
-    if (approval) {
-        filter.approval = parseInt(approval, 10);
+    if (approval && Object.values(ApprovalStatus).includes(approval as ApprovalStatus)) {
+        filter.approval = approval;
     }
 
     if (published) {
         filter.published = published === "true";
     }
 
-    const total = await Post.countDocuments(filter);
-    const posts = await Post.find(filter)
-        .populate({ path: "userId", model: User, select: "email username name" })
-        .populate({ path: "categoryId", model: Category, select: "title slug" })
-        .sort({ [sortField]: sortOrder })
-        .skip((page - 1) * pageSize)
-        .limit(pageSize)
-        .lean();
+    const [total, posts] = await Promise.all([
+        Post.countDocuments(filter),
+        Post.find(filter)
+            .populate({ path: "userId", model: User, select: "email username name" })
+            .populate({ path: "categoryId", model: Category, select: "title slug" })
+            .sort({ [sortField]: sortOrder })
+            .skip((page - 1) * pageSize)
+            .limit(pageSize)
+            .lean(),
+    ]);
 
     return NextResponse.json({ data: posts, total, message: "Success" });
-}
+});
+
 export const POST = withApiGuard(async (request, { session }) => {
     try {
         const body = await request.formData();
@@ -47,17 +52,30 @@ export const POST = withApiGuard(async (request, { session }) => {
             return NextResponse.json({ data: null, message: 'Post page data is required' }, { status: 400 });
         }
 
-        await Post.create({
+        const title = (body.get('title') as string || '').trim();
+        if (!title) {
+            return NextResponse.json({ data: null, message: 'Title is required' }, { status: 400 });
+        }
+
+        const slug = ((body.get('slug') as string) || '').trim() || slugify(title);
+        if (!slug) {
+            return NextResponse.json({ data: null, message: 'Slug is required' }, { status: 400 });
+        }
+
+        const post = await Post.create({
             'userId': session.user.id,
-            'slug': body.get('slug'),
-            'title': body.get('title'),
+            'slug': slug,
+            'title': title,
             'titleDescription': body.get('titleDescription'),
             'tags': (body.get('tags') as string)?.split(','),
             'bannerImage': body.get('postBannerPath'),
             'content': body.get('post_data'),
         })
-        return NextResponse.redirect(new URL('/posts', request.url))
+        return NextResponse.json({ data: { slug: post.slug }, message: 'Success' });
     } catch (error) {
+        if ((error as { code?: number }).code === 11000) {
+            return NextResponse.json({ data: null, message: 'A post with this slug already exists. Please choose a different slug.' }, { status: 409 });
+        }
         console.error('Failed to create post:', error);
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }

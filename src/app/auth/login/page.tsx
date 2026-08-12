@@ -23,6 +23,10 @@ function LoginForm() {
     // Catch errors passed in the URL (e.g., from middleware or initial load)
     const urlError = searchParams.get("error");
 
+    // Only follow same-site paths; reject protocol-relative URLs (e.g. "//evil.com") to avoid an open redirect.
+    const callbackUrl = searchParams.get("callbackUrl");
+    const redirectTo = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/posts";
+
     const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
@@ -44,7 +48,7 @@ function LoginForm() {
                 // NextAuth provides specific error strings like "CredentialsSignin"
                 setError("Invalid email or password. Please try again.");
             } else {
-                router.push("/posts");
+                router.push(redirectTo);
                 router.refresh(); // Forces a refresh to update the session state
             }
         } catch (err) {

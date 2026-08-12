@@ -35,6 +35,6 @@ Write it at whatever length the change actually warrants — length should track
 
 ## Output
 
-Show the drafted message to the user, ready to paste into `git commit`.
+Show the drafted message to the user inside a single fenced code block (plain text, no language tag) so it renders as one copyable block instead of formatted markdown — bullets in the message should be literal `- ` lines inside that block, not markdown list items outside it. Ready to paste into `git commit`.
 
 $ARGUMENTS

@@ -1,209 +1,118 @@
-"use client";
-
-import { Table, Tag, Input, Space, Flex, Button } from "antd";
-import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import type { SorterResult, FilterValue } from "antd/es/table/interface";
-import { SearchOutlined } from "@ant-design/icons";
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import { FilterQuery } from "mongoose";
+import dbConnect from "@/libs/db-connect";
+import Post, { IPost } from "@/models/Post";
+import Category from "@/models/Category";
+import { Badge } from "@/components/ui/badge";
+import ArticleGrid from "@/components/posts/ArticleGrid";
+import PostsSearch from "@/components/posts/PostsSearch";
+import PostsPagination from "@/components/posts/PostsPagination";
+import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
+import { escapeRegExp } from "@/libs/search-query";
+import { buildSearchParamsHref } from "@/libs/build-href";
 
-interface Post {
-  _id: string;
-  title: string;
-  slug: string;
-  categoryId?: { title: string };
-  userId?: { email: string; username?: string; name?: string };
-  approval: number;
-  published: boolean;
-  publishedAt?: string;
-  visitorCount: number;
-  upvoteCount: number;
-  downvoteCount: number;
-  commentCount: number;
-  createdAt: string;
+const PAGE_SIZE = 9;
+
+interface PostsPageProps {
+    searchParams: Promise<{ page?: string; category?: string; q?: string }>;
 }
 
-const approvalMap: Record<string, string> = {
-  "Pending": "orange",
-  "Approved": "green",
-  "Rejected": "red",
-  "Inactive": "gray",
+export const metadata = {
+    title: "Posts — Vedev.Guru",
+    description: "Essays and deep dives on technology, culture, and the questions in between.",
 };
 
-export default function PostsTable() {
-  const [data, setData] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState<TablePaginationConfig>({
-    current: 1,
-    pageSize: 10,
-    total: 0,
-  });
-  const [sorter, setSorter] = useState<{ field?: string; order?: string }>({});
-  const [filters, setFilters] = useState<{ approval?: string; published?: string }>({});
-  const [searchText, setSearchText] = useState("");
+export default async function PostsPage({ searchParams }: PostsPageProps) {
+    const { page: pageParam, category: categorySlug, q } = await searchParams;
+    const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
 
-  const fetchData = async (
-    page = 1,
-    pageSize = 10,
-    sortField?: string,
-    sortOrder?: string,
-    approval?: string,
-    published?: string,
-    search?: string
-  ) => {
-    setLoading(true);
-    const params = new URLSearchParams({
-      page: String(page),
-      pageSize: String(pageSize),
-    });
+    await dbConnect();
 
-    if (sortField) params.append("sortField", sortField);
-    if (sortOrder) params.append("sortOrder", sortOrder);
-    if (approval) params.append("approval", approval);
-    if (published) params.append("published", published);
-    if (search) params.append("search", search);
+    const categories = await Category.find({ visibility: true }).select("title slug").sort({ title: 1 }).lean();
 
-    const res = await fetch(`/api/posts?${params.toString()}`);
-    const json = await res.json();
-    setData(json.data);
-    setPagination({ current: page, pageSize, total: json.total });
-    setLoading(false);
-  };
+    const filter: FilterQuery<IPost> = { approval: "Approved", published: true, visibility: true };
 
-  useEffect(() => {
-    fetchData(
-      pagination.current,
-      pagination.pageSize,
-      sorter.field,
-      sorter.order,
-      filters.approval,
-      filters.published,
-      searchText
-    );
-  }, [pagination.current, pagination.pageSize, sorter, filters, searchText]);
-
-  const columns: ColumnsType<Post> = [
-    {
-      title: "Title",
-      dataIndex: "title",
-      key: "title",
-      sorter: true,
-      render: (val, record) => <Link href={`/posts/${record.slug}`} passHref>{val}</Link>,
-    },
-    {
-      title: "Category",
-      dataIndex: ["categoryId", "title"],
-      key: "category",
-    },
-    {
-      title: "Author",
-      key: "author",
-      render: (_, record) => record.userId?.email || record.userId?.username,
-    },
-    {
-      title: "Approval",
-      dataIndex: "approval",
-      key: "approval",
-      filters: Object.keys(approvalMap).map((item) => ({
-        text: item,
-        value: item,
-      })),
-      render: (val) => {
-        return <Tag color={approvalMap[val]}>{val}</Tag>;
-      },
-    },
-    {
-      title: "Published",
-      dataIndex: "published",
-      key: "published",
-      filters: [
-        { text: "Yes", value: "true" },
-        { text: "No", value: "false" },
-      ],
-      render: (val) => (val ? "✅ Yes" : "❌ No"),
-    },
-    {
-      title: "Published At",
-      dataIndex: "publishedAt",
-      key: "publishedAt",
-      sorter: true,
-      render: (val) => (val ? new Date(val).toLocaleDateString() : "—"),
-    },
-    {
-      title: "Visitors",
-      dataIndex: "visitorCount",
-      key: "visitorCount",
-      sorter: true,
-    },
-    {
-      title: "Votes",
-      key: "votes",
-      render: (_, record) => (
-        <span>
-          👍 {record.upvoteCount} / 👎 {record.downvoteCount}
-        </span>
-      ),
-    },
-    {
-      title: "Comments",
-      dataIndex: "commentCount",
-      key: "commentCount",
-      sorter: true,
-    },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      sorter: true,
-      render: (val) => new Date(val).toLocaleDateString(),
-    },
-  ];
-
-  const handleTableChange = (
-    newPagination: TablePaginationConfig,
-    newFilters: Record<string, FilterValue | null>,
-    newSorter: SorterResult<Post> | SorterResult<Post>[]
-  ) => {
-    setPagination(newPagination);
-    if (!Array.isArray(newSorter)) {
-      setSorter({ field: newSorter.field as string, order: newSorter.order || undefined });
+    if (categorySlug) {
+        const activeCategory = categories.find((c) => c.slug === categorySlug);
+        if (activeCategory) filter.categoryId = activeCategory._id;
     }
-    setFilters({
-      approval: (newFilters.approval?.[0] as string) || undefined,
-      published: (newFilters.published?.[0] as string) || undefined,
-    });
-  };
 
-  return (
-    <div>
-      <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
-        <Space>
-          <Input
-            placeholder="Search by Title"
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            allowClear
-          />
-        </Space>
-        <Link href="/posts/add" passHref>
-          <Button
-              type="primary"
-              size="large"
-          >
-            Add Post
-          </Button>
-        </Link>
-      </Flex>
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={pagination}
-        loading={loading}
-        onChange={handleTableChange}
-        rowKey="_id"
-        bordered
-      />
-    </div>
-  );
+    if (q) {
+        filter.title = { $regex: escapeRegExp(q), $options: "i" };
+    }
+
+    const [total, posts] = await Promise.all([
+        Post.countDocuments(filter),
+        Post.find(filter)
+            .sort({ publishedAt: -1 })
+            .skip((page - 1) * PAGE_SIZE)
+            .limit(PAGE_SIZE)
+            .populate({ path: "categoryId", model: Category, select: "title" })
+            .select("slug title titleDescription bannerImage publishedAt categoryId")
+            .lean(),
+    ]);
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    const articles = posts.map((post) => toArticleCardData(post as unknown as Parameters<typeof toArticleCardData>[0]));
+
+    const buildHref = (overrides: { page?: number; category?: string }) => {
+        const nextCategory = overrides.category !== undefined ? overrides.category : categorySlug;
+        const nextPage = overrides.page && overrides.page > 1 ? overrides.page : undefined;
+        return buildSearchParamsHref("/posts", { q, category: nextCategory, page: nextPage });
+    };
+
+    return (
+        <div className="mx-auto max-w-5xl px-6 py-16">
+            <div className="text-center">
+                <h1 className="font-heading text-5xl font-semibold tracking-tight text-foreground">All Posts</h1>
+                <p className="mt-3 text-muted-foreground">
+                    {total} article{total === 1 ? "" : "s"} on technology, culture, and everything in between.
+                </p>
+            </div>
+
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                <div className="flex flex-wrap justify-center gap-2 font-mono text-[11px] tracking-widest uppercase">
+                    <Link href={buildHref({ category: "" })}>
+                        <Badge
+                            variant={!categorySlug ? "default" : "secondary"}
+                            className={!categorySlug ? "" : "bg-gold/10 text-gold hover:bg-gold/20"}
+                        >
+                            All
+                        </Badge>
+                    </Link>
+                    {categories.map((c) => (
+                        <Link key={c.slug} href={buildHref({ category: c.slug })}>
+                            <Badge
+                                variant={categorySlug === c.slug ? "default" : "secondary"}
+                                className={categorySlug === c.slug ? "" : "bg-gold/10 text-gold hover:bg-gold/20"}
+                            >
+                                {c.title}
+                            </Badge>
+                        </Link>
+                    ))}
+                </div>
+                <PostsSearch defaultValue={q || ""} />
+            </div>
+
+            <div className="mt-10">
+                {articles.length > 0 ? (
+                    <ArticleGrid>
+                        {articles.map((article) => (
+                            <ArticleCard key={article.slug} article={article} />
+                        ))}
+                    </ArticleGrid>
+                ) : (
+                    <p className="py-16 text-center text-muted-foreground">No articles found.</p>
+                )}
+            </div>
+
+            <PostsPagination
+                page={page}
+                totalPages={totalPages}
+                buildHref={buildHref}
+                className="mt-12"
+                labelClassName="font-mono text-xs tracking-wide"
+            />
+        </div>
+    );
 }

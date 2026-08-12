@@ -45,7 +45,7 @@ export function TinyMCEEditor(props) {
               text: 'Publish',
               tooltip: 'Publish',
               onAction: function () {
-                document.getElementById('post-form').submit();
+                document.getElementById('post-form').requestSubmit();
               },
             });
           },

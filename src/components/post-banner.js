@@ -10,6 +10,7 @@ export function BannerImage({ defaultImage }) {
     const [imageURL, setImageURL] = useState(defaultImage ?? emptyImage);
     const [bannerLocation, setBannerLocation] = useState('');
     const [loader, setLoader] = useState('none');
+    const [error, setError] = useState('');
 
     const uploadToServer = (event) => {
         if (event.target.files && event.target.files[0]) {
@@ -18,11 +19,21 @@ export function BannerImage({ defaultImage }) {
             const body = new FormData();
             body.append("file", image);
             setLoader('block');
+            setError('');
             fetch("/api/posts/upload", { method: "POST", body })
                 .then((response) => response.json())
                 .then((response) => {
+                    if (!response.location) {
+                        setError(response.message || 'Upload failed. Please try a different image.');
+                        setLoader('none');
+                        return;
+                    }
                     setBannerLocation(response.location);
                     setImageURL(response.location);
+                })
+                .catch(() => {
+                    setError('Upload failed. Please try again.');
+                    setLoader('none');
                 });
         }
     };
@@ -60,6 +71,7 @@ export function BannerImage({ defaultImage }) {
 
                 </Image>
             </div>
+            {error && <p className={styles.bannerError}>{error}</p>}
         </>
     );
 }

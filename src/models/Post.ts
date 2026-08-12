@@ -62,7 +62,7 @@ const schema = new Schema<IPost>(
 
 schema.plugin(mongooseDelete, { deletedAt : true, deletedBy: true, overrideMethods: true });
 
-schema.index({ slug: 1 }, { unique: true });
+schema.index({ slug: 1 }, { unique: true, partialFilterExpression: { deleted: false } });
 schema.index({ categoryId: 1 });
 schema.index({ userId: 1 });
 

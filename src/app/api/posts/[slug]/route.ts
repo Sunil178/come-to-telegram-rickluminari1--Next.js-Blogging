@@ -22,7 +22,15 @@ export const DELETE = withApiGuard<DeletePost>(async (request, { params, session
         }
 
         await dbConnect();
-        await SoftDeletePost.delete({ slug }, session.user.id);
+        // mongoose-delete's types claim a DeleteResult, but `.delete()` actually runs an
+        // `updateMany` under the hood (it flips `deleted: true` rather than removing the doc).
+        const result = (await SoftDeletePost.delete(
+            { slug, userId: session.user.id },
+            session.user.id
+        )) as unknown as { matchedCount: number };
+        if (result.matchedCount === 0) {
+            return NextResponse.json({ data: null, message: 'Post not found' }, { status: 404 });
+        }
 
         return NextResponse.json({ data: null, message: 'Success' });
     } catch (error) {

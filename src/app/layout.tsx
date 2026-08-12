@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { AntdRegistry } from "@ant-design/nextjs-registry";
 import SessionWrapper from "@/components/SessionWrapper";
 import GlobalLoader from "@/components/GlobalLoader";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -20,10 +19,12 @@ import Navbar from "@/components/Navbar";
 
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
-import { Geist } from "next/font/google";
+import { Cormorant, IBM_Plex_Mono, Source_Sans_3 } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const fontDisplay = Cormorant({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
+const fontBody = Source_Sans_3({ subsets: ["latin"], variable: "--font-body" });
+const fontMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 
 
 config.autoAddCss = false;
@@ -40,7 +41,11 @@ export default function RootLayout({
 }>) {
     return (
         <SessionWrapper>
-            <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+            <html
+                lang="en"
+                className={cn("font-sans", fontDisplay.variable, fontBody.variable, fontMono.variable)}
+                suppressHydrationWarning
+            >
                 <head>
                     <link
                         rel="stylesheet"
@@ -61,13 +66,11 @@ export default function RootLayout({
                 </head>
                 <body>
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-                        <AntdRegistry>
-                            <Suspense fallback={null}>
-                                <GlobalLoader />
-                            </Suspense>
-                            <Navbar />
-                            {children}
-                        </AntdRegistry>
+                        <Suspense fallback={null}>
+                            <GlobalLoader />
+                        </Suspense>
+                        <Navbar />
+                        {children}
                     </ThemeProvider>
                 </body>
             </html>

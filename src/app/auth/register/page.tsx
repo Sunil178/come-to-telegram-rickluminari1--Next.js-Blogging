@@ -30,7 +30,7 @@ export default function Register() {
                     {/* formAction connects the form to our server-side logic */}
                     <form action={formAction}>
                         <h2 className={styles.cardTab}>
-                            <span className={styles.active}>Join Vede.Guru</span>
+                            <span className={styles.active}>Join Vedev.Guru</span>
                         </h2>
 
                         {/* Error Handling UI */}

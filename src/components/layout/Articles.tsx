@@ -1,42 +1,39 @@
-"use client";
+import dbConnect from "@/libs/db-connect";
+import Post from "@/models/Post";
+import Category from "@/models/Category";
+import ArticleGrid from "@/components/posts/ArticleGrid";
+import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Card, Row, Col, Typography } from "antd";
-import { fetchRequest } from "@/libs/helpers";
-const { Title } = Typography;
+const RECENT_ARTICLES_LIMIT = 6;
 
-interface Article {
-    slug: string;
-    title: string;
-    titleDescription: string;
-}
+export default async function Articles() {
+    await dbConnect();
 
-export default function Articles() {
-    const [articles, setArticles] = useState<Article[]>([]);
+    const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
+        .sort({ publishedAt: -1 })
+        .limit(RECENT_ARTICLES_LIMIT)
+        .populate({ path: "categoryId", model: Category, select: "title" })
+        .select("slug title titleDescription bannerImage publishedAt categoryId")
+        .lean();
 
-    useEffect(() => {
-        fetchRequest("/api/posts")
-            .then((res) => res?.json())
-            .then((response) => setArticles(response.data || []));
-    }, []);
+    const articles = posts.map((post) =>
+        toArticleCardData(post as unknown as Parameters<typeof toArticleCardData>[0])
+    );
+
+    if (articles.length === 0) return null;
 
     return (
-        <div style={{ padding: "60px 20px" }}>
-            <Title level={2} style={{ textAlign: "center" }}>
+        <div className="mx-auto max-w-5xl px-6 py-8">
+            <h2 className="text-center font-heading text-4xl font-semibold tracking-tight text-foreground">
                 Latest Articles
-            </Title>
-            <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
-                {articles.map((a) => (
-                    <Col xs={24} sm={12} md={8} key={a.slug}>
-                        <Link href={`/posts/${a.slug}`} passHref>
-                            <Card hoverable title={a.title} variant="outlined">
-                                <p>{a.titleDescription}</p>
-                            </Card>
-                        </Link>
-                    </Col>
-                ))}
-            </Row>
+            </h2>
+            <div className="mt-10">
+                <ArticleGrid>
+                    {articles.map((article) => (
+                        <ArticleCard key={article.slug} article={article} />
+                    ))}
+                </ArticleGrid>
+            </div>
         </div>
     );
 }
