@@ -16,13 +16,13 @@ export default function Hero() {
             />
             <motion.div
                 aria-hidden
-                className="pointer-events-none absolute -top-20 left-[calc(50%+220px)] h-80 w-105 -translate-x-1/2 rounded-full bg-berry/20 blur-3xl"
+                className="pointer-events-none absolute -top-20 left-[calc(50%+220px)] h-80 w-105 -translate-x-1/2 rounded-full bg-magenta/20 blur-3xl"
                 animate={{ opacity: [0.4, 0.8, 0.4], y: [0, -20, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
             />
             <motion.div
                 aria-hidden
-                className="pointer-events-none absolute -top-24 left-[calc(50%-260px)] h-64 w-80 -translate-x-1/2 rounded-full bg-gold/20 blur-3xl"
+                className="pointer-events-none absolute -top-24 left-[calc(50%-260px)] h-64 w-80 -translate-x-1/2 rounded-full bg-teal/20 blur-3xl"
                 animate={{ opacity: [0.35, 0.7, 0.35], y: [0, 16, 0] }}
                 transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
             />
@@ -33,13 +33,13 @@ export default function Hero() {
                 transition={{ duration: 0.5, ease: "easeOut" }}
                 className="relative"
             >
-                <p className="font-mono text-xs tracking-[0.3em] text-gold uppercase">Vedev · Guru</p>
+                <p className="font-mono text-xs tracking-[0.3em] text-teal uppercase">Vedev · Guru</p>
                 <h1 className="mx-auto mt-5 max-w-2xl font-heading text-6xl leading-[1.05] font-medium text-foreground">
                     Ideas worth reading,
                     <br />
                     <span className="relative inline-block font-semibold">
                         written with care.
-                        <Flourish className="absolute inset-x-0 -bottom-2" color="berry" delay={0.5} />
+                        <Flourish className="absolute inset-x-0 -bottom-2" color="magenta" delay={0.5} />
                     </span>
                 </h1>
                 <p className="mx-auto mt-7 max-w-lg text-lg text-muted-foreground">

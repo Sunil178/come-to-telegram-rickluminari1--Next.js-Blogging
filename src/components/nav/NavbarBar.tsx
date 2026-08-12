@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import NavLinks from "@/components/nav/NavLinks";
 import UserMenu from "@/components/nav/UserMenu";
 import MobileNav from "@/components/nav/MobileNav";
+import ThemeToggle from "@/components/nav/ThemeToggle";
 import Wordmark from "@/components/marginalia/Wordmark";
 
 interface NavbarBarProps {
@@ -26,6 +27,7 @@ export default function NavbarBar({ user }: NavbarBarProps) {
                 <NavLinks links={links} className="hidden items-center gap-8 md:flex" />
 
                 <div className="flex items-center gap-3">
+                    <ThemeToggle />
                     {user ? (
                         <UserMenu name={user.name} email={user.email} image={user.image} />
                     ) : (

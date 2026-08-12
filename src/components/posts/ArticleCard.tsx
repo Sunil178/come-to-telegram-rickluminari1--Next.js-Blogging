@@ -38,7 +38,7 @@ export default function ArticleCard({ article }: { article: ArticleCardData }) {
                 {article.bannerImage && <BannerImage src={article.bannerImage} />}
                 <CardHeader className="gap-2 pt-6">
                     <div className="flex items-center justify-between font-mono text-[11px] tracking-widest uppercase">
-                        {article.category && <span className="text-gold">{article.category}</span>}
+                        {article.category && <span className="text-teal">{article.category}</span>}
                         {article.publishedAt && (
                             <span className="text-muted-foreground">
                                 {new Date(article.publishedAt).toLocaleDateString("en-US", {

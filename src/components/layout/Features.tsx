@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils";
 
 const FEATURES = [
     { icon: Lightbulb, title: "Innovative Ideas", description: "Get the latest opinions & creative insights.", accent: "primary" },
-    { icon: BookOpen, title: "In-Depth Articles", description: "Well-researched blogs and technology deep dives.", accent: "berry" },
-    { icon: Globe, title: "Global Reach", description: "Content that connects with audiences worldwide.", accent: "gold" },
+    { icon: BookOpen, title: "In-Depth Articles", description: "Well-researched blogs and technology deep dives.", accent: "magenta" },
+    { icon: Globe, title: "Global Reach", description: "Content that connects with audiences worldwide.", accent: "teal" },
 ] as const;
 
 const ACCENT_CLASS: Record<(typeof FEATURES)[number]["accent"], string> = {
     primary: "text-primary",
-    berry: "text-berry",
-    gold: "text-gold",
+    magenta: "text-magenta",
+    teal: "text-teal",
 };
 
 const container = {

@@ -75,7 +75,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
                     <Link href={buildHref({ category: "" })}>
                         <Badge
                             variant={!categorySlug ? "default" : "secondary"}
-                            className={!categorySlug ? "" : "bg-gold/10 text-gold hover:bg-gold/20"}
+                            className={!categorySlug ? "" : "bg-teal/10 text-teal hover:bg-teal/20"}
                         >
                             All
                         </Badge>
@@ -84,7 +84,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
                         <Link key={c.slug} href={buildHref({ category: c.slug })}>
                             <Badge
                                 variant={categorySlug === c.slug ? "default" : "secondary"}
-                                className={categorySlug === c.slug ? "" : "bg-gold/10 text-gold hover:bg-gold/20"}
+                                className={categorySlug === c.slug ? "" : "bg-teal/10 text-teal hover:bg-teal/20"}
                             >
                                 {c.title}
                             </Badge>

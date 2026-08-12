@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 
 interface FlourishProps {
     className?: string;
-    color?: "primary" | "berry" | "current";
+    color?: "primary" | "magenta" | "current";
     animate?: boolean;
     delay?: number;
 }
 
 const COLOR_CLASS: Record<NonNullable<FlourishProps["color"]>, string> = {
     primary: "stroke-primary",
-    berry: "stroke-berry",
+    magenta: "stroke-magenta",
     current: "stroke-current",
 };
 

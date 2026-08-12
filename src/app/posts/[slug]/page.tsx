@@ -21,7 +21,7 @@ interface PostPageProps {
 function MetaItem({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="font-mono text-[11px] tracking-widest text-gold uppercase">{label}</p>
+            <p className="font-mono text-[11px] tracking-widest text-teal uppercase">{label}</p>
             <p className="mt-1 text-sm text-foreground">{value}</p>
         </div>
     );
@@ -90,7 +90,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
             <div className="mx-auto max-w-3xl px-6 pt-16 text-center">
                 {category?.title && (
-                    <p className="font-mono text-xs tracking-[0.3em] text-gold uppercase">{category.title}</p>
+                    <p className="font-mono text-xs tracking-[0.3em] text-teal uppercase">{category.title}</p>
                 )}
                 <h1 className="mt-4 font-heading text-5xl font-semibold tracking-tight text-foreground">
                     {post.title}

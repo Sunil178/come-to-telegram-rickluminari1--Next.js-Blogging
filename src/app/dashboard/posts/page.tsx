@@ -216,7 +216,7 @@ function FilterGroup({
         <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] tracking-widest uppercase">
             <span className="text-muted-foreground">{label}:</span>
             <Link href={buildHref({ [paramKey]: undefined, page: undefined })}>
-                <Badge variant={!active ? "default" : "secondary"} className={active ? "bg-gold/10 text-gold hover:bg-gold/20" : ""}>
+                <Badge variant={!active ? "default" : "secondary"} className={active ? "bg-teal/10 text-teal hover:bg-teal/20" : ""}>
                     All
                 </Badge>
             </Link>
@@ -224,7 +224,7 @@ function FilterGroup({
                 <Link key={option} href={buildHref({ [paramKey]: option, page: undefined })}>
                     <Badge
                         variant={active === option ? "default" : "secondary"}
-                        className={active === option ? "" : "bg-gold/10 text-gold hover:bg-gold/20"}
+                        className={active === option ? "" : "bg-teal/10 text-teal hover:bg-teal/20"}
                     >
                         {labels?.[option] || option}
                     </Badge>

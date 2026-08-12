@@ -6,7 +6,7 @@ export default function TableOfContents({ toc }: { toc: TocEntry[] }) {
 
     return (
         <nav className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
-            <p className="font-mono text-[11px] tracking-widest text-gold uppercase">On this page</p>
+            <p className="font-mono text-[11px] tracking-widest text-teal uppercase">On this page</p>
             <ul className="mt-3 space-y-2 border-l border-border pl-4">
                 {toc.map((entry) => (
                     <li key={entry.id} className={cn(entry.level === 3 && "pl-3")}>
