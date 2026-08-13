@@ -6,15 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 import "./globals.css";
 import "@/styles/custom.css";
-import "@/styles/post-tags.css";
 
-import "@/../public/assets/libs/tinymce/skins/ui/oxide/content.min.css";
-
-import "@/styles/prism.js/prism-tomorrow-night.css";
-import "@/styles/prism.js/prism-line-numbers.min.css";
-import "highlight.js/styles/default.css";
-import "@/../public/assets/libs/prism.js/prism-tomorrow-night.js";
-import "@/../public/assets/libs/prism.js/prism-line-numbers.min.js";
 import Navbar from "@/components/Navbar";
 import EmberField from "@/components/layout/EmberField";
 
@@ -47,24 +39,6 @@ export default function RootLayout({
                 className={cn("font-sans", fontDisplay.variable, fontBody.variable, fontMono.variable)}
                 suppressHydrationWarning
             >
-                <head>
-                    <link
-                        rel="stylesheet"
-                        href="/assets/libs/tinymce/skins/ui/oxide/content.min.css"
-                    />
-                    <script
-                        src="/assets/libs/tinymce/tinymce.min.js"
-                        defer
-                    ></script>
-                    <script
-                        src="/assets/libs/prism.js/prism-tomorrow-night.js"
-                        defer
-                    ></script>
-                    <script
-                        src="/assets/libs/prism.js/prism-line-numbers.min.js"
-                        defer
-                    ></script>
-                </head>
                 <body>
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                         <EmberField />
