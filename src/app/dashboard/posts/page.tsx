@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PostsSearch from "@/components/posts/PostsSearch";
 import PostsPagination from "@/components/posts/PostsPagination";
+import DeletePostButton from "@/components/posts/DeletePostButton";
 
 const PAGE_SIZE = 10;
 
@@ -80,7 +81,9 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
 
     await dbConnect();
 
-    const filter: FilterQuery<IPost> = {};
+    // Ownership-scoped: this app has no admin role, so "manage posts" means
+    // "manage my own posts" — the same model edit/delete already enforce.
+    const filter: FilterQuery<IPost> = { userId };
     if (q) filter.title = { $regex: escapeRegExp(q), $options: "i" };
     if (approval && APPROVAL_OPTIONS.includes(approval as (typeof APPROVAL_OPTIONS)[number])) filter.approval = approval;
     if (published === "true" || published === "false") filter.published = published === "true";
@@ -139,9 +142,8 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
                     </TableHeader>
                     <TableBody>
                         {posts.map((post) => {
-                            const author = post.userId as unknown as { _id?: { toString(): string }; email?: string; username?: string } | null;
+                            const author = post.userId as unknown as { email?: string; username?: string } | null;
                             const category = post.categoryId as unknown as { title?: string } | null;
-                            const isOwner = author?._id?.toString() === userId;
                             return (
                                 <TableRow key={String(post._id)}>
                                     <TableCell className="font-medium">
@@ -182,13 +184,14 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
                                         {new Date(post.createdAt).toLocaleDateString("en-US")}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {isOwner && (
+                                        <div className="flex justify-end gap-1">
                                             <Button asChild variant="ghost" size="icon-sm">
                                                 <Link href={`/posts/${post.slug}/edit`} aria-label="Edit post">
                                                     <PencilLine />
                                                 </Link>
                                             </Button>
-                                        )}
+                                            <DeletePostButton slug={post.slug} title={post.title} />
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             );

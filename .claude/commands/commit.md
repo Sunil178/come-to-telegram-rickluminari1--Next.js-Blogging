@@ -26,7 +26,7 @@ Match this repo's existing style for tone. This is a plain descriptive title, no
 For a large or multi-part change, prefer a one-sentence title stating the overall capability, then a handful of bullets (roughly 3-6) for the genuinely distinct sub-parts — not one bullet per file or per component.
 
 Keep it readable, not exhaustive:
-- One idea per bullet, one line where it fits, two lines at most. If a bullet needs a third line, it's actually two bullets — split it.
+- One idea per bullet, written as a single unbroken line — don't hard-wrap it across multiple lines at some fixed column width; let the terminal/viewer soft-wrap it instead. If a bullet is trying to cover two distinct ideas, that's a sign to split it into two bullets, not to just let it run long.
 - Don't enumerate every instance of something (every component, every route, every field) — say what changed and, if useful, a representative example, not the full list. The diff is the exhaustive record; the commit message is the summary a person reads without opening it.
   - Bad: "Adds shadcn Avatar, DropdownMenu, Sheet, and Separator; rebuilds Navbar.tsx, NavbarBar.tsx, NavLinks.tsx, UserMenu.tsx, MobileNav.tsx, Footer.tsx, and GlobalLoader.tsx"
   - Good: "Rebuild Navbar, Footer, and GlobalLoader on shadcn/ui and Motion, replacing the remaining antd usage in the shared layout"

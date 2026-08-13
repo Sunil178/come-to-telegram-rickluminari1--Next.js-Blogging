@@ -9,18 +9,14 @@ import "@/styles/custom.css";
 
 import Navbar from "@/components/Navbar";
 import EmberField from "@/components/layout/EmberField";
+import { Toaster } from "@/components/ui/sonner";
 
-import { config } from "@fortawesome/fontawesome-svg-core";
-import "@fortawesome/fontawesome-svg-core/styles.css";
 import { Cormorant, IBM_Plex_Mono, Source_Sans_3 } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const fontDisplay = Cormorant({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
 const fontBody = Source_Sans_3({ subsets: ["latin"], variable: "--font-body" });
 const fontMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
-
-
-config.autoAddCss = false;
 
 export const metadata: Metadata = {
     title: "Vedev Blog",
@@ -47,6 +43,7 @@ export default function RootLayout({
                         </Suspense>
                         <Navbar />
                         {children}
+                        <Toaster />
                     </ThemeProvider>
                 </body>
             </html>
