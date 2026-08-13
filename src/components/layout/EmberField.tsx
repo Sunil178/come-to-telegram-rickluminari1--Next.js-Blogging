@@ -63,7 +63,13 @@ const FACTORY = emberDrift();
 
 export default function EmberField() {
     const pathname = usePathname();
-    const paused = pathname?.startsWith("/dashboard") ?? false;
+    // Paused on the dashboard and on individual posts (write, edit, read) —
+    // all sustained-attention pages where drifting motion competes with the
+    // content instead of just sitting behind it. The public listing at
+    // /posts itself stays animated. "/posts/" (trailing slash) excludes the
+    // bare listing route while covering /posts/add, /posts/[slug], and
+    // /posts/[slug]/edit in one check.
+    const paused = pathname?.startsWith("/dashboard") || pathname?.startsWith("/posts/") || false;
     const canvasRef = useCanvasField(FACTORY, { paused });
     return (
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
