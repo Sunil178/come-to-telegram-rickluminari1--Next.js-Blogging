@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FilterQuery } from "mongoose";
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, PencilLine, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import dbConnect from "@/libs/db-connect";
 import Post, { IPost } from "@/models/Post";
 import User from "@/models/User";
@@ -71,6 +71,7 @@ interface DashboardPostsPageProps {
 export default async function DashboardPostsPage({ searchParams }: DashboardPostsPageProps) {
     const session = await getSession();
     if (!session?.user) redirect("/auth/login?callbackUrl=/dashboard/posts");
+    const userId = session.user.id;
 
     const { page: pageParam, q, sort, order, approval, published } = await searchParams;
     const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
@@ -133,12 +134,14 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
                             <TableHead>Votes</TableHead>
                             <SortableHead field="commentCount" label="Comments" href={sortHref("commentCount")} sortField={sortField} sortOrder={sortOrder} />
                             <SortableHead field="createdAt" label="Created At" href={sortHref("createdAt")} sortField={sortField} sortOrder={sortOrder} />
+                            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {posts.map((post) => {
-                            const author = post.userId as unknown as { email?: string; username?: string } | null;
+                            const author = post.userId as unknown as { _id?: { toString(): string }; email?: string; username?: string } | null;
                             const category = post.categoryId as unknown as { title?: string } | null;
+                            const isOwner = author?._id?.toString() === userId;
                             return (
                                 <TableRow key={String(post._id)}>
                                     <TableCell className="font-medium">
@@ -178,12 +181,21 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
                                     <TableCell className="font-mono text-xs">
                                         {new Date(post.createdAt).toLocaleDateString("en-US")}
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        {isOwner && (
+                                            <Button asChild variant="ghost" size="icon-sm">
+                                                <Link href={`/posts/${post.slug}/edit`} aria-label="Edit post">
+                                                    <PencilLine />
+                                                </Link>
+                                            </Button>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             );
                         })}
                         {posts.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
+                                <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
                                     No posts found.
                                 </TableCell>
                             </TableRow>

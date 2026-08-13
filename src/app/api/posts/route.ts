@@ -5,6 +5,7 @@ import Post, { ApprovalStatus } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { escapeRegExp } from "@/libs/search-query";
 import { slugify } from "@/libs/slug";
+import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
 
 export const GET = withApiGuard(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
@@ -48,9 +49,6 @@ export const GET = withApiGuard(async (request: NextRequest) => {
 export const POST = withApiGuard(async (request, { session }) => {
     try {
         const body = await request.formData();
-        if (!body.has('post_data')) {
-            return NextResponse.json({ data: null, message: 'Post page data is required' }, { status: 400 });
-        }
 
         const title = (body.get('title') as string || '').trim();
         if (!title) {
@@ -62,14 +60,19 @@ export const POST = withApiGuard(async (request, { session }) => {
             return NextResponse.json({ data: null, message: 'Slug is required' }, { status: 400 });
         }
 
+        const value = parsePostEditorValue(body.get('post_data'));
+        if (!value) {
+            return NextResponse.json({ data: null, message: 'Post content is required' }, { status: 400 });
+        }
+
         const post = await Post.create({
             'userId': session.user.id,
             'slug': slug,
             'title': title,
             'titleDescription': body.get('titleDescription'),
-            'tags': (body.get('tags') as string)?.split(','),
+            'tags': (body.get('tags') as string)?.split(',').filter(Boolean) ?? [],
             'bannerImage': body.get('postBannerPath'),
-            'content': body.get('post_data'),
+            'content': await serializePostContent(value),
         })
         return NextResponse.json({ data: { slug: post.slug }, message: 'Success' });
     } catch (error) {
