@@ -65,6 +65,13 @@
     --popover-foreground: oklch(0.233 0.019 66.6);
     --primary: oklch(0.724 0.184 47.0);
     --primary-foreground: oklch(0.205 0.037 54.0);
+    /* EmberField background: darker than --primary since that lightness
+       barely registers against this theme's pale ground; alpha leans up
+       to compensate for the smaller dot size still reading as visible. */
+    --ember: oklch(0.52 0.184 47.0);
+    --ember-alpha-base: 0.32;
+    --ember-alpha-spread: 0.3;
+    --ember-radius-base: 0.75;
     --secondary: oklch(0.948 0.016 82.8);
     --secondary-foreground: oklch(0.255 0.021 66.6);
     --muted: oklch(0.948 0.016 82.8);
@@ -109,6 +116,12 @@
     --popover-foreground: oklch(0.948 0.011 76.6);
     --primary: oklch(0.759 0.157 49.1);
     --primary-foreground: oklch(0.177 0.029 63.1);
+    /* EmberField background: same lightness as --primary reads clearly
+       against this theme's near-black ground, so alpha can stay low. */
+    --ember: oklch(0.759 0.157 49.1);
+    --ember-alpha-base: 0.15;
+    --ember-alpha-spread: 0.25;
+    --ember-radius-base: 0.6;
     --secondary: oklch(0.248 0.006 70.0);
     --secondary-foreground: oklch(0.948 0.011 76.6);
     --muted: oklch(0.248 0.006 70.0);

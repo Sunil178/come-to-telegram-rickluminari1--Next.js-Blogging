@@ -16,6 +16,7 @@ import "highlight.js/styles/default.css";
 import "@/../public/assets/libs/prism.js/prism-tomorrow-night.js";
 import "@/../public/assets/libs/prism.js/prism-line-numbers.min.js";
 import Navbar from "@/components/Navbar";
+import EmberField from "@/components/layout/EmberField";
 
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -66,6 +67,7 @@ export default function RootLayout({
                 </head>
                 <body>
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                        <EmberField />
                         <Suspense fallback={null}>
                             <GlobalLoader />
                         </Suspense>

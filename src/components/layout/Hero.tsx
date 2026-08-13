@@ -26,7 +26,6 @@ export default function Hero() {
                 animate={{ opacity: [0.35, 0.7, 0.35], y: [0, 16, 0] }}
                 transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
             />
-
             <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
