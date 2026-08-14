@@ -209,6 +209,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 initialComments={comments}
                 isLoggedIn={Boolean(session?.user)}
                 currentUserId={session?.user?.id ?? null}
+                currentUsername={session?.user?.username ?? null}
             />
         </article>
     );

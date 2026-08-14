@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, type MouseEvent } from "react";
+import Link from "next/link";
 import { MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +52,16 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
             ) : (
                 <>
                     <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-foreground">{node.authorUsername ?? "Unknown"}</span>
+                        {node.authorUsername ? (
+                            <Link
+                                href={`/users/${encodeURIComponent(node.authorUsername)}`}
+                                className="font-medium text-foreground hover:text-teal"
+                            >
+                                {node.authorUsername}
+                            </Link>
+                        ) : (
+                            <span className="font-medium text-foreground">Unknown</span>
+                        )}
                         <span className="text-muted-foreground">
                             {new Date(node.createdAt).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}
                         </span>

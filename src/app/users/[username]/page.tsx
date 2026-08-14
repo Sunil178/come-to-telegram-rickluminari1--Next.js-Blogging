@@ -16,13 +16,14 @@ interface ProfilePageProps {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
     const { username } = await params;
-    const user = await User.findOne({ username }).select("username").lean();
+    const user = await User.findOne({ username: decodeURIComponent(username) }).select("username").lean();
     if (!user) return {};
-    return { title: `${username} — Vedev.Guru` };
+    return { title: `${user.username} — Vedev.Guru` };
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-    const { username } = await params;
+    const { username: rawUsername } = await params;
+    const username = decodeURIComponent(rawUsername);
 
     const profileUser = await User.findOne({ username })
         .select("username avatar intro profile upvoteCount downvoteCount")

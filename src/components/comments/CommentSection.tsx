@@ -12,6 +12,7 @@ interface CommentSectionProps {
     initialComments: CommentNode[];
     isLoggedIn: boolean;
     currentUserId: string | null;
+    currentUsername: string | null;
 }
 
 type CommentAction =
@@ -69,7 +70,13 @@ function reduceComments(state: CommentNode[], action: CommentAction): CommentNod
     }
 }
 
-export default function CommentSection({ postSlug, initialComments, isLoggedIn, currentUserId }: CommentSectionProps) {
+export default function CommentSection({
+    postSlug,
+    initialComments,
+    isLoggedIn,
+    currentUserId,
+    currentUsername,
+}: CommentSectionProps) {
     const router = useRouter();
     const [comments, setComments] = useState(initialComments);
     const [optimisticComments, applyOptimistic] = useOptimistic(comments, reduceComments);
@@ -90,7 +97,7 @@ export default function CommentSection({ postSlug, initialComments, isLoggedIn, 
             parentId,
             content,
             authorId: currentUserId,
-            authorUsername: null,
+            authorUsername: currentUsername,
             upvoteCount: 0,
             downvoteCount: 0,
             myVote: null,

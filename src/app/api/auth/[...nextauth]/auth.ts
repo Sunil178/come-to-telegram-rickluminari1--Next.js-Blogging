@@ -17,9 +17,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 const user = await User.findOne({ email: credentials.username });
 
                 if (user && compareSync(credentials.password as string, user.password)) {
+                    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {
                         id: user.id,
-                        name: user.name,
+                        name: fullName || user.username,
+                        username: user.username,
                         email: user.email,
                     };
                 }
@@ -31,12 +33,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         async session({ session, token, user }) {
             if (token && session.user) {
                 session.user.id = token.id as string;
+                session.user.username = token.username;
             }
             return session;
         },
         async jwt({ token, user, account, profile }) {
             if (user) {
                 token.id = user.id;
+                token.username = user.username;
             }
             return token;
         },

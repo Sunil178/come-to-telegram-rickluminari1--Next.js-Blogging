@@ -16,7 +16,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             return NextResponse.json({ data: null, message: "type must be a boolean" }, { status: 400 });
         }
 
-        const targetUser = await User.findOne({ username });
+        const targetUser = await User.findOne({ username: decodeURIComponent(username) });
         if (!targetUser) {
             return NextResponse.json({ data: null, message: "User not found" }, { status: 404 });
         }
