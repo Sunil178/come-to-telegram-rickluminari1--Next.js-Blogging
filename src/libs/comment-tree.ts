@@ -27,6 +27,21 @@ export interface CommentNode {
     replies: CommentNode[];
 }
 
+function extractAuthorId(userId: FlatComment["userId"]): string | null {
+    if (!userId) return null;
+    if (typeof userId === "object" && "username" in userId) {
+        return userId._id ? userId._id.toString() : null;
+    }
+    return userId.toString();
+}
+
+function extractAuthorUsername(userId: FlatComment["userId"]): string | null {
+    if (userId && typeof userId === "object" && "username" in userId) {
+        return userId.username ?? null;
+    }
+    return null;
+}
+
 /**
  * Builds a nested reply tree from a flat, parentId-linked comment list.
  * A soft-deleted comment with no surviving replies is dropped entirely;
@@ -39,17 +54,13 @@ export function buildCommentTree(flat: FlatComment[]): CommentNode[] {
 
     for (const comment of flat) {
         const id = comment._id.toString();
-        const author =
-            comment.userId && typeof comment.userId === "object" && "username" in comment.userId
-                ? comment.userId
-                : null;
 
         byId.set(id, {
             id,
             parentId: comment.parentId ? comment.parentId.toString() : null,
             content: comment.deleted ? "" : comment.content,
-            authorId: author?._id ? author._id.toString() : null,
-            authorUsername: author?.username ?? null,
+            authorId: extractAuthorId(comment.userId),
+            authorUsername: extractAuthorUsername(comment.userId),
             upvoteCount: comment.upvoteCount ?? 0,
             downvoteCount: comment.downvoteCount ?? 0,
             editedAt: comment.editedAt ? new Date(comment.editedAt).toISOString() : null,

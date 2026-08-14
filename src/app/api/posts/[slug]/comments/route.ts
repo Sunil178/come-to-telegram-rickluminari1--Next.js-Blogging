@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import type { SoftDeleteModel } from "mongoose-delete";
+import type { IComment } from "@/models/Comment";
 import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
+
+const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -33,7 +37,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         }
 
         if (parentId) {
-            const parent = await Comment.findOne({ _id: parentId, postId: post._id });
+            const parent = await SoftDeleteComment.findOneWithDeleted({ _id: parentId, postId: post._id });
             if (!parent) {
                 return NextResponse.json({ data: null, message: "Parent comment not found" }, { status: 400 });
             }
