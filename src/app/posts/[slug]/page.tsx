@@ -12,6 +12,7 @@ import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
 import Comment from "@/models/Comment";
 import type { IComment } from "@/models/Comment";
+import CommentVote from "@/models/CommentVote";
 import { getSession } from "@/libs/api-guard";
 import { processPostContent } from "@/libs/post-content";
 import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
@@ -70,13 +71,22 @@ const getMyPostVote = cache(async (postId: string, userId: string | undefined) =
 
 const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
 
-const getComments = cache(async (postId: string) => {
+const getComments = cache(async (postId: string, userId: string | undefined) => {
     await dbConnect();
     const flat = await SoftDeleteComment.findWithDeleted({ postId })
         .populate({ path: "userId", model: User, select: "username" })
         .sort({ createdAt: 1 })
         .lean();
-    return buildCommentTree(flat as unknown as FlatComment[]);
+
+    let myVotes = new Map<string, boolean>();
+    if (userId && flat.length > 0) {
+        const votes = await CommentVote.find({ userId, commentId: { $in: flat.map((c) => c._id) } })
+            .select("commentId type")
+            .lean();
+        myVotes = new Map(votes.map((v) => [v.commentId.toString(), Boolean(v.type)]));
+    }
+
+    return buildCommentTree(flat as unknown as FlatComment[], myVotes);
 });
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
@@ -106,7 +116,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const session = await getSession();
     const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
-    const comments = await getComments(post._id.toString());
+    const comments = await getComments(post._id.toString(), session?.user?.id);
 
     const window = new JSDOM("").window;
     const purify = DOMPurify(window as unknown as Window & typeof globalThis);
@@ -133,7 +143,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 </h1>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:hidden">
                     {authorLabel && (
-                        <Link href={`/users/${authorLabel}`} className="hover:text-teal">
+                        <Link href={`/users/${encodeURIComponent(authorLabel)}`} className="hover:text-teal">
                             {authorLabel}
                         </Link>
                     )}
@@ -149,7 +159,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 <div className="mt-6 flex justify-center">
                     <VoteButtons
                         voteUrl={`/api/posts/${post.slug}/vote`}
-                        initialState={{ upvoteCount: post.upvoteCount, downvoteCount: post.downvoteCount, myVote }}
+                        initialState={{ upvoteCount: post.upvoteCount ?? 0, downvoteCount: post.downvoteCount ?? 0, myVote }}
                         isLoggedIn={Boolean(session?.user)}
                     />
                 </div>
@@ -172,7 +182,9 @@ export default async function PostPage({ params }: PostPageProps) {
                         {category?.title && <MetaItem label="Category" value={category.title} />}
                         {dateLabel && <MetaItem label="Published" value={dateLabel} />}
                         <MetaItem label="Reading time" value={`${readingTime} min`} />
-                        {authorLabel && <MetaItem label="Written by" value={authorLabel} href={`/users/${authorLabel}`} />}
+                        {authorLabel && (
+                            <MetaItem label="Written by" value={authorLabel} href={`/users/${encodeURIComponent(authorLabel)}`} />
+                        )}
                     </div>
                 </aside>
 

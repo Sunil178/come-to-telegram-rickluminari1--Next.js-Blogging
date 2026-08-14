@@ -80,7 +80,11 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
                         <div className="mt-2 flex items-center gap-3">
                             <VoteButtons
                                 voteUrl={`/api/comments/${node.id}/vote`}
-                                initialState={{ upvoteCount: node.upvoteCount, downvoteCount: node.downvoteCount, myVote: null }}
+                                initialState={{
+                                    upvoteCount: node.upvoteCount,
+                                    downvoteCount: node.downvoteCount,
+                                    myVote: node.myVote ?? null,
+                                }}
                                 isLoggedIn={isLoggedIn}
                                 size="sm"
                             />

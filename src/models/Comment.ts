@@ -22,7 +22,7 @@ const schema = new Schema<IComment>(
     postId: { type: ObjectId, ref: "Post", required: true },
     parentId: { type: ObjectId, ref: "Comment", default: null },
     userId: { type: ObjectId, ref: "User", required: true },
-    content: { type: String, required: true },
+    content: { type: String, required: true, maxlength: 5000 },
     upvoteCount: { type: Number, default: 0 },
     downvoteCount: { type: Number, default: 0 },
     visibility: { type: Boolean, default: true },

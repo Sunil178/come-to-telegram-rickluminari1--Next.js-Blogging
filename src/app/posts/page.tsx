@@ -56,9 +56,10 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     const session = await getSession();
-    const isLoggedIn = Boolean(session?.user);
+    const userId = session?.user?.id;
+    const isLoggedIn = Boolean(userId);
     const myVotes = isLoggedIn
-        ? await PostVote.find({ userId: session!.user!.id, postId: { $in: posts.map((p) => p._id) } })
+        ? await PostVote.find({ userId, postId: { $in: posts.map((p) => p._id) } })
               .select("postId type")
               .lean()
         : [];

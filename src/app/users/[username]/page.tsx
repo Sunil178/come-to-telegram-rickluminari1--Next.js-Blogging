@@ -64,7 +64,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {!isOwnProfile && (
                     <div className="mt-6">
                         <VoteButtons
-                            voteUrl={`/api/users/${profileUser.username}/vote`}
+                            voteUrl={`/api/users/${encodeURIComponent(profileUser.username)}/vote`}
                             initialState={{
                                 upvoteCount: profileUser.upvoteCount ?? 0,
                                 downvoteCount: profileUser.downvoteCount ?? 0,

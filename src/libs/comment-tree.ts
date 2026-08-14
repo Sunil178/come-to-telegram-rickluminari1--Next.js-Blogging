@@ -21,6 +21,7 @@ export interface CommentNode {
     authorUsername: string | null;
     upvoteCount: number;
     downvoteCount: number;
+    myVote?: boolean | null;
     editedAt: string | null;
     createdAt: string;
     deleted: boolean;
@@ -48,7 +49,7 @@ function extractAuthorUsername(userId: FlatComment["userId"]): string | null {
  * one with replies is kept as a "[deleted]" placeholder (content cleared,
  * deleted: true) so the thread structure under it stays intact.
  */
-export function buildCommentTree(flat: FlatComment[]): CommentNode[] {
+export function buildCommentTree(flat: FlatComment[], myVotes: Map<string, boolean> = new Map()): CommentNode[] {
     const byId = new Map<string, CommentNode>();
     const childrenOf = new Map<string, string[]>();
 
@@ -63,6 +64,7 @@ export function buildCommentTree(flat: FlatComment[]): CommentNode[] {
             authorUsername: extractAuthorUsername(comment.userId),
             upvoteCount: comment.upvoteCount ?? 0,
             downvoteCount: comment.downvoteCount ?? 0,
+            myVote: myVotes.get(id) ?? null,
             editedAt: comment.editedAt ? new Date(comment.editedAt).toISOString() : null,
             createdAt: new Date(comment.createdAt).toISOString(),
             deleted: Boolean(comment.deleted),

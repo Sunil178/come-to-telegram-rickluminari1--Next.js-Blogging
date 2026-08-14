@@ -47,7 +47,7 @@ export function withApiGuard<Context = unknown>(
     return async (request: NextRequest, context: Context) => {
         if (requireAuth) {
             const session = await getSession();
-            if (!session?.user) {
+            if (!session?.user?.id) {
                 return NextResponse.json({ data: null, message: "Unauthorized" }, { status: 401 });
             }
             return handler(request, { ...context, session: session as AuthenticatedSession });

@@ -22,6 +22,9 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (!content) {
             return NextResponse.json({ data: null, message: "Comment can't be empty" }, { status: 400 });
         }
+        if (content.length > 5000) {
+            return NextResponse.json({ data: null, message: "Comment is too long (max 5000 characters)" }, { status: 400 });
+        }
 
         await dbConnect();
 

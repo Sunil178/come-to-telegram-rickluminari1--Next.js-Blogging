@@ -48,6 +48,7 @@ export default function CommentForm({
                 disabled={!isLoggedIn}
                 autoFocus={autoFocus}
                 rows={3}
+                maxLength={5000}
             />
             <div className="flex justify-end gap-2">
                 {onCancel && (
