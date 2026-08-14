@@ -3,18 +3,23 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
+import type { SoftDeleteModel } from "mongoose-delete";
 import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
+import Comment from "@/models/Comment";
+import type { IComment } from "@/models/Comment";
 import { getSession } from "@/libs/api-guard";
 import { processPostContent } from "@/libs/post-content";
+import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
 import { Badge } from "@/components/ui/badge";
 import BannerImage from "@/components/posts/BannerImage";
 import ReadingProgress from "@/components/posts/ReadingProgress";
 import TableOfContents from "@/components/posts/TableOfContents";
 import VoteButtons from "@/components/votes/VoteButtons";
+import CommentSection from "@/components/comments/CommentSection";
 
 interface PostPageProps {
     params: Promise<{ slug: string }>;
@@ -56,6 +61,17 @@ const getMyPostVote = cache(async (postId: string, userId: string | undefined) =
     return vote ? Boolean(vote.type) : null;
 });
 
+const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
+
+const getComments = cache(async (postId: string) => {
+    await dbConnect();
+    const flat = await SoftDeleteComment.findWithDeleted({ postId })
+        .populate({ path: "userId", model: User, select: "username" })
+        .sort({ createdAt: 1 })
+        .lean();
+    return buildCommentTree(flat as unknown as FlatComment[]);
+});
+
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
     const { slug } = await params;
     const post = await getPost(slug);
@@ -83,6 +99,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const session = await getSession();
     const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
+    const comments = await getComments(post._id.toString());
 
     const window = new JSDOM("").window;
     const purify = DOMPurify(window as unknown as Window & typeof globalThis);
@@ -167,6 +184,13 @@ export default async function PostPage({ params }: PostPageProps) {
                     ))}
                 </div>
             )}
+
+            <CommentSection
+                postSlug={post.slug}
+                initialComments={comments}
+                isLoggedIn={Boolean(session?.user)}
+                currentUserId={session?.user?.id ?? null}
+            />
         </article>
     );
 }
