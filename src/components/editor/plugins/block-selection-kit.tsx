@@ -17,8 +17,8 @@ export const hasSelectableClass = ({
         .join(' ')
         .includes('slate-selectable');
 
-// Backs the drag-handle hover/selection state that block-draggable.tsx reads
-// via editor.getApi(BlockSelectionPlugin) — required alongside DndKit, not optional.
+// Required alongside DndKit — block-draggable.tsx calls
+// editor.getApi(BlockSelectionPlugin) directly.
 export const BlockSelectionKit = [
     BlockSelectionPlugin.configure(({ editor }) => ({
         options: {

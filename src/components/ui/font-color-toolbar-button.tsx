@@ -17,10 +17,8 @@ import {
 import { cn } from '@/lib/utils';
 
 // Only the swatch grid (ColorDropdownMenuItems/DEFAULT_COLORS) is used, by
-// table-node.tsx's cell background color picker. The custom-color-input
-// variant of this component (hex input, eyedropper) isn't wired into
-// anything in this editor, so it's been left out rather than kept as dead
-// code with an unreachable ref-during-render bug.
+// table-node.tsx's color picker. The rest of this component was unused dead
+// code with a ref-during-render bug, so it's left out entirely.
 
 function normalizeColor(color: string): string {
   return color.toLowerCase();

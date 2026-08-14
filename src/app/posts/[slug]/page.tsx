@@ -172,7 +172,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
             )}
 
-            <div className="mx-auto mt-14 max-w-5xl px-6 lg:grid lg:grid-cols-[160px_1fr_200px] lg:gap-10">
+            <div className="mx-auto mt-14 max-w-6xl px-6 lg:grid lg:grid-cols-[160px_1fr_200px] lg:gap-10">
                 <aside className="hidden lg:block">
                     <div className="sticky top-24 space-y-6">
                         {category?.title && <MetaItem label="Category" value={category.title} />}
@@ -184,8 +184,10 @@ export default async function PostPage({ params }: PostPageProps) {
                     </div>
                 </aside>
 
+                {/* max-w-none drops prose's own 65ch cap; the child rule below reapplies
+                    it to everything except tables/code/images, which use the full column. */}
                 <div
-                    className="prose prose-neutral dark:prose-invert min-w-0 [&_h1]:font-heading [&_h2]:font-heading [&_h3]:font-heading [&_h4]:font-heading"
+                    className="prose prose-neutral dark:prose-invert min-w-0 max-w-none [&>*:not(:has(table)):not(:has(pre)):not(:has(figure))]:max-w-[65ch] [&_h1]:font-heading [&_h2]:font-heading [&_h3]:font-heading [&_h4]:font-heading"
                     dangerouslySetInnerHTML={{ __html: html }}
                 />
 
@@ -195,7 +197,7 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
 
             {post.tags?.length > 0 && (
-                <div className="mx-auto mt-10 flex max-w-5xl flex-wrap gap-2 px-6">
+                <div className="mx-auto mt-10 flex max-w-6xl flex-wrap gap-2 px-6">
                     {post.tags.map((tag: string) => (
                         <Badge key={tag} variant="outline" className="font-mono text-[11px] tracking-wide uppercase">
                             {tag}

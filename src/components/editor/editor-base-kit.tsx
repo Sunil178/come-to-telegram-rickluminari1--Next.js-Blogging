@@ -7,10 +7,8 @@ import { MarkdownKit } from './plugins/markdown-kit';
 import { BaseMediaKit } from './plugins/media-base-kit';
 import { BaseTableKit } from './plugins/table-base-kit';
 
-// Server-safe plugin set used only for HTML serialization (see
-// src/libs/post-editor-serialize.ts). No 'use client' — this file (and
-// everything it imports) must never touch platejs/react. MarkdownKit is safe
-// here too — @platejs/markdown has no /react entry point.
+// Server-safe plugin set for HTML serialization (src/libs/post-editor-serialize.ts) —
+// this file must never import platejs/react. MarkdownKit is fine here; it has no /react entry.
 export const BaseEditorKit = [
     ...BaseBasicBlocksKit,
     ...BaseBasicMarksKit,
