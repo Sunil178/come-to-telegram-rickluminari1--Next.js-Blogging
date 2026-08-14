@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { FilterQuery } from "mongoose";
 import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, PencilLine, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import Post, { IPost } from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
-import { getSession } from "@/libs/api-guard";
+import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { escapeRegExp } from "@/libs/search-query";
 import { buildSearchParamsHref } from "@/libs/build-href";
 import { Badge } from "@/components/ui/badge";
@@ -69,8 +68,8 @@ interface DashboardPostsPageProps {
 }
 
 export default async function DashboardPostsPage({ searchParams }: DashboardPostsPageProps) {
-    const session = await getSession();
-    if (!session?.user) redirect("/auth/login?callbackUrl=/dashboard/posts");
+    // proxy.ts's matcher redirects unauthenticated requests before this renders.
+    const session = (await getSession()) as AuthenticatedSession;
     const userId = session.user.id;
 
     const { page: pageParam, q, sort, order, approval, published } = await searchParams;

@@ -4,6 +4,7 @@ import { useState, useTransition, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { loginRedirectUrl } from "@/libs/auth-redirect";
 import { Button } from "@/components/ui/button";
 import {
     AlertDialog,
@@ -37,7 +38,7 @@ export default function DeletePostButton({ slug, title }: DeletePostButtonProps)
                 const response = await fetch(`/api/posts/${slug}`, { method: "DELETE" });
 
                 if (response.status === 401) {
-                    router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
+                    router.push(loginRedirectUrl(location.pathname));
                     return;
                 }
 

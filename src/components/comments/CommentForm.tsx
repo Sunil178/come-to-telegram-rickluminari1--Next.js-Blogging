@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { loginRedirectUrl } from "@/libs/auth-redirect";
 
 interface CommentFormProps {
     isLoggedIn: boolean;
@@ -30,7 +31,7 @@ export default function CommentForm({
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
         if (!isLoggedIn) {
-            router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
+            router.push(loginRedirectUrl(location.pathname));
             return;
         }
         const trimmed = content.trim();

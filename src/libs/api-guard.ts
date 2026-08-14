@@ -8,7 +8,9 @@ import { auth } from "@/app/api/auth/[...nextauth]/auth";
 // https://nextjs.org/docs/app/guides/authentication#creating-a-data-access-layer-dal
 export const getSession = cache(auth);
 
-type AuthenticatedSession = Session & { user: NonNullable<Session["user"]> & { id: string } };
+// Also the trusted session type for pages matched in proxy.ts's `config.matcher`,
+// which guarantees a session is present before they render.
+export type AuthenticatedSession = Session & { user: NonNullable<Session["user"]> & { id: string } };
 
 interface ApiGuardOptions {
     /** Require a logged-in session; unauthenticated requests get a 401 before the handler runs. Defaults to true. */

@@ -1,6 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Post from "@/models/Post";
-import { getSession } from "@/libs/api-guard";
+import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import PostForm from "@/components/posts/PostForm";
 
 interface EditPostPageProps {
@@ -9,11 +9,8 @@ interface EditPostPageProps {
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
     const { slug } = await params;
-    const session = await getSession();
-    if (!session?.user) {
-        redirect(`/auth/login?callbackUrl=${encodeURIComponent(`/posts/${slug}/edit`)}`);
-    }
-
+    // proxy.ts's matcher redirects unauthenticated requests before this renders.
+    const session = (await getSession()) as AuthenticatedSession;
     const post = await Post.findOne({ slug, userId: session.user.id }).lean();
     if (!post) notFound();
 

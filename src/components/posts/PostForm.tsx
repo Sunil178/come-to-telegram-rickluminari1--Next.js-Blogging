@@ -10,6 +10,7 @@ import { PostEditor, usePostEditor } from "@/components/editor/PostEditor";
 import PostBannerUpload from "@/components/posts/PostBannerUpload";
 import TagInput from "@/components/posts/TagInput";
 import { slugify } from "@/libs/slug";
+import { loginRedirectUrl } from "@/libs/auth-redirect";
 
 interface InitialPost {
     slug: string;
@@ -69,7 +70,7 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
             });
 
             if (response.status === 401) {
-                router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
+                router.push(loginRedirectUrl(location.pathname));
                 return;
             }
 

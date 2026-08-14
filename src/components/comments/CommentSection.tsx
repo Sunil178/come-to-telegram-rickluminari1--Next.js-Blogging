@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CommentNode } from "@/libs/comment-tree";
+import { loginRedirectUrl } from "@/libs/auth-redirect";
 import CommentForm from "@/components/comments/CommentForm";
 import CommentItem from "@/components/comments/CommentItem";
 
@@ -83,7 +84,7 @@ export default function CommentSection({
     const [, startTransition] = useTransition();
 
     const requireLogin = () => {
-        router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
+        router.push(loginRedirectUrl(location.pathname));
     };
 
     const handleAdd = (content: string, parentId: string | null) => {

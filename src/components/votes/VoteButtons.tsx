@@ -6,6 +6,7 @@ import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { loginRedirectUrl } from "@/libs/auth-redirect";
 
 export interface VoteState {
     upvoteCount: number;
@@ -50,7 +51,7 @@ export default function VoteButtons({ voteUrl, initialState, isLoggedIn, size = 
     const [optimisticState, applyOptimistic] = useOptimistic(state, applyVote);
 
     const requireLogin = () => {
-        router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
+        router.push(loginRedirectUrl(location.pathname));
     };
 
     const handleVote = (event: React.MouseEvent, type: boolean) => {

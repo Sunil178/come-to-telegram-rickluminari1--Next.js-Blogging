@@ -15,3 +15,9 @@ Route Handlers (`src/app/api/**/route.ts`) must not contain inline auth logic �
 ## Database connection
 
 Do not call `dbConnect()` (`src/libs/db-connect.ts`) from routes, pages, or components. `src/instrumentation.ts` / `src/instrumentation-node.ts` already calls it once when the Next.js server boots — mongoose's default connection is shared process-wide after that, so every model call downstream (`Post.find(...)`, etc.) just works with no per-file connect step. The only other legitimate caller is `src/seeds/seeder.ts`, a standalone script that runs outside the Next.js server, so instrumentation never fires for it.
+
+## Route protection
+
+Whole-page auth gates live in `src/proxy.ts` (Next.js's `middleware.ts` convention, under its current file name), matched via its `config.matcher` (currently `/posts/add`, `/posts/:slug/edit`, `/dashboard/:path*`). It redirects unauthenticated requests to `/auth/login?callbackUrl=...` at the edge, before any page component renders. Pages matched by it (e.g. `src/app/posts/[slug]/edit/page.tsx`, `src/app/dashboard/posts/page.tsx`) don't re-check `session?.user` and redirect again — they cast with `getSession() as AuthenticatedSession` (exported from `src/libs/api-guard.ts`) and trust it. Adding a new fully-gated page (not just an action inside an otherwise-public page) means adding its path to that matcher, not writing a per-page auth redirect.
+
+Client components where only an *action* is gated (voting, commenting, deleting) rather than the whole page discover logged-out state from a 401 on their own fetch call, since those pages stay publicly viewable and `proxy.ts` doesn't apply to them. Build the redirect target with `loginRedirectUrl()` from `src/libs/auth-redirect.ts` rather than hand-rolling `` `/auth/login?callbackUrl=${encodeURIComponent(...)}` `` inline.
