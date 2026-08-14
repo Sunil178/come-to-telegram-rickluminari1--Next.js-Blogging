@@ -7,12 +7,14 @@ import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
+import PostVote from "@/models/PostVote";
 import { getSession } from "@/libs/api-guard";
 import { processPostContent } from "@/libs/post-content";
 import { Badge } from "@/components/ui/badge";
 import BannerImage from "@/components/posts/BannerImage";
 import ReadingProgress from "@/components/posts/ReadingProgress";
 import TableOfContents from "@/components/posts/TableOfContents";
+import VoteButtons from "@/components/votes/VoteButtons";
 
 interface PostPageProps {
     params: Promise<{ slug: string }>;
@@ -47,6 +49,13 @@ const getPost = cache(async (slug: string) => {
     return null;
 });
 
+const getMyPostVote = cache(async (postId: string, userId: string | undefined) => {
+    if (!userId) return null;
+    await dbConnect();
+    const vote = await PostVote.findOne({ userId, postId }).lean();
+    return vote ? Boolean(vote.type) : null;
+});
+
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
     const { slug } = await params;
     const post = await getPost(slug);
@@ -71,6 +80,9 @@ export default async function PostPage({ params }: PostPageProps) {
     const { slug } = await params;
     const post = await getPost(slug);
     if (!post) notFound();
+
+    const session = await getSession();
+    const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
 
     const window = new JSDOM("").window;
     const purify = DOMPurify(window as unknown as Window & typeof globalThis);
@@ -105,6 +117,13 @@ export default async function PostPage({ params }: PostPageProps) {
                     )}
                     <span aria-hidden>·</span>
                     <span>{readingTime} min read</span>
+                </div>
+                <div className="mt-6 flex justify-center">
+                    <VoteButtons
+                        voteUrl={`/api/posts/${post.slug}/vote`}
+                        initialState={{ upvoteCount: post.upvoteCount, downvoteCount: post.downvoteCount, myVote }}
+                        isLoggedIn={Boolean(session?.user)}
+                    />
                 </div>
             </div>
 
