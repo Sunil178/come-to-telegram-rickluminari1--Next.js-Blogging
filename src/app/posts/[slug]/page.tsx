@@ -1,28 +1,43 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
+import type { SoftDeleteModel } from "mongoose-delete";
 import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
+import PostVote from "@/models/PostVote";
+import Comment from "@/models/Comment";
+import type { IComment } from "@/models/Comment";
+import CommentVote from "@/models/CommentVote";
 import { getSession } from "@/libs/api-guard";
 import { processPostContent } from "@/libs/post-content";
+import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
 import { Badge } from "@/components/ui/badge";
 import BannerImage from "@/components/posts/BannerImage";
 import ReadingProgress from "@/components/posts/ReadingProgress";
 import TableOfContents from "@/components/posts/TableOfContents";
+import VoteButtons from "@/components/votes/VoteButtons";
+import CommentSection from "@/components/comments/CommentSection";
 
 interface PostPageProps {
     params: Promise<{ slug: string }>;
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaItem({ label, value, href }: { label: string; value: string; href?: string }) {
     return (
         <div>
             <p className="font-mono text-[11px] tracking-widest text-teal uppercase">{label}</p>
-            <p className="mt-1 text-sm text-foreground">{value}</p>
+            {href ? (
+                <Link href={href} className="mt-1 block text-sm text-foreground hover:text-teal">
+                    {value}
+                </Link>
+            ) : (
+                <p className="mt-1 text-sm text-foreground">{value}</p>
+            )}
         </div>
     );
 }
@@ -45,6 +60,33 @@ const getPost = cache(async (slug: string) => {
     }
 
     return null;
+});
+
+const getMyPostVote = cache(async (postId: string, userId: string | undefined) => {
+    if (!userId) return null;
+    await dbConnect();
+    const vote = await PostVote.findOne({ userId, postId }).lean();
+    return vote ? Boolean(vote.type) : null;
+});
+
+const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
+
+const getComments = cache(async (postId: string, userId: string | undefined) => {
+    await dbConnect();
+    const flat = await SoftDeleteComment.findWithDeleted({ postId })
+        .populate({ path: "userId", model: User, select: "username" })
+        .sort({ createdAt: 1 })
+        .lean();
+
+    let myVotes = new Map<string, boolean>();
+    if (userId && flat.length > 0) {
+        const votes = await CommentVote.find({ userId, commentId: { $in: flat.map((c) => c._id) } })
+            .select("commentId type")
+            .lean();
+        myVotes = new Map(votes.map((v) => [v.commentId.toString(), Boolean(v.type)]));
+    }
+
+    return buildCommentTree(flat as unknown as FlatComment[], myVotes);
 });
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
@@ -72,6 +114,10 @@ export default async function PostPage({ params }: PostPageProps) {
     const post = await getPost(slug);
     if (!post) notFound();
 
+    const session = await getSession();
+    const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
+    const comments = await getComments(post._id.toString(), session?.user?.id);
+
     const window = new JSDOM("").window;
     const purify = DOMPurify(window as unknown as Window & typeof globalThis);
     const sanitized = purify.sanitize(post.content || "");
@@ -96,7 +142,11 @@ export default async function PostPage({ params }: PostPageProps) {
                     {post.title}
                 </h1>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:hidden">
-                    {authorLabel && <span>{authorLabel}</span>}
+                    {authorLabel && (
+                        <Link href={`/users/${encodeURIComponent(authorLabel)}`} className="hover:text-teal">
+                            {authorLabel}
+                        </Link>
+                    )}
                     {dateLabel && (
                         <>
                             <span aria-hidden>·</span>
@@ -105,6 +155,13 @@ export default async function PostPage({ params }: PostPageProps) {
                     )}
                     <span aria-hidden>·</span>
                     <span>{readingTime} min read</span>
+                </div>
+                <div className="mt-6 flex justify-center">
+                    <VoteButtons
+                        voteUrl={`/api/posts/${post.slug}/vote`}
+                        initialState={{ upvoteCount: post.upvoteCount ?? 0, downvoteCount: post.downvoteCount ?? 0, myVote }}
+                        isLoggedIn={Boolean(session?.user)}
+                    />
                 </div>
             </div>
 
@@ -125,7 +182,9 @@ export default async function PostPage({ params }: PostPageProps) {
                         {category?.title && <MetaItem label="Category" value={category.title} />}
                         {dateLabel && <MetaItem label="Published" value={dateLabel} />}
                         <MetaItem label="Reading time" value={`${readingTime} min`} />
-                        {authorLabel && <MetaItem label="Written by" value={authorLabel} />}
+                        {authorLabel && (
+                            <MetaItem label="Written by" value={authorLabel} href={`/users/${encodeURIComponent(authorLabel)}`} />
+                        )}
                     </div>
                 </aside>
 
@@ -148,6 +207,13 @@ export default async function PostPage({ params }: PostPageProps) {
                     ))}
                 </div>
             )}
+
+            <CommentSection
+                postSlug={post.slug}
+                initialComments={comments}
+                isLoggedIn={Boolean(session?.user)}
+                currentUserId={session?.user?.id ?? null}
+            />
         </article>
     );
 }

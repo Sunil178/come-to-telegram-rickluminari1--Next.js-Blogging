@@ -104,6 +104,8 @@ Researched against Plate's current (2026) docs, npm registry, and official templ
 
 ### Phase 7 — Comments & voting (net-new feature)
 
+**Status: implemented.** Built via `superpowers:subagent-driven-development` against `docs/superpowers/plans/2026-08-14-phase-7-comments-voting.md` — see that file's ledger for the full task-by-task build record, review findings, and rulings.
+
 **Scope grew beyond the original bullet list** once the models were actually inspected: `User` already has unused `upvoteCount`/`downvoteCount`/`intro`/`profile` fields, meaning a user-reputation system (`UserVote`) was clearly planned alongside post/comment voting, not just the two the original plan bullet named. There is currently **no user profile page anywhere in the app** to vote from, so building `UserVote` for real means building `/users/[username]` too. Confirmed via codebase check: zero API routes, zero UI, zero references to `Comment`/`CommentVote`/`PostVote`/`UserVote` anywhere outside the model files themselves — this phase is genuinely greenfield, unlike Phase 6 where "missing" middleware turned out to already exist.
 
 **Data model** — convert all four models from untyped `.js` to `.ts` (`Comment.ts`, `CommentVote.ts`, `PostVote.ts`, `UserVote.ts`), matching `Post.ts`/`User.ts`'s existing typed-interface pattern instead of leaving them as the only untyped models in the app:

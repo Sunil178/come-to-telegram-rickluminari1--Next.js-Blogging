@@ -8,7 +8,7 @@ import { auth } from "@/app/api/auth/[...nextauth]/auth";
 // https://nextjs.org/docs/app/guides/authentication#creating-a-data-access-layer-dal
 export const getSession = cache(auth);
 
-type AuthenticatedSession = Session & { user: NonNullable<Session["user"]> };
+type AuthenticatedSession = Session & { user: NonNullable<Session["user"]> & { id: string } };
 
 interface ApiGuardOptions {
     /** Require a logged-in session; unauthenticated requests get a 401 before the handler runs. Defaults to true. */
@@ -47,7 +47,7 @@ export function withApiGuard<Context = unknown>(
     return async (request: NextRequest, context: Context) => {
         if (requireAuth) {
             const session = await getSession();
-            if (!session?.user) {
+            if (!session?.user?.id) {
                 return NextResponse.json({ data: null, message: "Unauthorized" }, { status: 401 });
             }
             return handler(request, { ...context, session: session as AuthenticatedSession });
