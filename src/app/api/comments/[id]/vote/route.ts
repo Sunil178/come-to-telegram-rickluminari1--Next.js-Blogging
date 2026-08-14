@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
@@ -17,8 +16,6 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (typeof body?.type !== "boolean") {
             return NextResponse.json({ data: null, message: "type must be a boolean" }, { status: 400 });
         }
-
-        await dbConnect();
 
         const comment = await Comment.findById(id);
         if (!comment) {

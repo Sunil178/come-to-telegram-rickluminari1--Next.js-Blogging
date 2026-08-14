@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import dbConnect from "@/libs/db-connect";
 import User from "@/models/User";
 import Post from "@/models/Post";
 import Category from "@/models/Category";
@@ -17,7 +16,6 @@ interface ProfilePageProps {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
     const { username } = await params;
-    await dbConnect();
     const user = await User.findOne({ username }).select("username").lean();
     if (!user) return {};
     return { title: `${username} — Vedev.Guru` };
@@ -26,7 +24,6 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function ProfilePage({ params }: ProfilePageProps) {
     const { username } = await params;
 
-    await dbConnect();
     const profileUser = await User.findOne({ username })
         .select("username avatar intro profile upvoteCount downvoteCount")
         .lean();

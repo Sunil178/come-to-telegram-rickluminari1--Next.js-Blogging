@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FilterQuery } from "mongoose";
-import dbConnect from "@/libs/db-connect";
 import Post, { IPost } from "@/models/Post";
 import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
@@ -27,8 +26,6 @@ export const metadata = {
 export default async function PostsPage({ searchParams }: PostsPageProps) {
     const { page: pageParam, category: categorySlug, q } = await searchParams;
     const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
-
-    await dbConnect();
 
     const categories = await Category.find({ visibility: true }).select("title slug").sort({ title: 1 }).lean();
 

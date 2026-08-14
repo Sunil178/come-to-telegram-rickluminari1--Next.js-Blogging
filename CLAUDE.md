@@ -11,3 +11,7 @@ Runs on port 5000 in this project (`npm run dev -- --port=5000`), not the Next.j
 ## API routes
 
 Route Handlers (`src/app/api/**/route.ts`) must not contain inline auth logic — wrap them with `withApiGuard` from `src/libs/api-guard.ts`. See the `api-route-security` skill for the pattern and the reasoning behind it.
+
+## Database connection
+
+Do not call `dbConnect()` (`src/libs/db-connect.ts`) from routes, pages, or components. `src/instrumentation.ts` / `src/instrumentation-node.ts` already calls it once when the Next.js server boots — mongoose's default connection is shared process-wide after that, so every model call downstream (`Post.find(...)`, etc.) just works with no per-file connect step. The only other legitimate caller is `src/seeds/seeder.ts`, a standalone script that runs outside the Next.js server, so instrumentation never fires for it.

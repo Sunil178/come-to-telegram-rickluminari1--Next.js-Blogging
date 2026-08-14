@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import dbConnect from "@/libs/db-connect";
 import User from "@/models/User";
 import authConfig from "@/auth.config";
 import { compareSync } from "bcrypt";
@@ -15,7 +14,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                await dbConnect();
                 const user = await User.findOne({ email: credentials.username });
 
                 if (user && compareSync(credentials.password as string, user.password)) {

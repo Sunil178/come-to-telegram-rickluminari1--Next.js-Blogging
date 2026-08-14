@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
@@ -19,8 +18,6 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
         if (content.length > 5000) {
             return NextResponse.json({ data: null, message: "Comment is too long (max 5000 characters)" }, { status: 400 });
         }
-
-        await dbConnect();
 
         const comment = await Comment.findOneAndUpdate(
             { _id: id, userId: session.user.id },
@@ -45,8 +42,6 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
 export const DELETE = withApiGuard<RouteContext>(async (request, { params, session }) => {
     try {
         const { id } = await params;
-
-        await dbConnect();
 
         const comment = await Comment.findOne({ _id: id, userId: session.user.id });
         if (!comment) {

@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import { getSession } from "@/libs/api-guard";
 import PostForm from "@/components/posts/PostForm";
@@ -15,7 +14,6 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
         redirect(`/auth/login?callbackUrl=${encodeURIComponent(`/posts/${slug}/edit`)}`);
     }
 
-    await dbConnect();
     const post = await Post.findOne({ slug, userId: session.user.id }).lean();
     if (!post) notFound();
 

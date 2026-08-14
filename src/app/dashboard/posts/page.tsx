@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FilterQuery } from "mongoose";
 import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, PencilLine, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
-import dbConnect from "@/libs/db-connect";
 import Post, { IPost } from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
@@ -78,8 +77,6 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
     const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
     const sortField: SortField = SORTABLE_FIELDS.includes(sort as SortField) ? (sort as SortField) : "createdAt";
     const sortOrder = order === "asc" ? 1 : -1;
-
-    await dbConnect();
 
     // Ownership-scoped: this app has no admin role, so "manage posts" means
     // "manage my own posts" — the same model edit/delete already enforce.

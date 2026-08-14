@@ -1,6 +1,5 @@
 "use server";
 
-import dbConnect from "@/libs/db-connect";
 import User from "@/models/User";
 import Validator from "validatorjs";
 import { hashSync } from "bcrypt";
@@ -35,8 +34,6 @@ export async function registerAction(initialState: RegisterState, formData: Form
     }
 
     try {
-        await dbConnect();
-
         // 2. Check if user already exists
         const existingUser = await User.findOne({
             $or: [{ email: body.email }, { username: body.username }],

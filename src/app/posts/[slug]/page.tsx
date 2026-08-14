@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 import type { SoftDeleteModel } from "mongoose-delete";
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
@@ -43,7 +42,6 @@ function MetaItem({ label, value, href }: { label: string; value: string; href?:
 }
 
 const getPost = cache(async (slug: string) => {
-    await dbConnect();
     const post = await Post.findOne({ slug })
         .populate({ path: "userId", model: User, select: "username" })
         .populate({ path: "categoryId", model: Category, select: "title slug" })
@@ -64,7 +62,6 @@ const getPost = cache(async (slug: string) => {
 
 const getMyPostVote = cache(async (postId: string, userId: string | undefined) => {
     if (!userId) return null;
-    await dbConnect();
     const vote = await PostVote.findOne({ userId, postId }).lean();
     return vote ? Boolean(vote.type) : null;
 });
@@ -72,7 +69,6 @@ const getMyPostVote = cache(async (postId: string, userId: string | undefined) =
 const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
 
 const getComments = cache(async (postId: string, userId: string | undefined) => {
-    await dbConnect();
     const flat = await SoftDeleteComment.findWithDeleted({ postId })
         .populate({ path: "userId", model: User, select: "username" })
         .sort({ createdAt: 1 })

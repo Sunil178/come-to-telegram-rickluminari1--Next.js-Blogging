@@ -1,4 +1,3 @@
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
@@ -9,8 +8,6 @@ import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 const RECENT_ARTICLES_LIMIT = 6;
 
 export default async function Articles() {
-    await dbConnect();
-
     const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
         .sort({ publishedAt: -1 })
         .limit(RECENT_ARTICLES_LIMIT)

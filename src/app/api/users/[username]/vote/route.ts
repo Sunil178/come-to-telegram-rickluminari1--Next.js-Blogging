@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/libs/db-connect";
 import User from "@/models/User";
 import UserVote from "@/models/UserVote";
 import { withApiGuard } from "@/libs/api-guard";
@@ -16,8 +15,6 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (typeof body?.type !== "boolean") {
             return NextResponse.json({ data: null, message: "type must be a boolean" }, { status: 400 });
         }
-
-        await dbConnect();
 
         const targetUser = await User.findOne({ username });
         if (!targetUser) {

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SoftDeleteModel } from "mongoose-delete";
 import type { IComment } from "@/models/Comment";
-import dbConnect from "@/libs/db-connect";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
@@ -25,8 +24,6 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (content.length > 5000) {
             return NextResponse.json({ data: null, message: "Comment is too long (max 5000 characters)" }, { status: 400 });
         }
-
-        await dbConnect();
 
         const post = await Post.findOne({ slug });
         if (!post) {

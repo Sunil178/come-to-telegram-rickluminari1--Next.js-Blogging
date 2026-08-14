@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+// Don't call this from routes/pages/components — `src/instrumentation-node.ts` already
+// calls it once when the server boots, and mongoose's default connection is shared
+// process-wide after that. The only other legitimate caller is `src/seeds/seeder.ts`,
+// a standalone script that runs outside the Next.js server (instrumentation never fires
+// for it).
 const MONGODB_URI = process.env.MONGODB_URI
 
 if (!MONGODB_URI) {
