@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
@@ -25,11 +26,17 @@ interface PostPageProps {
     params: Promise<{ slug: string }>;
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaItem({ label, value, href }: { label: string; value: string; href?: string }) {
     return (
         <div>
             <p className="font-mono text-[11px] tracking-widest text-teal uppercase">{label}</p>
-            <p className="mt-1 text-sm text-foreground">{value}</p>
+            {href ? (
+                <Link href={href} className="mt-1 block text-sm text-foreground hover:text-teal">
+                    {value}
+                </Link>
+            ) : (
+                <p className="mt-1 text-sm text-foreground">{value}</p>
+            )}
         </div>
     );
 }
@@ -125,7 +132,11 @@ export default async function PostPage({ params }: PostPageProps) {
                     {post.title}
                 </h1>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground lg:hidden">
-                    {authorLabel && <span>{authorLabel}</span>}
+                    {authorLabel && (
+                        <Link href={`/users/${authorLabel}`} className="hover:text-teal">
+                            {authorLabel}
+                        </Link>
+                    )}
                     {dateLabel && (
                         <>
                             <span aria-hidden>·</span>
@@ -161,7 +172,7 @@ export default async function PostPage({ params }: PostPageProps) {
                         {category?.title && <MetaItem label="Category" value={category.title} />}
                         {dateLabel && <MetaItem label="Published" value={dateLabel} />}
                         <MetaItem label="Reading time" value={`${readingTime} min`} />
-                        {authorLabel && <MetaItem label="Written by" value={authorLabel} />}
+                        {authorLabel && <MetaItem label="Written by" value={authorLabel} href={`/users/${authorLabel}`} />}
                     </div>
                 </aside>
 
