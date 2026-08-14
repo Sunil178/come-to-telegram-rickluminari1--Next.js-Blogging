@@ -1,0 +1,42 @@
+[
+  {
+    "username": "ada.lovelace",
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "email": "ada@example.com",
+    "intro": "Mathematician turned software person.",
+    "profile": "Writes about the history and theory of computing when not arguing on the internet."
+  },
+  {
+    "username": "alan.turing",
+    "firstName": "Alan",
+    "lastName": "Turing",
+    "email": "alan@example.com",
+    "intro": "Breaks things to see how they work.",
+    "profile": "Interested in machine intelligence, cryptography, and long walks."
+  },
+  {
+    "username": "grace.hopper",
+    "firstName": "Grace",
+    "lastName": "Hopper",
+    "email": "grace@example.com",
+    "intro": "Compiler enthusiast.",
+    "profile": "Believes most bugs are just undocumented features waiting to be found."
+  },
+  {
+    "username": "linus.t",
+    "firstName": "Linus",
+    "lastName": "T.",
+    "email": "linus@example.com",
+    "intro": "Opinionated about tabs vs. spaces.",
+    "profile": "Reads every changelog. Comments on maybe a third of them."
+  },
+  {
+    "username": "margaret.h",
+    "firstName": "Margaret",
+    "lastName": "H.",
+    "email": "margaret@example.com",
+    "intro": "Systems thinker.",
+    "profile": "Cares more about reliability than features. Always asks about the failure modes."
+  }
+]

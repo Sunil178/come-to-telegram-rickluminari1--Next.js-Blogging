@@ -38,5 +38,10 @@
     "title": "Entertainment",
     "slug": "entertainment",
     "content": "Movies, TV shows, music, and everything in the entertainment world."
+  },
+  {
+    "title": "Lifestyle",
+    "slug": "lifestyle",
+    "content": "Remote work, digital nomad life, wellness, and everyday living."
   }
 ]
