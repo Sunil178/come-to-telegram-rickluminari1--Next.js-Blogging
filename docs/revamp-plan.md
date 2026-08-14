@@ -103,11 +103,54 @@ Researched against Plate's current (2026) docs, npm registry, and official templ
 - Add a delete-confirmation dialog (shadcn `AlertDialog`) — the old `page-backup.js` deleted posts with no confirmation at all; don't repeat that.
 
 ### Phase 7 — Comments & voting (net-new feature)
-- API routes: `POST/GET /api/posts/[slug]/comments`, `POST /api/posts/[slug]/vote`, `POST /api/comments/[id]/vote` — all mutations require auth.
-- Add unique compound indexes to prevent duplicate votes: `CommentVote(userId, commentId)`, `PostVote(userId, postId)`, `UserVote(userId, votingUserId)`; add `required` on the fields that should never be empty (`Comment.postId/userId/content`, vote `userId`/target id/`type`).
-- Update denormalized counters (`Post.commentCount/upvoteCount/downvoteCount`, `Comment.upvoteCount/downvoteCount`) atomically via `$inc` on comment/vote create-or-remove.
-- Build UI: threaded comments (using existing `Comment.parentId`) with optimistic updates + Motion transitions, upvote/downvote controls on posts and comments.
-- Scope note: voting/commenting will require login (no anonymous fingerprint-based flow) — the `TempUser`/`UserInterest` models stay out of scope unless you want that built separately later.
+
+**Scope grew beyond the original bullet list** once the models were actually inspected: `User` already has unused `upvoteCount`/`downvoteCount`/`intro`/`profile` fields, meaning a user-reputation system (`UserVote`) was clearly planned alongside post/comment voting, not just the two the original plan bullet named. There is currently **no user profile page anywhere in the app** to vote from, so building `UserVote` for real means building `/users/[username]` too. Confirmed via codebase check: zero API routes, zero UI, zero references to `Comment`/`CommentVote`/`PostVote`/`UserVote` anywhere outside the model files themselves — this phase is genuinely greenfield, unlike Phase 6 where "missing" middleware turned out to already exist.
+
+**Data model** — convert all four models from untyped `.js` to `.ts` (`Comment.ts`, `CommentVote.ts`, `PostVote.ts`, `UserVote.ts`), matching `Post.ts`/`User.ts`'s existing typed-interface pattern instead of leaving them as the only untyped models in the app:
+- `Comment`: add `required: true` to `postId`, `userId`, `content`. Add `editedAt: Date` (nullable) to back an "edited" indicator (edit is in scope, see below). Add an index on `{ postId: 1, parentId: 1 }` for efficient thread queries. A deleted comment with existing replies renders in place as "[deleted]" (thread structure preserved) rather than vanishing and orphaning its children; a childless deleted comment just disappears.
+- `CommentVote` / `PostVote`: add `required: true` to all three fields each, plus a unique compound index (`{ userId, commentId }` / `{ userId, postId }`) — this is what actually stops duplicate votes at the DB level, which today nothing does.
+- `UserVote`: same hardening, but rename the ambiguous `votingUserId` field to `targetUserId` while touching this model anyway, so `{ userId, targetUserId, type }` reads unambiguously as "`userId` voted on `targetUserId`" (consistent with `userId` meaning "the voter" in both sibling models). Unique index on `{ userId, targetUserId }`, plus an application-level check rejecting `userId === targetUserId` (can't upvote yourself) since Mongo can't express a "field A ≠ field B" schema constraint.
+- Denormalized counters (`Post.upvoteCount/downvoteCount/commentCount`, `Comment.upvoteCount/downvoteCount`, `User.upvoteCount/downvoteCount`) all already exist as fields but nothing currently writes to them. Every vote/comment mutation updates them via `$inc` in the same request — not a separate reconciliation job — so they can't silently drift from the underlying vote/comment documents.
+
+**Vote toggle/switch semantics**, shared across all three vote endpoints via one helper (`src/libs/toggle-vote.ts`, parameterized by model, to avoid triplicating the logic):
+1. Look up the existing vote doc for `(voterId, targetId)`.
+2. No existing vote → create it, `$inc` the target's matching counter by 1.
+3. Existing vote, same type as the request → remove the vote doc (toggle off), `$inc` that counter by -1.
+4. Existing vote, different type → update the vote doc's type, `$inc` the old counter -1 and the new counter +1.
+
+This read-then-write isn't wrapped in a Mongo transaction — a deliberate simplification given this is a low-traffic personal blog where a lost race condition has no real consequence, not a silent gap.
+
+**API routes** (all via `withApiGuard`, auth required by default; drops the plan's original `GET /api/posts/[slug]/comments` — see Data flow below for why):
+- `POST /api/posts/[slug]/comments` — create a comment (top-level or reply via `parentId` in the body).
+- `PATCH /api/comments/[id]` / `DELETE /api/comments/[id]` — edit/soft-delete own comment, ownership-scoped exactly like post edit/delete already are.
+- `POST /api/posts/[slug]/vote`, `POST /api/comments/[id]/vote`, `POST /api/users/[username]/vote` — vote/toggle/switch, body `{ type: boolean }`.
+- All comment/vote mutations on a post additionally re-check the same visibility rule the read page uses (`approval === "Approved" && published && visibility`, OR owner) — can't comment on or vote on something that isn't actually visible to you.
+
+**Data flow — SSR initial load + client-side optimistic mutations** (chosen over two alternatives: a fully client-fetched comment section, which would lose SEO/no-JS visibility and duplicate data-fetching logic this app already does server-side everywhere else; and SSR + `router.refresh()`-per-action, which is simpler but has a visible round-trip delay per click instead of feeling instant). The post page fetches the comment tree and vote state server-side alongside the existing `getPost` query — no GET API needed, matching how every other list in this app (dashboard, listings) is fetched directly via `Post.find()` in a Server Component. The interactive parts (post/edit/delete a comment, cast/change/remove a vote) are Client Components using React 19's `useOptimistic`: the screen updates immediately, then reconciles against the server response, rolling back with a toast on error.
+
+**New/changed files:**
+- `src/models/Comment.ts`, `CommentVote.ts`, `PostVote.ts`, `UserVote.ts` — converted + hardened, as above.
+- `src/libs/toggle-vote.ts` — shared vote create/remove/switch logic.
+- `src/libs/comment-tree.ts` — builds a nested reply tree from a flat `Comment` list (`parentId`-based), used when preparing the SSR data for a post's comment section.
+- `src/app/api/posts/[slug]/comments/route.ts` (POST), `src/app/api/comments/[id]/route.ts` (PATCH/DELETE), `src/app/api/posts/[slug]/vote/route.ts`, `src/app/api/comments/[id]/vote/route.ts`, `src/app/api/users/[username]/vote/route.ts`.
+- `src/app/users/[username]/page.tsx` (new) — public profile page, direct-DB fetch like `posts/[slug]/page.tsx`, 404 if the user doesn't exist. Shows avatar, bio (`intro`/`profile` fields), vote score + vote button (hidden/disabled when viewing your own profile), and a grid of the user's published posts reusing `ArticleCard`.
+- `src/components/comments/CommentSection.tsx` — client component, receives the SSR-built tree as props, owns the `useOptimistic` state for add/edit/delete.
+- `src/components/comments/CommentItem.tsx` — recursive renderer for one comment + its replies (recursion handles the unlimited nesting depth).
+- `src/components/comments/CommentForm.tsx` — the new-comment / reply input.
+- `src/components/votes/VoteButtons.tsx` — shared up/down control reused on the post read page, `ArticleCard` (listing cards, both `/posts` and the homepage), and the user profile page.
+
+**UI placement:** `VoteButtons` on the post read page (near the existing metadata block) and on every `ArticleCard`, so voting works from listing grids without opening the full post. `CommentSection` renders below the article content on the read page. The profile page gets its own `VoteButtons` instance plus the post grid.
+
+**Error handling:** unauthenticated mutation attempts redirect client-side to login with `callbackUrl` (matching `PostForm`/`DeletePostButton`'s existing pattern) on top of the 401 the API already returns. Self-voting is rejected both client-side (button hidden on your own profile) and server-side (defense in depth). Editing/deleting someone else's comment 403s via the same ownership-scoped-query pattern post edit/delete already use.
+
+**Sequencing** (5 independently testable/committable steps, per the workflow above):
+1. Convert the four models to TypeScript, add required fields + unique indexes, rename `votingUserId` → `targetUserId`. No API/UI yet — verify `npm run build` passes and the (currently empty) collections aren't broken.
+2. Build `toggle-vote.ts` + the three vote routes, `VoteButtons`, wired into the post read page only. Verify: vote, toggle off, switch, and confirm duplicate votes are rejected at the DB level.
+3. Build the comment routes (create/edit/delete) + `comment-tree.ts` + `CommentSection`/`CommentItem`/`CommentForm`, wired below the article. Verify: post a top-level comment, reply (nested), edit, delete (with and without replies, confirming the "[deleted]" placeholder behavior), and confirm editing/deleting someone else's comment fails.
+4. Build `/users/[username]` with `VoteButtons` wired in. Verify: profile renders bio + posts + vote score, self-voting is blocked both in the UI and via a direct API call.
+5. Add `VoteButtons` to `ArticleCard`. Verify: voting from a listing card updates the count without a full page navigation, and counters (`Post`/`Comment`/`User`) stay consistent with actual vote-collection document counts after a mixed sequence of votes/comments/deletes.
+
+**Scope note carried over from the original plan:** voting/commenting requires login (no anonymous fingerprint-based flow) — the `TempUser`/`UserInterest` models stay out of scope unless you want that built separately later.
 
 ### Phase 8 — Performance, testing, polish
 - Add Vitest + Testing Library; cover the highest-risk paths first: auth guards, upload validation, vote/comment mutation logic.
