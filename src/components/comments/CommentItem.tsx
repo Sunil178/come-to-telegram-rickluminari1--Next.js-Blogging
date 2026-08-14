@@ -64,6 +64,7 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
                                 isLoggedIn={isLoggedIn}
                                 autoFocus
                                 submitLabel="Save"
+                                initialValue={node.content}
                                 onCancel={() => setEditing(false)}
                                 onSubmit={(content) => {
                                     onEdit(node.id, content);

@@ -12,6 +12,7 @@ interface CommentFormProps {
     autoFocus?: boolean;
     placeholder?: string;
     submitLabel?: string;
+    initialValue?: string;
 }
 
 export default function CommentForm({
@@ -21,9 +22,10 @@ export default function CommentForm({
     autoFocus = false,
     placeholder = "Add to the discussion…",
     submitLabel = "Comment",
+    initialValue = "",
 }: CommentFormProps) {
     const router = useRouter();
-    const [content, setContent] = useState("");
+    const [content, setContent] = useState(initialValue);
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
