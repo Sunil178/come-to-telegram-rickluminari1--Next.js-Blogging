@@ -103,7 +103,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
                         </Link>
                     ))}
                 </div>
-                <PostsSearch defaultValue={q || ""} />
+                <PostsSearch key={q || ""} defaultValue={q || ""} />
             </div>
 
             <div className="mt-10">

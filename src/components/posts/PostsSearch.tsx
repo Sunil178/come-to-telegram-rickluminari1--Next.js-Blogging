@@ -12,10 +12,6 @@ export default function PostsSearch({ defaultValue }: { defaultValue: string }) 
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        setValue(defaultValue);
-    }, [defaultValue]);
-
-    useEffect(() => {
         const timeout = setTimeout(() => {
             const params = new URLSearchParams(searchParams.toString());
             if (value) {

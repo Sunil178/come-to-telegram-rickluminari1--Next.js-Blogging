@@ -8,6 +8,7 @@ import { MarkdownPlugin } from '@platejs/markdown';
 import { FileDownIcon } from 'lucide-react';
 import { useEditorRef } from 'platejs/react';
 import { useFilePicker } from 'use-file-picker';
+import type { SelectedFilesOrErrors } from 'use-file-picker/types';
 
 import {
     DropdownMenu,
@@ -25,9 +26,10 @@ export function MarkdownToolbarButton(props: DropdownMenuProps) {
     const { openFilePicker } = useFilePicker({
         accept: ['.md', '.markdown'],
         multiple: false,
-        onFilesSelected: async ({ plainFiles }) => {
-            if (!plainFiles[0]) return;
-            const text = await plainFiles[0].text();
+        readFilesContent: false,
+        onFilesSelected: async (data: SelectedFilesOrErrors<undefined, unknown>) => {
+            if (!data.plainFiles?.[0]) return;
+            const text = await data.plainFiles[0].text();
             const nodes = editor.getApi(MarkdownPlugin).markdown.deserialize(text);
             editor.tf.insertNodes(nodes);
         },
