@@ -10,8 +10,10 @@ import { RedoToolbarButton, UndoToolbarButton } from './history-toolbar-button';
 import { IndentToolbarButton, OutdentToolbarButton } from './indent-toolbar-button';
 import { LinkToolbarButton } from './link-toolbar-button';
 import { BulletedListToolbarButton, NumberedListToolbarButton, TodoListToolbarButton } from './list-toolbar-button';
+import { MarkdownToolbarButton } from './markdown-toolbar-button';
 import { MarkToolbarButton } from './mark-toolbar-button';
 import { MediaToolbarButton } from './media-toolbar-button';
+import { TableToolbarButton } from './table-toolbar-button';
 import { ToolbarGroup } from './toolbar';
 import { TurnIntoToolbarButton } from './turn-into-toolbar-button';
 
@@ -19,7 +21,7 @@ export function FixedToolbarButtons() {
     const readOnly = useEditorReadOnly();
 
     return (
-        <div className="flex w-full">
+        <div className="flex w-full flex-wrap gap-y-1">
             {!readOnly && (
                 <>
                     <ToolbarGroup>
@@ -66,11 +68,16 @@ export function FixedToolbarButtons() {
                     <ToolbarGroup>
                         <LinkToolbarButton />
                         <MediaToolbarButton nodeType={KEYS.img} />
+                        <TableToolbarButton />
                     </ToolbarGroup>
 
                     <ToolbarGroup>
                         <OutdentToolbarButton />
                         <IndentToolbarButton />
+                    </ToolbarGroup>
+
+                    <ToolbarGroup>
+                        <MarkdownToolbarButton />
                     </ToolbarGroup>
                 </>
             )}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,22 +10,13 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMounted } from "@/hooks/use-mounted";
 
 const OPTIONS = [
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
     { value: "system", label: "System", icon: Monitor },
 ] as const;
-
-function noopSubscribe() {
-    return () => {};
-}
-
-// Reads as "true" only once client rendering has taken over, without the
-// setState-in-effect pattern this repo's lint config forbids.
-function useMounted() {
-    return useSyncExternalStore(noopSubscribe, () => true, () => false);
-}
 
 export default function ThemeToggle() {
     const { theme, setTheme } = useTheme();
