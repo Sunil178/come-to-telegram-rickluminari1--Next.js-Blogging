@@ -27,12 +27,12 @@ export default function CommentForm({
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
-        const trimmed = content.trim();
-        if (!trimmed) return;
         if (!isLoggedIn) {
             router.push(`/auth/login?callbackUrl=${encodeURIComponent(location.pathname)}`);
             return;
         }
+        const trimmed = content.trim();
+        if (!trimmed) return;
         onSubmit(trimmed);
         setContent("");
     };
