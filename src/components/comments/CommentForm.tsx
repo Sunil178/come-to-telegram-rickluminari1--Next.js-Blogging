@@ -43,6 +43,7 @@ export default function CommentForm({
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <Textarea
+                aria-label="Comment"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
                 placeholder={isLoggedIn ? placeholder : "Log in to join the discussion."}

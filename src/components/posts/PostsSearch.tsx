@@ -36,6 +36,7 @@ export default function PostsSearch({ defaultValue }: { defaultValue: string }) 
         <div className="relative w-full max-w-xs">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
+                aria-label="Search articles"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder="Search articles..."

@@ -127,8 +127,8 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
             </div>
 
             <div className="flex flex-col gap-2">
-                <Label>Tags</Label>
-                <TagInput value={tags} onChange={setTags} />
+                <Label htmlFor="post-tags">Tags</Label>
+                <TagInput id="post-tags" value={tags} onChange={setTags} />
             </div>
 
             <div className="flex flex-col gap-2">

@@ -8,9 +8,10 @@ interface TagInputProps {
     value: string[];
     onChange: (tags: string[]) => void;
     placeholder?: string;
+    id?: string;
 }
 
-export default function TagInput({ value, onChange, placeholder = "Add a tag…" }: TagInputProps) {
+export default function TagInput({ value, onChange, placeholder = "Add a tag…", id }: TagInputProps) {
     const [draft, setDraft] = useState("");
 
     const commit = () => {
@@ -39,6 +40,8 @@ export default function TagInput({ value, onChange, placeholder = "Add a tag…"
                 </Badge>
             ))}
             <input
+                id={id}
+                aria-label="Tags"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
