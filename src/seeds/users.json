@@ -1,6 +1,7 @@
 [
   {
     "username": "ada.lovelace",
+    "role": "author",
     "firstName": "Ada",
     "lastName": "Lovelace",
     "email": "ada@example.com",
@@ -9,6 +10,7 @@
   },
   {
     "username": "alan.turing",
+    "role": "reader",
     "firstName": "Alan",
     "lastName": "Turing",
     "email": "alan@example.com",
@@ -17,6 +19,7 @@
   },
   {
     "username": "grace.hopper",
+    "role": "admin",
     "firstName": "Grace",
     "lastName": "Hopper",
     "email": "grace@example.com",
@@ -25,6 +28,7 @@
   },
   {
     "username": "linus.t",
+    "role": "moderator",
     "firstName": "Linus",
     "lastName": "T.",
     "email": "linus@example.com",
@@ -33,6 +37,7 @@
   },
   {
     "username": "margaret.h",
+    "role": "author",
     "firstName": "Margaret",
     "lastName": "H.",
     "email": "margaret@example.com",

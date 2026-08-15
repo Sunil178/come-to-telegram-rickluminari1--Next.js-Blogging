@@ -69,6 +69,10 @@ async function seedDemoUsers(): Promise<UserDoc[]> {
             user = await User.create({ ...raw, password: hashSync(DEMO_PASSWORD, 10) });
             console.log(`👤 Demo user created: ${raw.username}`);
         } else {
+            if (user.role !== raw.role) {
+                user.role = raw.role;
+                await user.save();
+            }
             console.log(`👤 Demo user exists: ${raw.username}`);
         }
         users.push(user);
