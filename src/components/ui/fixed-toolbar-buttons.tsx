@@ -6,6 +6,7 @@ import { BoldIcon, Code2Icon, HighlighterIcon, ItalicIcon, StrikethroughIcon, Un
 import { KEYS } from 'platejs';
 import { useEditorReadOnly } from 'platejs/react';
 
+import { CodeBlockToolbarButton } from './code-block-toolbar-button';
 import { RedoToolbarButton, UndoToolbarButton } from './history-toolbar-button';
 import { IndentToolbarButton, OutdentToolbarButton } from './indent-toolbar-button';
 import { LinkToolbarButton } from './link-toolbar-button';
@@ -50,13 +51,17 @@ export function FixedToolbarButtons() {
                             <StrikethroughIcon />
                         </MarkToolbarButton>
 
-                        <MarkToolbarButton nodeType={KEYS.code} tooltip="Code (⌘+E)">
-                            <Code2Icon />
-                        </MarkToolbarButton>
-
                         <MarkToolbarButton nodeType={KEYS.highlight} tooltip="Highlight">
                             <HighlighterIcon />
                         </MarkToolbarButton>
+                    </ToolbarGroup>
+
+                    <ToolbarGroup>
+                        <MarkToolbarButton nodeType={KEYS.code} tooltip="Inline Code (⌘+E)">
+                            <Code2Icon />
+                        </MarkToolbarButton>
+
+                        <CodeBlockToolbarButton />
                     </ToolbarGroup>
 
                     <ToolbarGroup>

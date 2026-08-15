@@ -23,8 +23,10 @@ export const BlockSelectionKit = [
     BlockSelectionPlugin.configure(({ editor }) => ({
         options: {
             enableContextMenu: true,
+            // codeBlock excluded like codeLine/column/td: turning a paragraph into one is a
+            // type change, and the overlay's unmount races Slate's own DOM update, crashing React.
             isSelectable: (element) =>
-                !getPluginTypes(editor, [KEYS.column, KEYS.codeLine, KEYS.td]).includes(element.type),
+                !getPluginTypes(editor, [KEYS.column, KEYS.codeBlock, KEYS.codeLine, KEYS.td]).includes(element.type),
         },
         render: {
             belowRootNodes: (props) => {

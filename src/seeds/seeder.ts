@@ -9,6 +9,7 @@ import PostVote from "@/models/PostVote";
 import CommentVote from "@/models/CommentVote";
 import UserVote from "@/models/UserVote";
 import { toggleVote, type VoteResult } from "@/libs/toggle-vote";
+import { downloadSeedImage } from "@/libs/download-seed-image";
 import postsData from "./posts.json";
 import categoriesData from "./categories.json";
 import usersData from "./users.json";
@@ -55,6 +56,10 @@ async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string
     for (const raw of postsData) {
         const existing = await Post.findOne({ slug: raw.slug });
         if (existing) {
+            if (existing.bannerImage?.startsWith("http")) {
+                existing.bannerImage = await downloadSeedImage(existing.bannerImage, raw.slug);
+                await existing.save();
+            }
             console.log(`⚠️ Post already exists: ${raw.slug}`);
             posts.push(existing);
             continue;
@@ -69,8 +74,9 @@ async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string
         // upvoteCount/downvoteCount are dropped here rather than trusted from the fixture —
         // seedEngagement() below backs them with real PostVote documents via toggleVote(),
         // the same helper the app itself uses, so the counts are never fabricated.
-        const { categorySlug: _categorySlug, upvoteCount: _upvoteCount, downvoteCount: _downvoteCount, ...rest } = raw;
-        const post = await Post.create({ ...rest, userId: ownerId, categoryId });
+        const { categorySlug: _categorySlug, upvoteCount: _upvoteCount, downvoteCount: _downvoteCount, bannerImage, ...rest } = raw;
+        const localBannerImage = bannerImage?.startsWith("http") ? await downloadSeedImage(bannerImage, raw.slug) : bannerImage;
+        const post = await Post.create({ ...rest, bannerImage: localBannerImage, userId: ownerId, categoryId });
         console.log(`📝 Post created: ${raw.title}`);
         posts.push(post);
     }
