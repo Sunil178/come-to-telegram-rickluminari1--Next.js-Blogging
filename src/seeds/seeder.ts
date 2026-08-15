@@ -10,10 +10,35 @@ import CommentVote from "@/models/CommentVote";
 import UserVote from "@/models/UserVote";
 import { toggleVote, type VoteResult } from "@/libs/toggle-vote";
 import { downloadSeedImage } from "@/libs/download-seed-image";
-import postsData from "./posts.json";
+import { loadSeedPosts } from "@/libs/load-seed-posts";
+import { markdownToPostHtml } from "@/libs/markdown-to-post-html";
 import categoriesData from "./categories.json";
 import usersData from "./users.json";
 import commentTemplates from "./comment-templates.json";
+
+// Old posts.json fixtures, retired now that src/seeds/posts/*.md replaces them.
+// Matched on slug+title, not slug alone: some slugs (e.g. "5g-and-beyond") are generic
+// enough that a real post could collide, and this cleanup hard-deletes past soft-delete.
+const LEGACY_POSTS = [
+    { slug: "future-of-ai", title: "The Future of AI" },
+    { slug: "blockchain-next-payment-methods", title: "The Blockchain Dominance" },
+    { slug: "james-webb-discoveries", title: "James Webb's Latest Discoveries" },
+    { slug: "covid-19-long-term-effects", title: "Understanding Long COVID" },
+    { slug: "climate-change-opinions", title: "Climate Change: Voices Around the World" },
+    { slug: "ai-in-healthcare", title: "How AI is Saving Lives" },
+    { slug: "mars-colonization", title: "Mars Colonization by 2050?" },
+    { slug: "indian-election-2025", title: "Indian General Election 2025" },
+    { slug: "digital-nomad-lifestyle", title: "Rise of Digital Nomads" },
+    { slug: "quantum-computing-explained", title: "Quantum Computing Explained" },
+    { slug: "mental-health-awareness", title: "Breaking the Mental Health Stigma" },
+    { slug: "climate-science-data", title: "Latest Climate Science Reports" },
+    { slug: "5g-and-beyond", title: "5G and Beyond" },
+    { slug: "women-in-tech", title: "Women in Tech: Breaking Barriers" },
+    { slug: "vaccines-and-future", title: "Future of Vaccines" },
+    { slug: "global-warming-politics", title: "Politics of Global Warming" },
+    { slug: "top-travel-destinations-2025", title: "Top Travel Destinations in 2025" },
+    { slug: "ai-vs-human-creativity", title: "AI vs Human Creativity" },
+];
 
 // Demo users are seeded with this password so they can be logged into for manual testing.
 const DEMO_PASSWORD = "Passw0rd!";
@@ -51,9 +76,28 @@ async function seedDemoUsers(): Promise<UserDoc[]> {
     return users;
 }
 
+// Hard-deletes (via .collection, bypassing mongoose-delete) the retired fixtures and
+// everything referencing them, so they don't linger in trash views.
+async function retireLegacyPosts(): Promise<void> {
+    const legacyPosts = await Post.collection
+        .find({ $or: LEGACY_POSTS.map(({ slug, title }) => ({ slug, title })) }, { projection: { _id: 1 } })
+        .toArray();
+    if (legacyPosts.length === 0) return;
+    const postIds = legacyPosts.map((p) => p._id);
+
+    const legacyComments = await Comment.collection.find({ postId: { $in: postIds } }, { projection: { _id: 1 } }).toArray();
+    const commentIds = legacyComments.map((c) => c._id);
+
+    await CommentVote.collection.deleteMany({ commentId: { $in: commentIds } });
+    await Comment.collection.deleteMany({ postId: { $in: postIds } });
+    await PostVote.collection.deleteMany({ postId: { $in: postIds } });
+    await Post.collection.deleteMany({ _id: { $in: postIds } });
+    console.log(`🗑️  Retired ${legacyPosts.length} legacy demo post(s) and their engagement`);
+}
+
 async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string, Types.ObjectId>): Promise<PostDoc[]> {
     const posts: PostDoc[] = [];
-    for (const raw of postsData) {
+    for (const raw of loadSeedPosts()) {
         const existing = await Post.findOne({ slug: raw.slug });
         if (existing) {
             if (existing.bannerImage?.startsWith("http")) {
@@ -71,20 +115,18 @@ async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string
             continue;
         }
 
-        // upvoteCount/downvoteCount are dropped here rather than trusted from the fixture —
-        // seedEngagement() below backs them with real PostVote documents via toggleVote(),
-        // the same helper the app itself uses, so the counts are never fabricated.
-        const { categorySlug: _categorySlug, upvoteCount: _upvoteCount, downvoteCount: _downvoteCount, bannerImage, ...rest } = raw;
+        const { categorySlug: _categorySlug, bannerImage, markdownBody, ...rest } = raw;
         const localBannerImage = bannerImage?.startsWith("http") ? await downloadSeedImage(bannerImage, raw.slug) : bannerImage;
-        const post = await Post.create({ ...rest, bannerImage: localBannerImage, userId: ownerId, categoryId });
+        const content = await markdownToPostHtml(markdownBody);
+        const post = await Post.create({ ...rest, content, bannerImage: localBannerImage, userId: ownerId, categoryId });
         console.log(`📝 Post created: ${raw.title}`);
         posts.push(post);
     }
     return posts;
 }
 
-// Only creates the vote if this voter hasn't already voted on this target — toggleVote()
-// itself would flip an existing vote off, which would make re-running the seeder destructive.
+// Skips voters who already voted — toggleVote() would flip an existing vote off,
+// which would make re-running the seeder destructive.
 async function seedVoteIfMissing(options: Parameters<typeof toggleVote>[0]): Promise<VoteResult | null> {
     const existing = await options.voteModel.findOne(options.voteFilter);
     if (existing) return null;
@@ -112,8 +154,8 @@ function isPubliclyVisible(post: PostDoc): boolean {
     return post.approval === "Approved" && post.published && post.visibility;
 }
 
-// Votes and threaded comments on every publicly visible post, from the demo users (never the
-// post's own owner — the app's own vote routes disallow that same shape of self-engagement).
+// Votes and threaded comments from demo users (never the post's own owner — the
+// app's vote routes disallow that same shape of self-engagement).
 async function seedEngagement(owner: UserDoc, demoUsers: UserDoc[], posts: PostDoc[]): Promise<void> {
     let templateIndex = 0;
     const nextComment = () => commentTemplates[templateIndex++ % commentTemplates.length];
@@ -170,8 +212,8 @@ async function seedEngagement(owner: UserDoc, demoUsers: UserDoc[], posts: PostD
     }
 }
 
-// Reputation votes on user profiles: every demo user upvotes the post owner's profile, plus a
-// light round of cross-voting between demo users so UserVote isn't seeded one-directionally.
+// Every demo user upvotes the post owner's profile, plus a light round of
+// cross-voting so UserVote isn't seeded one-directionally.
 async function seedProfileVotes(owner: UserDoc, demoUsers: UserDoc[]): Promise<void> {
     for (const voter of demoUsers) {
         const result = await seedVoteIfMissing({
@@ -210,12 +252,13 @@ async function main() {
         const userValue = userArg?.split("=")[1];
         if (userArg && !userValue) throw new Error("❌ Invalid --user argument");
 
+        await retireLegacyPosts();
+
         const categories = await seedCategories();
         const demoUsers = await seedDemoUsers();
 
-        // --user=<username/email> attaches the sample posts to a real account so they show up
-        // in your own dashboard. Without it, the first demo user owns them instead — still a
-        // real, fully-functional account, just not one you're logged into.
+        // --user=<username/email> attaches sample posts to a real account; without it,
+        // the first demo user owns them instead.
         let owner: UserDoc;
         if (userValue) {
             const found = await User.findOne({ $or: [{ username: userValue }, { email: userValue }] });

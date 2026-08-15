@@ -1301,6 +1301,13 @@ export function TableCellElement({
   const { borders, colIndex, colSpan, rowIndex, rowSpan, width } =
     useTableCellPresentation(element);
 
+  // Framework merges raw lowercase colspan/rowspan (from dangerouslyAllowAttributes)
+  // into props.attributes too — strip them so only our camelCase pair below reaches the DOM.
+  const { colspan: _colspan, rowspan: _rowspan, ...restAttributes } = props.attributes as typeof props.attributes & {
+    colspan?: unknown;
+    rowspan?: unknown;
+  };
+
   return (
     <PlateElement
       {...props}
@@ -1326,7 +1333,7 @@ export function TableCellElement({
         } as React.CSSProperties
       }
       attributes={{
-        ...props.attributes,
+        ...restAttributes,
         colSpan,
         'data-table-cell-id': element.id,
         rowSpan,

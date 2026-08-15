@@ -13,6 +13,7 @@
     "seed": "tsx --env-file=.env ./src/seeds/seeder.ts"
   },
   "dependencies": {
+    "@11ty/gray-matter": "^3.0.0",
     "@platejs/basic-nodes": "^53.0.0",
     "@platejs/caption": "^53.0.0",
     "@platejs/code-block": "^53.0.0",
