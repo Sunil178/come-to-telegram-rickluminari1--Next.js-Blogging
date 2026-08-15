@@ -46,19 +46,24 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(response.status).toBe(404);
     });
 
-    it("approves a post and stamps approvedAt", async () => {
+    it("approves a post, stamps approvedAt, and makes it publicly visible", async () => {
         findOneAndUpdateMock.mockResolvedValue({ slug: "some-slug", approval: "Approved" });
         const response = await PATCH(requestWithBody({ approval: "Approved" }), context("some-slug"));
 
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { slug: "some-slug" },
-            expect.objectContaining({ approval: "Approved", approvedAt: expect.any(Date) }),
+            expect.objectContaining({
+                approval: "Approved",
+                approvedAt: expect.any(Date),
+                published: true,
+                publishedAt: expect.any(Date),
+            }),
             { new: true }
         );
     });
 
-    it("rejects a post and clears approvedAt", async () => {
+    it("rejects a post, clears approvedAt, and leaves published untouched", async () => {
         findOneAndUpdateMock.mockResolvedValue({ slug: "some-slug", approval: "Rejected" });
         const response = await PATCH(requestWithBody({ approval: "Rejected" }), context("some-slug"));
 
@@ -68,5 +73,8 @@ describe("PATCH /api/posts/[slug]/approval", () => {
             expect.objectContaining({ approval: "Rejected", approvedAt: null }),
             { new: true }
         );
+        const updatePayload = findOneAndUpdateMock.mock.calls[0][1];
+        expect(updatePayload).not.toHaveProperty("published");
+        expect(updatePayload).not.toHaveProperty("publishedAt");
     });
 });

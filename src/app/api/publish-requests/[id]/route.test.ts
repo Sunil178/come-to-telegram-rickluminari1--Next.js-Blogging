@@ -11,8 +11,13 @@ vi.mock("@/models/PublishRequest", () => ({
 }));
 
 const updateOneMock = vi.fn().mockResolvedValue(undefined);
+const userSelectMock = vi.fn();
+const userFindByIdMock = vi.fn().mockReturnValue({ select: userSelectMock });
 vi.mock("@/models/User", () => ({
-    default: { updateOne: (...args: unknown[]) => updateOneMock(...args) },
+    default: {
+        updateOne: (...args: unknown[]) => updateOneMock(...args),
+        findById: (...args: unknown[]) => userFindByIdMock(...args),
+    },
 }));
 
 const { PATCH } = await import("@/app/api/publish-requests/[id]/route");
@@ -29,6 +34,9 @@ describe("PATCH /api/publish-requests/[id]", () => {
     beforeEach(() => {
         findOneAndUpdateMock.mockReset();
         updateOneMock.mockClear();
+        userFindByIdMock.mockClear();
+        userSelectMock.mockReset();
+        userSelectMock.mockResolvedValue({ role: "reader" });
     });
 
     it("rejects an invalid action", async () => {
@@ -58,6 +66,15 @@ describe("PATCH /api/publish-requests/[id]", () => {
     it("rejecting doesn't change the requester's role", async () => {
         findOneAndUpdateMock.mockResolvedValue({ _id: "r1", userId: "reader1", status: "Rejected" });
         const response = await PATCH(requestWithBody({ action: "reject" }), context("r1"));
+
+        expect(response.status).toBe(200);
+        expect(updateOneMock).not.toHaveBeenCalled();
+    });
+
+    it("approving a requester already promoted (e.g. to moderator) since the request was made doesn't overwrite their role", async () => {
+        userSelectMock.mockResolvedValue({ role: "moderator" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "r1", userId: "reader1", status: "Approved" });
+        const response = await PATCH(requestWithBody({ action: "approve" }), context("r1"));
 
         expect(response.status).toBe(200);
         expect(updateOneMock).not.toHaveBeenCalled();

@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "tsx --env-file=.env ./src/seeds/seeder.ts"
+    "seed": "tsx --env-file=.env ./src/seeds/seeder.ts",
+    "bootstrap-admin": "tsx --env-file=.env ./src/scripts/bootstrap-admin.ts"
   },
   "dependencies": {
     "@11ty/gray-matter": "^3.0.0",

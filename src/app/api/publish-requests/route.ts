@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import PublishRequest from "@/models/PublishRequest";
+import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
+import { hasRole } from "@/libs/roles";
 
 export const POST = withApiGuard(async (request, { session }) => {
     try {
-        if (session.user.role !== "reader") {
+        const user = await User.findById(session.user.id).select("role");
+        if (!user || hasRole(user.role, "author")) {
             return NextResponse.json({ data: null, message: "Only Readers can request to publish" }, { status: 400 });
         }
 

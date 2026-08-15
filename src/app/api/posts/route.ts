@@ -82,4 +82,4 @@ export const POST = withApiGuard(async (request, { session }) => {
         console.error('Failed to create post:', error);
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
-});
+}, { role: "author" });

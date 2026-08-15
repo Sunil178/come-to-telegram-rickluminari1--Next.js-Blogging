@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const authMock = vi.fn().mockResolvedValue({ user: { id: "u1", username: "alice", role: "author" } });
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
-    auth: vi.fn().mockResolvedValue({ user: { id: "u1", username: "alice" } }),
+    auth: authMock,
 }));
 
 const existsSyncMock = vi.fn().mockReturnValue(true);
@@ -31,6 +32,16 @@ describe("POST /api/posts/upload", () => {
         existsSyncMock.mockClear();
         mkdirSyncMock.mockClear();
         writeFileSyncMock.mockClear();
+        authMock.mockResolvedValue({ user: { id: "u1", username: "alice", role: "author" } });
+    });
+
+    it("rejects a caller below the author role minimum", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", username: "alice", role: "reader" } });
+        const file = new File(["image bytes"], "banner.png", { type: "image/png" });
+        const response = await POST(requestWithFile(file), {});
+
+        expect(response.status).toBe(403);
+        expect(writeFileSyncMock).not.toHaveBeenCalled();
     });
 
     it("rejects a file type outside the image allowlist", async () => {

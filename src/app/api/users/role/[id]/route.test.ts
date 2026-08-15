@@ -6,8 +6,15 @@ vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
 }));
 
 const findOneAndUpdateMock = vi.fn();
+const selectMock = vi.fn();
+const findByIdMock = vi.fn().mockReturnValue({ select: selectMock });
+const countDocumentsMock = vi.fn();
 vi.mock("@/models/User", () => ({
-    default: { findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args) },
+    default: {
+        findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args),
+        findById: (...args: unknown[]) => findByIdMock(...args),
+        countDocuments: (...args: unknown[]) => countDocumentsMock(...args),
+    },
 }));
 
 const { PATCH } = await import("@/app/api/users/role/[id]/route");
@@ -23,6 +30,10 @@ function requestWithBody(body: unknown) {
 describe("PATCH /api/users/[id]/role", () => {
     beforeEach(() => {
         findOneAndUpdateMock.mockReset();
+        findByIdMock.mockClear();
+        selectMock.mockReset();
+        selectMock.mockResolvedValue({ role: "reader" });
+        countDocumentsMock.mockReset();
     });
 
     it("rejects an invalid role value", async () => {
@@ -45,6 +56,27 @@ describe("PATCH /api/users/[id]/role", () => {
 
     it("updates the target user's role", async () => {
         findOneAndUpdateMock.mockResolvedValue({ _id: "u1", role: "moderator" });
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
+
+        expect(response.status).toBe(200);
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "u1" }, { role: "moderator" }, { new: true });
+    });
+
+    it("blocks demoting the last remaining admin", async () => {
+        selectMock.mockResolvedValue({ role: "admin" });
+        countDocumentsMock.mockResolvedValue(1);
+
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
+
+        expect(response.status).toBe(400);
+        expect(findOneAndUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it("allows demoting an admin when other admins remain", async () => {
+        selectMock.mockResolvedValue({ role: "admin" });
+        countDocumentsMock.mockResolvedValue(2);
+        findOneAndUpdateMock.mockResolvedValue({ _id: "u1", role: "moderator" });
+
         const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
 
         expect(response.status).toBe(200);

@@ -27,7 +27,7 @@ const schema = new Schema<ICategory>(
 
 schema.plugin(mongooseDelete, { deletedAt : true, deletedBy: true, overrideMethods: true });
 
-schema.index({ slug: 1 }, { unique: true });
+schema.index({ slug: 1 }, { unique: true, partialFilterExpression: { deleted: false } });
 
 // Hide soft-delete metadata in API responses
 schema.set("toJSON", {

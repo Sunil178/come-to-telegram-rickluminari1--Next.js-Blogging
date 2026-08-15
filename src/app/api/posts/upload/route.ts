@@ -54,4 +54,4 @@ export const POST = withApiGuard(async (request) => {
         console.error('Failed to upload file:', error);
         return NextResponse.json({ data: null, location: null, message: "Something went wrong" }, { status: 500 });
     }
-});
+}, { role: "author" });

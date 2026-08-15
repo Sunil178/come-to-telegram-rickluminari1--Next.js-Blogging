@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import PublishRequest from "@/models/PublishRequest";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
+import { hasRole } from "@/libs/roles";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -30,7 +31,10 @@ export const PATCH = withApiGuard<RouteContext>(
             }
 
             if (action === "approve") {
-                await User.updateOne({ _id: publishRequest.userId }, { role: "author" });
+                const requester = await User.findById(publishRequest.userId).select("role");
+                if (!requester || !hasRole(requester.role, "author")) {
+                    await User.updateOne({ _id: publishRequest.userId }, { role: "author" });
+                }
             }
 
             return NextResponse.json({ data: { id: publishRequest._id.toString(), status }, message: "Success" });

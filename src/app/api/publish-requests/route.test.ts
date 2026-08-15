@@ -13,6 +13,12 @@ vi.mock("@/models/PublishRequest", () => ({
     },
 }));
 
+const userSelectMock = vi.fn();
+const userFindByIdMock = vi.fn().mockReturnValue({ select: userSelectMock });
+vi.mock("@/models/User", () => ({
+    default: { findById: (...args: unknown[]) => userFindByIdMock(...args) },
+}));
+
 const { POST } = await import("@/app/api/publish-requests/route");
 
 function request() {
@@ -23,10 +29,13 @@ describe("POST /api/publish-requests", () => {
     beforeEach(() => {
         findOneMock.mockReset();
         createMock.mockReset();
+        userFindByIdMock.mockClear();
+        userSelectMock.mockReset();
     });
 
     it("rejects a caller who isn't a Reader", async () => {
         authMock.mockResolvedValue({ user: { id: "u1", role: "author" } });
+        userSelectMock.mockResolvedValue({ role: "author" });
 
         const response = await POST(request(), {});
 
@@ -36,6 +45,7 @@ describe("POST /api/publish-requests", () => {
 
     it("rejects a Reader who already has a pending request", async () => {
         authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
         findOneMock.mockResolvedValue({ _id: "existing" });
 
         const response = await POST(request(), {});
@@ -46,6 +56,19 @@ describe("POST /api/publish-requests", () => {
 
     it("creates a request for a Reader with no pending request", async () => {
         authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockResolvedValue({ _id: "new1" });
+
+        const response = await POST(request(), {});
+
+        expect(response.status).toBe(200);
+        expect(createMock).toHaveBeenCalledWith({ userId: "u1" });
+    });
+
+    it("allows a session with no role field (stale JWT) to submit a request, reading the current DB role", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1" } });
+        userSelectMock.mockResolvedValue({ role: undefined });
         findOneMock.mockResolvedValue(null);
         createMock.mockResolvedValue({ _id: "new1" });
 

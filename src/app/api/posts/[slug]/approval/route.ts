@@ -17,11 +17,16 @@ export const PATCH = withApiGuard<RouteContext>(
                 return NextResponse.json({ data: null, message: "approval must be Approved or Rejected" }, { status: 400 });
             }
 
-            const post = await Post.findOneAndUpdate(
-                { slug },
-                { approval, approvedAt: approval === ApprovalStatus.Approved ? new Date() : null },
-                { new: true }
-            );
+            const update: Record<string, unknown> = {
+                approval,
+                approvedAt: approval === ApprovalStatus.Approved ? new Date() : null,
+            };
+            if (approval === ApprovalStatus.Approved) {
+                update.published = true;
+                update.publishedAt = new Date();
+            }
+
+            const post = await Post.findOneAndUpdate({ slug }, update, { new: true });
 
             if (!post) {
                 return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });

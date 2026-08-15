@@ -22,6 +22,14 @@ export const PATCH = withApiGuard<RouteContext>(
                 return NextResponse.json({ data: null, message: "You can't change your own role" }, { status: 400 });
             }
 
+            const target = await User.findById(id).select("role");
+            if (target?.role === "admin" && role !== "admin") {
+                const adminCount = await User.countDocuments({ role: "admin" });
+                if (adminCount === 1) {
+                    return NextResponse.json({ data: null, message: "Can't demote the last remaining admin" }, { status: 400 });
+                }
+            }
+
             const user = await User.findOneAndUpdate({ _id: id }, { role }, { new: true });
             if (!user) {
                 return NextResponse.json({ data: null, message: "User not found" }, { status: 404 });
