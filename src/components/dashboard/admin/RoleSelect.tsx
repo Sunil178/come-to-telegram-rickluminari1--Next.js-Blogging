@@ -30,7 +30,7 @@ export default function RoleSelect({ userId, currentRole, disabled }: RoleSelect
         if (role === currentRole) return;
         startTransition(async () => {
             try {
-                const response = await fetch(`/api/users/${userId}/role`, {
+                const response = await fetch(`/api/users/role/${userId}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ role }),

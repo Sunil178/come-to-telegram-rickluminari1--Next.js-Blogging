@@ -10,7 +10,7 @@ vi.mock("@/models/User", () => ({
     default: { findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args) },
 }));
 
-const { PATCH } = await import("@/app/api/users/[id]/role/route");
+const { PATCH } = await import("@/app/api/users/role/[id]/route");
 
 function context(id: string) {
     return { params: Promise.resolve({ id }) };
