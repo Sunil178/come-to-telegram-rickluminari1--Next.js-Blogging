@@ -1,5 +1,6 @@
 import mongooseDelete, { SoftDeleteDocument, SoftDeleteModel } from 'mongoose-delete';
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import type { RoleName } from '@/libs/roles';
 
 const { Types: { ObjectId } } = Schema;
 type IUserWithSoftDelete = Document & SoftDeleteDocument;
@@ -16,6 +17,7 @@ export interface IUser extends IUserWithSoftDelete {
   avatar: string;
   intro: string;
   profile: string;
+  role: RoleName;
   upvoteCount: number;
   downvoteCount: number;
   lastLoginAt: Date;
@@ -34,6 +36,7 @@ const schema = new Schema<IUser>(
     avatar: String,
     intro: String,
     profile: String,
+    role: { type: String, enum: ["reader", "author", "moderator", "admin"], default: "reader" },
     upvoteCount: Number,
     downvoteCount: Number,
     lastLoginAt: Date,
