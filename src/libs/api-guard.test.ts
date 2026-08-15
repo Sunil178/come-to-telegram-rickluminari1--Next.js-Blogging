@@ -59,4 +59,28 @@ describe("withApiGuard", () => {
         expect(authMock).not.toHaveBeenCalled();
         expect(handler).toHaveBeenCalled();
     });
+
+    it("returns 403 when the session role is below the required minimum", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        const handler = vi.fn();
+        const guarded = withApiGuard(handler, { role: "moderator" });
+
+        const response = await guarded(makeRequest(), {});
+
+        expect(response.status).toBe(403);
+        expect(handler).not.toHaveBeenCalled();
+        const body = await response.json();
+        expect(body).toEqual({ data: null, message: "Forbidden" });
+    });
+
+    it("calls the handler when the session role meets the required minimum", async () => {
+        const session = { user: { id: "u1", role: "admin" } };
+        authMock.mockResolvedValue(session);
+        const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+        const guarded = withApiGuard(handler, { role: "moderator" });
+
+        await guarded(makeRequest(), {});
+
+        expect(handler).toHaveBeenCalledWith(expect.anything(), { session });
+    });
 });

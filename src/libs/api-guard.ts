@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
+import { hasRole, type RoleName } from "@/libs/roles";
 
 // Memoized per request/render pass, per Next.js's recommended Data Access Layer pattern:
 // https://nextjs.org/docs/app/guides/authentication#creating-a-data-access-layer-dal
@@ -15,6 +16,8 @@ export type AuthenticatedSession = Session & { user: NonNullable<Session["user"]
 interface ApiGuardOptions {
     /** Require a logged-in session; unauthenticated requests get a 401 before the handler runs. Defaults to true. */
     auth?: boolean;
+    /** Minimum role required; implies `auth`. Requests below this rank get a 403 before the handler runs. */
+    role?: RoleName;
 }
 
 /**
@@ -27,10 +30,16 @@ interface ApiGuardOptions {
  *
  *   export const POST = withApiGuard(async (request, { session }) => { ... });
  *   export const GET = withApiGuard(async (request) => { ... }, { auth: false }); // public route
+ *   export const PATCH = withApiGuard(async (request, { session }) => { ... }, { role: "moderator" });
  *
  * Next.js's own docs endorse wrapping Route Handlers this way ("factory" pattern):
  * https://nextjs.org/docs/app/guides/backend-for-frontend#library-patterns
  */
+export function withApiGuard<Context = unknown>(
+    handler: (request: NextRequest, context: Context & { session: AuthenticatedSession }) => Promise<Response> | Response,
+    options: { auth?: true; role: RoleName }
+): (request: NextRequest, context: Context) => Promise<Response>;
+
 export function withApiGuard<Context = unknown>(
     handler: (request: NextRequest, context: Context & { session: AuthenticatedSession }) => Promise<Response> | Response,
     options?: { auth?: true }
@@ -51,6 +60,9 @@ export function withApiGuard<Context = unknown>(
             const session = await getSession();
             if (!session?.user?.id) {
                 return NextResponse.json({ data: null, message: "Unauthorized" }, { status: 401 });
+            }
+            if (options.role && !hasRole(session.user.role, options.role)) {
+                return NextResponse.json({ data: null, message: "Forbidden" }, { status: 403 });
             }
             return handler(request, { ...context, session: session as AuthenticatedSession });
         }
