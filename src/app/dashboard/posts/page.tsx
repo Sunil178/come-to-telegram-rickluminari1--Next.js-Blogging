@@ -7,12 +7,14 @@ import Category from "@/models/Category";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { escapeRegExp } from "@/libs/search-query";
 import { buildSearchParamsHref } from "@/libs/build-href";
+import { hasRole } from "@/libs/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PostsSearch from "@/components/posts/PostsSearch";
 import PostsPagination from "@/components/posts/PostsPagination";
 import DeletePostButton from "@/components/posts/DeletePostButton";
+import RequestPublishButton from "@/components/dashboard/RequestPublishButton";
 
 const PAGE_SIZE = 10;
 
@@ -109,9 +111,13 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
             <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">Manage Posts</h1>
             <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <PostsSearch key={q || ""} defaultValue={q || ""} />
-                <Button asChild>
-                    <Link href="/posts/add">Add Post</Link>
-                </Button>
+                {hasRole(session.user.role, "author") ? (
+                    <Button asChild>
+                        <Link href="/posts/add">Add Post</Link>
+                    </Button>
+                ) : (
+                    <RequestPublishButton />
+                )}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-4">
