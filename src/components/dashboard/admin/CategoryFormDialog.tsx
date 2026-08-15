@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,10 @@ export default function CategoryFormDialog({ category }: CategoryFormDialogProps
     const [title, setTitle] = useState(category?.title ?? "");
     const [pending, startTransition] = useTransition();
     const isEdit = Boolean(category);
+
+    useEffect(() => {
+        if (open) setTitle(category?.title ?? "");
+    }, [open, category]);
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
