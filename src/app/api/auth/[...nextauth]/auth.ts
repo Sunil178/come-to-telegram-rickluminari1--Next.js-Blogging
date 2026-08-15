@@ -23,28 +23,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         name: fullName || user.username,
                         username: user.username,
                         email: user.email,
+                        role: user.role,
                     };
                 }
                 return null;
             },
         }),
     ],
-    callbacks: {
-        async session({ session, token, user }) {
-            if (token && session.user) {
-                session.user.id = token.id as string;
-                session.user.username = token.username;
-            }
-            return session;
-        },
-        async jwt({ token, user, account, profile }) {
-            if (user) {
-                token.id = user.id;
-                token.username = user.username;
-            }
-            return token;
-        },
-    },
     pages: {
         signIn: '/auth/login',
     },
