@@ -750,7 +750,7 @@ export const PATCH = withApiGuard<RouteContext>(
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/app/api/posts/[slug]/approval/route.test.ts`
-Expected: PASS (5 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
