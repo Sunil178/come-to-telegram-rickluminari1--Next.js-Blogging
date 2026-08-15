@@ -184,10 +184,11 @@ export default async function PostPage({ params }: PostPageProps) {
                     </div>
                 </aside>
 
-                {/* max-w-none drops prose's own 65ch cap; the child rule below reapplies
-                    it to everything except tables/code/images, which use the full column. */}
+                {/* max-w-none drops prose's 65ch cap; the child rule below reapplies it to everything
+                    except tables/code/images. prose-pre: strips typography's own always-dark <pre>
+                    styling so our theme-aware bg-muted wrapper + hljs colors show through instead. */}
                 <div
-                    className="prose prose-neutral dark:prose-invert min-w-0 max-w-none [&>*:not(:has(table)):not(:has(pre)):not(:has(figure))]:max-w-[65ch] [&_h1]:font-heading [&_h2]:font-heading [&_h3]:font-heading [&_h4]:font-heading"
+                    className="prose prose-neutral dark:prose-invert min-w-0 max-w-none prose-pre:bg-transparent prose-pre:text-foreground [&>*:not(:has(table)):not(:has(pre)):not(:has(figure))]:max-w-[65ch] [&_h1]:font-heading [&_h2]:font-heading [&_h3]:font-heading [&_h4]:font-heading"
                     dangerouslySetInnerHTML={{ __html: html }}
                 />
 
