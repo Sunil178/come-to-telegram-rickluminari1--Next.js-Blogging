@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
+import { hasRole } from "@/libs/roles";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -42,8 +43,9 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
 export const DELETE = withApiGuard<RouteContext>(async (request, { params, session }) => {
     try {
         const { id } = await params;
+        const filter = hasRole(session.user.role, "moderator") ? { _id: id } : { _id: id, userId: session.user.id };
 
-        const comment = await Comment.findOne({ _id: id, userId: session.user.id });
+        const comment = await Comment.findOne(filter);
         if (!comment) {
             return NextResponse.json({ data: null, message: "Comment not found" }, { status: 404 });
         }
