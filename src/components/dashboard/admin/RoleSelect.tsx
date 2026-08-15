@@ -12,9 +12,9 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { RoleName } from "@/libs/roles";
+import { ROLE_LABELS, ROLES, type RoleName } from "@/libs/roles";
 
-const ROLE_OPTIONS: RoleName[] = ["reader", "author", "moderator", "admin"];
+const ROLE_OPTIONS: RoleName[] = [ROLES.READER, ROLES.AUTHOR, ROLES.MODERATOR, ROLES.ADMIN];
 
 interface RoleSelectProps {
     userId: string;
@@ -40,7 +40,7 @@ export default function RoleSelect({ userId, currentRole, disabled }: RoleSelect
                     toast.error(result.message || "Failed to update role.");
                     return;
                 }
-                toast.success(`Role updated to ${role}.`);
+                toast.success(`Role updated to ${ROLE_LABELS[role as RoleName]}.`);
                 router.refresh();
             } catch {
                 toast.error("Failed to update role.");
@@ -51,15 +51,15 @@ export default function RoleSelect({ userId, currentRole, disabled }: RoleSelect
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={disabled || pending} className="capitalize">
-                    {currentRole} <ChevronDown className="size-3.5" />
+                <Button variant="outline" size="sm" disabled={disabled || pending}>
+                    {ROLE_LABELS[currentRole]} <ChevronDown className="size-3.5" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuRadioGroup value={currentRole} onValueChange={setRole}>
                     {ROLE_OPTIONS.map((role) => (
-                        <DropdownMenuRadioItem key={role} value={role} className="capitalize">
-                            {role}
+                        <DropdownMenuRadioItem key={role} value={role}>
+                            {ROLE_LABELS[role]}
                         </DropdownMenuRadioItem>
                     ))}
                 </DropdownMenuRadioGroup>

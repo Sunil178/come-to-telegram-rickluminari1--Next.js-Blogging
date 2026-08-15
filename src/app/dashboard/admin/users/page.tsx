@@ -2,7 +2,7 @@ import User from "@/models/User";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import RoleSelect from "@/components/dashboard/admin/RoleSelect";
-import type { RoleName } from "@/libs/roles";
+import { ROLES, type RoleName } from "@/libs/roles";
 
 export default async function AdminUsersPage() {
     const session = (await getSession()) as AuthenticatedSession;
@@ -28,7 +28,7 @@ export default async function AdminUsersPage() {
                                 <TableCell className="text-right">
                                     <RoleSelect
                                         userId={String(user._id)}
-                                        currentRole={(user.role ?? "reader") as RoleName}
+                                        currentRole={(user.role ?? ROLES.READER) as RoleName}
                                         disabled={String(user._id) === session.user.id}
                                     />
                                 </TableCell>

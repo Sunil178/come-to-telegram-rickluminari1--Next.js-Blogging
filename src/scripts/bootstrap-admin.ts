@@ -1,4 +1,6 @@
-import { MongoClient } from "mongodb";
+import dbConnect from "@/libs/db-connect";
+import User from "@/models/User";
+import { ROLES } from "@/libs/roles";
 
 async function main() {
     const email = process.argv[2];
@@ -7,19 +9,14 @@ async function main() {
         process.exit(1);
     }
 
-    const client = new MongoClient(process.env.MONGODB_URI as string);
-    try {
-        await client.connect();
-        const db = client.db();
-        const result = await db.collection("users").updateOne({ email }, { $set: { role: "admin" } });
-        if (result.matchedCount === 0) {
-            console.error(`No user found with email: ${email}`);
-            process.exit(1);
-        }
-        console.log(`✅ ${email} -> admin`);
-    } finally {
-        await client.close();
+    await dbConnect();
+    const result = await User.updateOne({ email }, { role: ROLES.ADMIN });
+    if (result.matchedCount === 0) {
+        console.error(`No user found with email: ${email}`);
+        process.exit(1);
     }
+    console.log(`✅ ${email} -> admin`);
+    process.exit(0);
 }
 
 main();

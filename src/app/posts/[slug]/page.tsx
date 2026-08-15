@@ -13,6 +13,7 @@ import Comment from "@/models/Comment";
 import type { IComment } from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
 import { getSession } from "@/libs/api-guard";
+import { hasRole, ROLES } from "@/libs/roles";
 import { processPostContent } from "@/libs/post-content";
 import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
 import { Badge } from "@/components/ui/badge";
@@ -51,8 +52,10 @@ const getPost = cache(async (slug: string) => {
     const isPubliclyVisible = post.approval === "Approved" && post.published && post.visibility;
     if (isPubliclyVisible) return post;
 
-    const owner = post.userId as unknown as { _id?: { toString(): string } } | null;
     const session = await getSession();
+    if (hasRole(session?.user?.role, ROLES.MODERATOR)) return post;
+
+    const owner = post.userId as unknown as { _id?: { toString(): string } } | null;
     if (session?.user?.id && owner?._id && owner._id.toString() === session.user.id) {
         return post;
     }

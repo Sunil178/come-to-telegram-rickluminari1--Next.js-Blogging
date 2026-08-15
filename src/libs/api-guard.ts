@@ -30,7 +30,7 @@ interface ApiGuardOptions {
  *
  *   export const POST = withApiGuard(async (request, { session }) => { ... });
  *   export const GET = withApiGuard(async (request) => { ... }, { auth: false }); // public route
- *   export const PATCH = withApiGuard(async (request, { session }) => { ... }, { role: "moderator" });
+ *   export const PATCH = withApiGuard(async (request, { session }) => { ... }, { role: ROLES.MODERATOR });
  *
  * Next.js's own docs endorse wrapping Route Handlers this way ("factory" pattern):
  * https://nextjs.org/docs/app/guides/backend-for-frontend#library-patterns

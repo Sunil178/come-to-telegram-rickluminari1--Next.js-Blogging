@@ -1,7 +1,7 @@
 import authConfig from "./auth.config";
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import { hasRole, type RoleName } from "@/libs/roles";
+import { hasRole, ROLES, type RoleName } from "@/libs/roles";
 
 const { auth } = NextAuth(authConfig);
 
@@ -9,12 +9,13 @@ const { auth } = NextAuth(authConfig);
 // this user edit *this* post) need a DB read and stay at the page/route level instead —
 // this list is only for checks resolvable from the role already in the session.
 const ROLE_REQUIREMENTS: { prefix: string; minimum: RoleName }[] = [
-    { prefix: "/posts/add", minimum: "author" },
-    { prefix: "/dashboard/admin/users", minimum: "admin" },
-    { prefix: "/dashboard/admin/categories", minimum: "admin" },
-    { prefix: "/dashboard/admin/requests", minimum: "admin" },
-    { prefix: "/dashboard/admin/posts", minimum: "moderator" },
-    { prefix: "/dashboard/admin/comments", minimum: "moderator" },
+    { prefix: "/posts/add", minimum: ROLES.AUTHOR },
+    { prefix: "/dashboard/admin/users", minimum: ROLES.ADMIN },
+    { prefix: "/dashboard/admin/categories", minimum: ROLES.ADMIN },
+    { prefix: "/dashboard/admin/requests", minimum: ROLES.ADMIN },
+    { prefix: "/dashboard/admin/all-posts", minimum: ROLES.ADMIN },
+    { prefix: "/dashboard/admin/posts", minimum: ROLES.MODERATOR },
+    { prefix: "/dashboard/admin/comments", minimum: ROLES.MODERATOR },
 ];
 
 export default auth((req) => {

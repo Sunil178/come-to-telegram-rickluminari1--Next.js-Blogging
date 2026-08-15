@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Post, { ApprovalStatus } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
+import { ROLES } from "@/libs/roles";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -38,5 +39,5 @@ export const PATCH = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "moderator" }
+    { role: ROLES.MODERATOR }
 );

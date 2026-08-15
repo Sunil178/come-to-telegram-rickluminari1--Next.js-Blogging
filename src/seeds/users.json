@@ -1,47 +1,47 @@
 [
-  {
-    "username": "ada.lovelace",
-    "role": "author",
-    "firstName": "Ada",
-    "lastName": "Lovelace",
-    "email": "ada@example.com",
-    "intro": "Mathematician turned software person.",
-    "profile": "Writes about the history and theory of computing when not arguing on the internet."
-  },
-  {
-    "username": "alan.turing",
-    "role": "reader",
-    "firstName": "Alan",
-    "lastName": "Turing",
-    "email": "alan@example.com",
-    "intro": "Breaks things to see how they work.",
-    "profile": "Interested in machine intelligence, cryptography, and long walks."
-  },
-  {
-    "username": "grace.hopper",
-    "role": "admin",
-    "firstName": "Grace",
-    "lastName": "Hopper",
-    "email": "grace@example.com",
-    "intro": "Compiler enthusiast.",
-    "profile": "Believes most bugs are just undocumented features waiting to be found."
-  },
-  {
-    "username": "linus.t",
-    "role": "moderator",
-    "firstName": "Linus",
-    "lastName": "T.",
-    "email": "linus@example.com",
-    "intro": "Opinionated about tabs vs. spaces.",
-    "profile": "Reads every changelog. Comments on maybe a third of them."
-  },
-  {
-    "username": "margaret.h",
-    "role": "author",
-    "firstName": "Margaret",
-    "lastName": "H.",
-    "email": "margaret@example.com",
-    "intro": "Systems thinker.",
-    "profile": "Cares more about reliability than features. Always asks about the failure modes."
-  }
+    {
+        "username": "ananya.iyer",
+        "role": "author",
+        "firstName": "Ananya",
+        "lastName": "Iyer",
+        "email": "ananya@example.com",
+        "intro": "Mathematician turned software person.",
+        "profile": "Writes about the history and theory of computing when not arguing on the internet."
+    },
+    {
+        "username": "aarav.mehta",
+        "role": "reader",
+        "firstName": "Aarav",
+        "lastName": "Mehta",
+        "email": "aarav@example.com",
+        "intro": "Breaks things to see how they work.",
+        "profile": "Interested in machine intelligence, cryptography, and long walks."
+    },
+    {
+        "username": "sunil.thakur",
+        "role": "admin",
+        "firstName": "Sunil",
+        "lastName": "Thakur",
+        "email": "sunil@example.com",
+        "intro": "Builder of this blog.",
+        "profile": "Ships fast, reviews carefully, and reads every PR before merging."
+    },
+    {
+        "username": "arjun.nair",
+        "role": "moderator",
+        "firstName": "Arjun",
+        "lastName": "Nair",
+        "email": "arjun@example.com",
+        "intro": "Opinionated about tabs vs. spaces.",
+        "profile": "Reads every changelog. Comments on maybe a third of them."
+    },
+    {
+        "username": "priya.deshmukh",
+        "role": "author",
+        "firstName": "Priya",
+        "lastName": "Deshmukh",
+        "email": "priya@example.com",
+        "intro": "Systems thinker.",
+        "profile": "Cares more about reliability than features. Always asks about the failure modes."
+    }
 ]

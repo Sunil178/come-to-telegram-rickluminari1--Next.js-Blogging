@@ -6,6 +6,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { escapeRegExp } from "@/libs/search-query";
 import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
+import { ROLES } from "@/libs/roles";
 
 export const GET = withApiGuard(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
@@ -82,4 +83,4 @@ export const POST = withApiGuard(async (request, { session }) => {
         console.error('Failed to create post:', error);
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
-}, { role: "author" });
+}, { role: ROLES.AUTHOR });

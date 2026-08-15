@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
-import { hasRole } from "@/libs/roles";
+import { hasRole, ROLES } from "@/libs/roles";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     // proxy.ts's matcher redirects unauthenticated requests before this renders.
@@ -9,11 +9,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     const links = [
         { href: "/dashboard/posts", label: "My Posts", show: true },
-        { href: "/dashboard/admin/posts", label: "Review Queue", show: hasRole(role, "moderator") },
-        { href: "/dashboard/admin/comments", label: "Comments", show: hasRole(role, "moderator") },
-        { href: "/dashboard/admin/requests", label: "Publish Requests", show: hasRole(role, "admin") },
-        { href: "/dashboard/admin/users", label: "Users", show: hasRole(role, "admin") },
-        { href: "/dashboard/admin/categories", label: "Categories", show: hasRole(role, "admin") },
+        { href: "/dashboard/admin/all-posts", label: "All Posts", show: hasRole(role, ROLES.ADMIN) },
+        { href: "/dashboard/admin/posts", label: "Review Queue", show: hasRole(role, ROLES.MODERATOR) },
+        { href: "/dashboard/admin/comments", label: "Comments", show: hasRole(role, ROLES.MODERATOR) },
+        { href: "/dashboard/admin/requests", label: "Publish Requests", show: hasRole(role, ROLES.ADMIN) },
+        { href: "/dashboard/admin/users", label: "Users", show: hasRole(role, ROLES.ADMIN) },
+        { href: "/dashboard/admin/categories", label: "Categories", show: hasRole(role, ROLES.ADMIN) },
     ].filter((link) => link.show);
 
     return (

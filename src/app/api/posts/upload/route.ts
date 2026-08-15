@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { withApiGuard } from "@/libs/api-guard";
+import { ROLES } from "@/libs/roles";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
@@ -54,4 +55,4 @@ export const POST = withApiGuard(async (request) => {
         console.error('Failed to upload file:', error);
         return NextResponse.json({ data: null, location: null, message: "Something went wrong" }, { status: 500 });
     }
-}, { role: "author" });
+}, { role: ROLES.AUTHOR });

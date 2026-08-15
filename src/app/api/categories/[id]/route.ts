@@ -4,6 +4,7 @@ import Category, { ICategory } from "@/models/Category";
 import Post from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
+import { ROLES } from "@/libs/roles";
 
 const SoftDeleteCategory = Category as unknown as SoftDeleteModel<ICategory>;
 
@@ -36,7 +37,7 @@ export const PATCH = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "admin" }
+    { role: ROLES.ADMIN }
 );
 
 export const DELETE = withApiGuard<RouteContext>(
@@ -60,5 +61,5 @@ export const DELETE = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "admin" }
+    { role: ROLES.ADMIN }
 );

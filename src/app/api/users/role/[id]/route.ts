@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
-import { ROLE_RANK } from "@/libs/roles";
+import { ROLE_RANK, ROLES } from "@/libs/roles";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -23,8 +23,8 @@ export const PATCH = withApiGuard<RouteContext>(
             }
 
             const target = await User.findById(id).select("role");
-            if (target?.role === "admin" && role !== "admin") {
-                const adminCount = await User.countDocuments({ role: "admin" });
+            if (target?.role === ROLES.ADMIN && role !== ROLES.ADMIN) {
+                const adminCount = await User.countDocuments({ role: ROLES.ADMIN });
                 if (adminCount === 1) {
                     return NextResponse.json({ data: null, message: "Can't demote the last remaining admin" }, { status: 400 });
                 }
@@ -41,5 +41,5 @@ export const PATCH = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "admin" }
+    { role: ROLES.ADMIN }
 );

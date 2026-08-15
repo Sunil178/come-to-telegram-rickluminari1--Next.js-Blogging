@@ -14,7 +14,7 @@ Route Handlers (`src/app/api/**/route.ts`) must not contain inline auth logic �
 
 ## Database connection
 
-Do not call `dbConnect()` (`src/libs/db-connect.ts`) from routes, pages, or components. `src/instrumentation.ts` / `src/instrumentation-node.ts` already calls it once when the Next.js server boots — mongoose's default connection is shared process-wide after that, so every model call downstream (`Post.find(...)`, etc.) just works with no per-file connect step. The only other legitimate caller is `src/seeds/seeder.ts`, a standalone script that runs outside the Next.js server, so instrumentation never fires for it.
+Do not call `dbConnect()` (`src/libs/db-connect.ts`) from routes, pages, or components. `src/instrumentation.ts` / `src/instrumentation-node.ts` already calls it once when the Next.js server boots — mongoose's default connection is shared process-wide after that, so every model call downstream (`Post.find(...)`, etc.) just works with no per-file connect step. The only other legitimate callers are `src/seeds/seeder.ts` and `src/scripts/bootstrap-admin.ts`, standalone scripts that run outside the Next.js server, so instrumentation never fires for them. Never use the raw `mongodb` driver in this codebase — `mongoose` is the only supported client, including in one-off scripts.
 
 ## Route protection
 

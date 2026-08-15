@@ -4,7 +4,7 @@ import Post, { IPost } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
-import { hasRole } from "@/libs/roles";
+import { hasRole, ROLES } from "@/libs/roles";
 
 // Post's exported type is loosened by `mongoose.models?.Post || mongoose.model<...>()`;
 // narrow it back here so the soft-delete plugin's `.delete()` is visible.
@@ -40,7 +40,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: 'Post content is required' }, { status: 400 });
         }
 
-        const isAdmin = hasRole(session.user.role, "admin");
+        const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
         const post = await Post.findOneAndUpdate(
             isAdmin ? { slug: currentSlug } : { slug: currentSlug, userId: session.user.id },
             {
@@ -75,7 +75,7 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
             return NextResponse.json({ data: null, message: 'Slug is required' }, { status: 400 });
         }
 
-        const isAdmin = hasRole(session.user.role, "admin");
+        const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
 
         // mongoose-delete's types claim a DeleteResult, but `.delete()` actually runs an
         // `updateMany` under the hood (it flips `deleted: true` rather than removing the doc).

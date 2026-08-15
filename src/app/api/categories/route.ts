@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Category from "@/models/Category";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
+import { ROLES } from "@/libs/roles";
 
 export const POST = withApiGuard(
     async (request) => {
@@ -23,5 +24,5 @@ export const POST = withApiGuard(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "admin" }
+    { role: ROLES.ADMIN }
 );

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import PublishRequest from "@/models/PublishRequest";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
-import { hasRole } from "@/libs/roles";
+import { hasRole, ROLES } from "@/libs/roles";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -32,8 +32,8 @@ export const PATCH = withApiGuard<RouteContext>(
 
             if (action === "approve") {
                 const requester = await User.findById(publishRequest.userId).select("role");
-                if (!requester || !hasRole(requester.role, "author")) {
-                    await User.updateOne({ _id: publishRequest.userId }, { role: "author" });
+                if (!requester || !hasRole(requester.role, ROLES.AUTHOR)) {
+                    await User.updateOne({ _id: publishRequest.userId }, { role: ROLES.AUTHOR });
                 }
             }
 
@@ -43,5 +43,5 @@ export const PATCH = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: "admin" }
+    { role: ROLES.ADMIN }
 );
