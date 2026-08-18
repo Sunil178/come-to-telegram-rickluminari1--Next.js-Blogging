@@ -1,5 +1,5 @@
 ---
-description: Deep, stack-aware code review of a diff. Detects the project's languages/frameworks/datastores, reviews through parallel specialist lenses, verifies every finding against the real code, and reports only what survives. Works on local changes without GitHub CLI.
+description: Deep, stack-aware code review of a diff. Detects the project's languages/frameworks/datastores, reviews through parallel specialist lenses, verifies every finding through an independent pass, and reports only what survives. Works on local changes without GitHub CLI.
 argument-hint: [ref | ref..ref | PR# | path | --staged | --all]
 ---
 
@@ -16,7 +16,7 @@ From `$ARGUMENTS`:
 - a path → restrict any of the above to that path
 - a bare number → a PR, only if `gh` is installed and authenticated; otherwise say so and fall back to the branch diff
 
-Gather: `git diff <range>`, `git diff --stat <range>`, `git log --oneline <range>`. Read the **full diff**, never just the stat. Then read each changed file in full — a diff hunk hides the context that decides whether a change is correct.
+Gather: `git diff <range>`, `git diff --stat <range>`, `git log --oneline <range>`. Read the **full diff**, never just the stat. Then read each changed file in full — a diff hunk hides the context that decides whether a change is correct. This full read matters even for prose/doc-only changes: a partial edit can leave a cross-reference (e.g. "see the Sequencing section below") pointing at a heading the same diff removed, and a hunk-only read won't surface that — read the file as a reader would, start to finish.
 
 Exclude from review (note them, don't analyze): lockfiles, generated/compiled output, vendored dependencies, snapshots, minified assets, binary files, and any path matching the project's own generated-file conventions.
 
@@ -73,7 +73,7 @@ Not backward compatible with the currently-deployed code that will run against i
 Credentials, tokens, or keys committed or hardcoded; injection of any kind — SQL, NoSQL, OS command, template, LDAP, header; path traversal in file operations; server-side request forgery on user-supplied URLs; deserialization of untrusted input; passwords hashed with a fast or general-purpose algorithm; tokens or IDs from a non-cryptographic random source; secrets compared non-constant-time; CORS wildcards combined with credentials; state-changing cookie-authenticated endpoints without CSRF protection; uploads accepted without type, size, and destination-path validation; and newly added dependencies that are unmaintained, unexpectedly broad in scope, or a near-miss on a well-known package name.
 
 **Concurrency & async**
-Promises/futures/goroutines started and never awaited or joined, so failures vanish; per-request or per-user data stored in module-level, static, or singleton state shared across requests; locks acquired in inconsistent order; cancellation/context not propagated to callees; retries without backoff amplifying an outage.
+Promises/futures/goroutines started and never awaited or joined, so failures vanish; per-request or per-user data stored in module-level, static, or singleton state shared across requests; locks acquired in inconsistent order; cancellation/context not propagated to callees; retries without backoff amplifying an outage; a check-then-act sequence gated on a cookie, cache entry, header, or other piece of state that hasn't round-tripped yet, letting concurrent requests (double-tab, fast double-navigation, retry-on-timeout) each pass the check before either write is visible to the other.
 
 **Config, infra & CI**
 A new environment variable with no default, no documentation, and no deployment-config entry; a feature flag whose default changes behaviour for everyone on deploy; containers running as root, secrets passed as build args, or floating `latest` base images; CI changes that expose secrets to untrusted pull requests or cache in a way that can serve stale or poisoned artifacts; infrastructure definitions opening public access to storage, databases, or network ports.
@@ -101,7 +101,9 @@ Every candidate finding must be verified against the actual code — not the dif
 
 **If you cannot write a concrete trigger and outcome, drop the finding.** This is the single most important filter — a defect you can't make happen isn't a defect, it's a hunch.
 
-Then score confidence 0–100 and **keep only ≥80**:
+Before scoring, trace every value the finding depends on back to *every* place that produces it — not just the primary or UI-driven path, but every producer a caller could realistically reach (a direct API call, an admin tool, a script, a different role, a bypassed client). Grep for it; don't assume a value is "already validated," "always well-formed," or "safe because the UI sanitizes it" without reading the code that actually produces it. Treating an unverified assumption as settled fact is the single most common way a real, reachable bug gets waved away as theoretical.
+
+**Score confidence in a genuinely separate pass, not the same reasoning that found the issue.** The context that generated a candidate is prone to confirming its own reasoning — it already has a story for why the finding is or isn't real, and will tend to talk itself into agreeing with itself. Spawn a subagent (one per candidate, or one covering the whole batch for a small diff) and give it *only*: the candidate finding as stated, the relevant file excerpts, and the stack/convention context from section 3 — not the discovery reasoning or verification narrative that produced it. That agent scores confidence 0–100 using the rubric below, and does its own trace of the value's origin rather than trusting the finder's trace. Do not self-score.
 
 - **0** — false positive, or a pre-existing issue this change didn't introduce
 - **25** — plausible but unverified
@@ -109,11 +111,15 @@ Then score confidence 0–100 and **keep only ≥80**:
 - **80** — verified by reading the code; will be hit in practice; the current approach is genuinely insufficient
 - **100** — certain, with direct evidence in the code
 
+Keep only findings the independent pass scores **≥80**.
+
 For a convention violation, confirm the rule is actually written in the file you're citing and quote it. If you're inferring it from sibling code instead, say so and cite the sibling.
 
 ## 7. Not findings
 
 Do not report: pre-existing issues on lines this change didn't touch; anything a linter, formatter, type-checker, or compiler catches (assume CI runs them — never run builds or test suites yourself as part of this review); style preferences not stated in the project's own rules; nitpicks a senior engineer would let through; missing tests or docs as a blanket complaint rather than for specific risky logic; behaviour changes that are clearly the intent of the change; theoretical concerns with no reachable path; and issues already silenced by an explicit suppression comment.
+
+"Behaviour changes that are clearly the intent of the change" means the *specific* residual risk under review was itself named and accepted somewhere (a spec, an issue, a comment saying this exact gap is fine) — not merely that some adjacent or related design choice was deliberate. A mechanism built to solve one problem (e.g. a cookie that dedupes accidental repeat counts) does not, by itself, establish that the design was also evaluated against a different threat (e.g. adversarial abuse from a client that never sends the cookie back) — those are separate questions, and only the one the spec actually addresses gets excluded.
 
 Structural findings from section 5 — duplication, file size, extraction, layering — are subject to that same rule: report them when **this change** introduced or measurably worsened them (it added the duplicate copy, it grew the file past the threshold, it put the new business rule in the controller). A file that was already oversized or already mislayered before this change is not a finding, however much it deserves one; mention it at most once in the closing paragraph, never as a numbered finding.
 

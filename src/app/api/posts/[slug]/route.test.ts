@@ -58,6 +58,17 @@ describe("PATCH /api/posts/[slug]", () => {
 
         expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.anything(), { new: true });
     });
+
+    it("normalizes a client-supplied slug instead of trusting it verbatim", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ slug: "foobar" });
+        await PATCH(patchRequest({ title: "New title", slug: "foo;bar", post_data: "{}" }), context("some-slug"));
+
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith(
+            { slug: "some-slug", userId: "author1" },
+            expect.objectContaining({ slug: "foobar" }),
+            { new: true }
+        );
+    });
 });
 
 describe("DELETE /api/posts/[slug]", () => {

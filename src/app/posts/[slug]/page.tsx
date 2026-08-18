@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import BannerImage from "@/components/posts/BannerImage";
 import ReadingProgress from "@/components/posts/ReadingProgress";
 import TableOfContents from "@/components/posts/TableOfContents";
+import ViewTracker from "@/components/posts/ViewTracker";
 import VoteButtons from "@/components/votes/VoteButtons";
 import CommentSection from "@/components/comments/CommentSection";
 
@@ -132,6 +133,7 @@ export default async function PostPage({ params }: PostPageProps) {
     return (
         <article className="pb-24">
             <ReadingProgress />
+            <ViewTracker slug={post.slug} />
 
             <div className="mx-auto max-w-3xl px-6 pt-16 text-center">
                 {category?.title && (

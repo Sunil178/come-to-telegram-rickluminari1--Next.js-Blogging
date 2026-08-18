@@ -51,4 +51,13 @@ describe("POST /api/posts", () => {
         expect(body.data).toEqual({ slug: "new-post" });
         expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "u1", slug: "new-post", title: "New post" }));
     });
+
+    it("normalizes a client-supplied slug instead of trusting it verbatim", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "author" } });
+        createMock.mockResolvedValue({ slug: "foobar" });
+
+        await POST(postRequest({ title: "New post", slug: "foo;bar", post_data: "{}" }), {});
+
+        expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ slug: "foobar" }));
+    });
 });

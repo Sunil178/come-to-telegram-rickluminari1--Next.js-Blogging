@@ -56,7 +56,8 @@ export const POST = withApiGuard(async (request, { session }) => {
             return NextResponse.json({ data: null, message: 'Title is required' }, { status: 400 });
         }
 
-        const slug = ((body.get('slug') as string) || '').trim() || slugify(title);
+        // slugify(), not just trim -- a raw slug can break the view-count route's dedupe cookie name.
+        const slug = slugify((body.get('slug') as string) || '') || slugify(title);
         if (!slug) {
             return NextResponse.json({ data: null, message: 'Slug is required' }, { status: 400 });
         }

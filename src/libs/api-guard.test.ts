@@ -6,8 +6,10 @@ vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
 const { withApiGuard } = await import("@/libs/api-guard");
 
-function makeRequest() {
-    return new NextRequest("http://localhost/api/example");
+function makeRequest(ip?: string) {
+    return new NextRequest("http://localhost/api/example", {
+        headers: ip ? { "x-forwarded-for": ip } : undefined,
+    });
 }
 
 describe("withApiGuard", () => {
@@ -82,5 +84,41 @@ describe("withApiGuard", () => {
         await guarded(makeRequest(), {});
 
         expect(handler).toHaveBeenCalledWith(expect.anything(), { session });
+    });
+
+    it("calls the handler for requests within the rate limit", async () => {
+        const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+        const guarded = withApiGuard(handler, { auth: false, rateLimit: { points: 2, duration: 60 } });
+
+        await guarded(makeRequest("1.1.1.1"), {});
+        await guarded(makeRequest("1.1.1.1"), {});
+
+        expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns 429 without calling the handler once an IP exceeds its rate limit", async () => {
+        const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+        const guarded = withApiGuard(handler, { auth: false, rateLimit: { points: 2, duration: 60 } });
+
+        await guarded(makeRequest("2.2.2.2"), {});
+        await guarded(makeRequest("2.2.2.2"), {});
+        const response = await guarded(makeRequest("2.2.2.2"), {});
+
+        expect(response.status).toBe(429);
+        expect(handler).toHaveBeenCalledTimes(2);
+        const body = await response.json();
+        expect(body).toEqual({ data: null, message: "Too many requests" });
+    });
+
+    it("tracks the rate limit per IP, not globally", async () => {
+        const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+        const guarded = withApiGuard(handler, { auth: false, rateLimit: { points: 1, duration: 60 } });
+
+        const first = await guarded(makeRequest("3.3.3.1"), {});
+        const second = await guarded(makeRequest("3.3.3.2"), {});
+
+        expect(first.status).toBe(200);
+        expect(second.status).toBe(200);
+        expect(handler).toHaveBeenCalledTimes(2);
     });
 });

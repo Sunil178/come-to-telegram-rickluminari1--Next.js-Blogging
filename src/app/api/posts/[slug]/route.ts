@@ -30,7 +30,8 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: 'Title is required' }, { status: 400 });
         }
 
-        const nextSlug = ((body.get('slug') as string) || '').trim() || slugify(title);
+        // Always run the client-supplied slug through slugify() too — see src/app/api/posts/route.ts.
+        const nextSlug = slugify((body.get('slug') as string) || '') || slugify(title);
         if (!nextSlug) {
             return NextResponse.json({ data: null, message: 'Slug is required' }, { status: 400 });
         }
