@@ -41,7 +41,7 @@ export default function CommentForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} method="post" className="flex flex-col gap-3">
             <Textarea
                 aria-label="Comment"
                 value={content}

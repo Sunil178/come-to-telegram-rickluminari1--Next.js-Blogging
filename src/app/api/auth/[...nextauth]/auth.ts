@@ -14,9 +14,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
+                // credentials is untyped — without this, an object like { $ne: null } here
+                // would act as a Mongo query operator instead of a literal value.
+                if (typeof credentials?.username !== "string" || typeof credentials?.password !== "string") {
+                    return null;
+                }
+
                 const user = await User.findOne({ email: credentials.username });
 
-                if (user && compareSync(credentials.password as string, user.password)) {
+                if (user && compareSync(credentials.password, user.password)) {
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {
                         id: user.id,

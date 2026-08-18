@@ -19,6 +19,8 @@ declare module "next-auth/jwt" {
     interface JWT {
         username?: string;
         role?: RoleName;
+        // epoch ms the role was last checked — bounds staleness without re-querying every request
+        roleCheckedAt?: number;
     }
 }
 
@@ -29,5 +31,6 @@ declare module "@auth/core/jwt" {
     interface JWT {
         username?: string;
         role?: RoleName;
+        roleCheckedAt?: number;
     }
 }

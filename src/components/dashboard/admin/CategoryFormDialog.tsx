@@ -70,7 +70,7 @@ export default function CategoryFormDialog({ category }: CategoryFormDialogProps
                 )}
             </DialogTrigger>
             <DialogContent>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} method="post">
                     <DialogHeader>
                         <DialogTitle>{isEdit ? "Edit category" : "New category"}</DialogTitle>
                         <DialogDescription>The slug is derived from the title automatically.</DialogDescription>

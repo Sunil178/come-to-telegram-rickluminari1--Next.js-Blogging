@@ -65,7 +65,7 @@ function LoginForm() {
                     <CardDescription>Log in to Vedev.Guru to manage your posts.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <form onSubmit={handleSubmit} method="post" className="flex flex-col gap-4">
                         {(error || urlError) && (
                             <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                                 {error || "Authentication failed. Please check your credentials."}

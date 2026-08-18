@@ -27,6 +27,9 @@ function requestWithFile(file: File | null) {
     return new NextRequest("http://localhost/api/posts/upload", { method: "POST", body: formData });
 }
 
+// Real PNG signature bytes; the rest is arbitrary padding, irrelevant to the check.
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+
 describe("POST /api/posts/upload", () => {
     beforeEach(() => {
         existsSyncMock.mockClear();
@@ -65,6 +68,16 @@ describe("POST /api/posts/upload", () => {
         expect(writeFileSyncMock).not.toHaveBeenCalled();
     });
 
+    it("rejects a file whose content doesn't match its declared type", async () => {
+        const file = new File(["not actually a png"], "banner.png", { type: "image/png" });
+        const response = await POST(requestWithFile(file), {});
+
+        expect(response.status).toBe(400);
+        const body = await response.json();
+        expect(body.message).toBe("File content doesn't match its declared type");
+        expect(writeFileSyncMock).not.toHaveBeenCalled();
+    });
+
     it("rejects a request with no file", async () => {
         const response = await POST(requestWithFile(null), {});
 
@@ -74,7 +87,7 @@ describe("POST /api/posts/upload", () => {
     });
 
     it("derives the stored filename/extension from the allowlist, never from the client-supplied name", async () => {
-        const file = new File(["image bytes"], "../../etc/passwd.png", { type: "image/png" });
+        const file = new File([PNG_BYTES], "../../etc/passwd.png", { type: "image/png" });
         const response = await POST(requestWithFile(file), {});
 
         expect(response.status).toBe(200);
