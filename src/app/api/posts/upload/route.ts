@@ -5,16 +5,12 @@ import { v4 as uuidv4 } from "uuid";
 import { withApiGuard } from "@/libs/api-guard";
 import { ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
+import { IMAGE_EXTENSIONS, uploadRoot, UPLOAD_URL_PREFIX } from "@/libs/uploads";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 // Extension is derived from this allowlist, never from the client-supplied filename.
-const ALLOWED_IMAGE_TYPES: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-};
+const ALLOWED_IMAGE_TYPES = IMAGE_EXTENSIONS;
 
 // `file.type` is just a client claim and can be forged — check the actual bytes.
 function matchesSignature(buffer: Buffer, mimeType: string): boolean {
@@ -60,18 +56,15 @@ export const POST = withApiGuard(async (request) => {
         }
 
         const today = new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }).split("/");
-        const UPLOAD_DIR = `uploads${path.sep}${today[2]}-${today[1]}-${today[0]}`;
-
-        if (!fs.existsSync(UPLOAD_DIR)) {
-            fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-        }
+        const dateDir = `${today[2]}-${today[1]}-${today[0]}`;
+        const uploadDir = path.join(uploadRoot(), dateDir);
+        fs.mkdirSync(uploadDir, { recursive: true });
 
         const filename = `${uuidv4()}.${extension}`;
-        const relativePath = `${UPLOAD_DIR}${path.sep}${filename}`;
+        fs.writeFileSync(path.join(uploadDir, filename), buffer);
 
-        fs.writeFileSync(path.resolve(relativePath), buffer);
-
-        return NextResponse.json({ data: `/${relativePath}`, location: `/${relativePath}`, message: "Success" });
+        const url = `${UPLOAD_URL_PREFIX}/${dateDir}/${filename}`;
+        return NextResponse.json({ data: url, location: url, message: "Success" });
     } catch (error) {
         logger.error("Failed to upload file", { error });
         return NextResponse.json({ data: null, location: null, message: "Something went wrong" }, { status: 500 });

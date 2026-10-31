@@ -1,5 +1,6 @@
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import NavbarBar from "@/components/nav/NavbarBar";
+import { pushPublicKey } from "@/libs/notify";
 
 export default async function Navbar() {
     const session = await auth();
@@ -7,5 +8,5 @@ export default async function Navbar() {
         ? { name: session.user.name, email: session.user.email, image: session.user.image }
         : null;
 
-    return <NavbarBar user={user} />;
+    return <NavbarBar user={user} vapidPublicKey={pushPublicKey()} />;
 }

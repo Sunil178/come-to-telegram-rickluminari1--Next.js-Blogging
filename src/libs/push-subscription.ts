@@ -11,9 +11,9 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     return outputArray;
 }
 
-function isCurrentServerKey(key: ArrayBuffer | null): boolean {
+function isCurrentServerKey(key: ArrayBuffer | null, serverKey: string): boolean {
     if (!key) return false;
-    const current = urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!);
+    const current = urlBase64ToUint8Array(serverKey);
     const existing = new Uint8Array(key);
     return existing.length === current.length && existing.every((byte, i) => byte === current[i]);
 }
@@ -24,16 +24,14 @@ export function isPushSupported(): boolean {
     return (
         typeof window !== "undefined" &&
         "serviceWorker" in navigator &&
-        "PushManager" in window &&
-        // Without a VAPID key the server can't send either, so don't offer push at all.
-        Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
+        "PushManager" in window
     );
 }
 
 // The VAPID key rides along in the script URL so the SW can resubscribe on its own in
 // pushsubscriptionchange -- a static file can't read env vars.
-export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
-    const key = encodeURIComponent(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "");
+export async function registerServiceWorker(serverKey: string): Promise<ServiceWorkerRegistration> {
+    const key = encodeURIComponent(serverKey);
     return navigator.serviceWorker.register(`/sw.js?vapidKey=${key}`, { scope: "/", updateViaCache: "none" });
 }
 
@@ -60,14 +58,14 @@ async function saveSubscription(subscription: PushSubscription): Promise<void> {
 
 // Re-binds this browser's subscription to the current user, so a subscription left
 // behind by a previous user on a shared browser stops delivering their notifications here.
-export async function syncExistingSubscription(): Promise<boolean> {
+export async function syncExistingSubscription(serverKey: string): Promise<boolean> {
     const subscription = await getExistingSubscription();
     if (!subscription) return false;
     // Made with a since-rotated VAPID key: the server can't send to it, so replace it while permission still stands.
-    if (!isCurrentServerKey(subscription.options.applicationServerKey)) {
+    if (!isCurrentServerKey(subscription.options.applicationServerKey, serverKey)) {
         await unsubscribeFromPush();
         if (window.Notification.permission !== "granted") return false;
-        return subscribeToPush().then(
+        return subscribeToPush(serverKey).then(
             () => true,
             () => false
         );
@@ -77,13 +75,13 @@ export async function syncExistingSubscription(): Promise<boolean> {
     return true;
 }
 
-export async function subscribeToPush(): Promise<void> {
+export async function subscribeToPush(serverKey: string): Promise<void> {
     if (!(await getRegistration())) throw new Error("Service worker is not registered");
     // Safe to await now that a registration exists; subscribe() needs an active worker.
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!) as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(serverKey) as BufferSource,
     });
     await saveSubscription(subscription);
 }

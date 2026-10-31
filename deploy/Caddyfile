@@ -1,0 +1,13 @@
+# Reverse proxy with automatic HTTPS (Let's Encrypt) for SITE_DOMAIN; "localhost" serves a local certificate.
+{$SITE_DOMAIN:localhost} {
+	encode zstd gzip
+
+	request_body {
+		max_size 10MB
+	}
+
+	reverse_proxy app:3000 {
+		# Overwrite rather than append, so the app (TRUSTED_PROXY_HOPS=1) always sees the real client IP.
+		header_up X-Forwarded-For {remote_host}
+	}
+}

@@ -38,11 +38,12 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `MONGODB_URI` | yes | MongoDB connection string |
 | `AUTH_SECRET` | yes | Auth.js signing secret (`openssl rand -base64 32`) |
 | `AUTH_URL` | production | Canonical site URL; without it (or `AUTH_TRUST_HOST=true`), Auth.js rejects sessions under `next start` outside Vercel/Cloudflare |
-| `NEXT_PUBLIC_SITE_URL` | production | Public origin for metadata, sitemap, RSS and OG links; an `https://` origin also enables `upgrade-insecure-requests` in the CSP |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT_EMAIL` | for push | Web Push keys (`npx web-push generate-vapid-keys`); without them notifications are in-app only |
+| `SITE_URL` | production | Public origin for metadata, sitemap, RSS and OG links; an `https://` origin also enables `upgrade-insecure-requests` in the CSP. Read at runtime (`NEXT_PUBLIC_SITE_URL` accepted as a fallback) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT_EMAIL` | for push | Web Push keys (`npx web-push generate-vapid-keys`), read at runtime; without them notifications are in-app only (`NEXT_PUBLIC_VAPID_PUBLIC_KEY` accepted as a fallback) |
 | `TRUSTED_PROXY_HOPS` | behind a proxy | Number of trusted proxies appending to `X-Forwarded-For` (default 1) |
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
+| `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
 | `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 
 ## Scripts
@@ -79,11 +80,29 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `public/sw.js` | Web Push service worker |
 | `docs/` | Roadmap, reviews, procedures, initiatives |
 
+## Docker
+
+The `Dockerfile` builds a self-contained Next.js server (standalone output, runs as the non-root `node` user, health-checked through `/api/health`). Configuration is read at runtime, so one image works in every environment.
+
+```bash
+cp .env.example .env                               # fill in AUTH_SECRET, AUTH_URL, SITE_URL, VAPID keys
+docker compose up -d --build                       # app + MongoDB → http://localhost:3000
+docker compose --profile proxy up -d --build       # + Caddy with automatic HTTPS for SITE_DOMAIN (ports 80/443)
+docker compose --profile mail up -d                # + Mailpit: SMTP on localhost:1025, inbox at http://localhost:8025
+```
+
+- **First admin:** the image ships only the server, so run the scripts from a checkout against the Compose database, which is published on loopback port `MONGO_PORT` (default 27018): `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin` (likewise `npm run seed` for demo data).
+- Compose points the app at its own `mongo` service (`COMPOSE_MONGODB_URI` overrides it) and keeps data in named volumes: `mongo-data` for the database and `uploads` for uploaded images (mounted at `UPLOAD_DIR=/app/uploads`).
+- With the `proxy` profile, set `SITE_DOMAIN` to your domain (DNS pointing at the server), `AUTH_URL` and `SITE_URL` to `https://<domain>`, and keep `TRUSTED_PROXY_HOPS=1`. The Caddyfile is in `deploy/Caddyfile`.
+- **Linux kernel 6.19 or newer:** the official `mongo` images refuse to start there ("known incompatibility", [SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)) until MongoDB ships a fix. On such hosts, point the app at another MongoDB (a managed cluster, or a server on another host) with `COMPOSE_MONGODB_URI` and start it without the bundled database: `docker compose up -d --build --no-deps app`.
+- Without Compose: `docker build -t vedev-blog .` and `docker run -p 3000:3000 --env-file .env -v blog-uploads:/app/uploads vedev-blog`, with `MONGODB_URI` pointing at your database.
+- To run the end-to-end suite against a running deployment instead of a local build: seed its database (`MONGODB_URI=<…>_e2e npx tsx e2e/seed.ts`), then `E2E_BASE_URL=http://host:port npx playwright test`.
+
 ## Deploying to production
 
 - **Run behind a reverse proxy** (Caddy, nginx, or a platform/CDN proxy) that terminates HTTPS and sets the client IP; set `TRUSTED_PROXY_HOPS` or `CLIENT_IP_HEADER` to match. Directly exposed, client IPs can be spoofed and per-IP rate limits bypassed.
-- **Set** `AUTH_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_SITE_URL` (it is inlined at build time, so set it before `npm run build`) and the VAPID keys.
-- **Single instance:** rate limits are kept in memory per process, and uploads are stored on the local disk (`uploads/`). Use one instance with a persistent disk until shared storage and a shared limiter are added (see `docs/roadmap.md`).
+- **Set** `AUTH_SECRET`, `AUTH_URL`, `SITE_URL` and the VAPID keys. All configuration is read at runtime, so one build (or Docker image) works in every environment.
+- **Single instance:** rate limits are kept in memory per process, and uploads are stored on the local disk (`UPLOAD_DIR`). Use one instance with a persistent disk or volume until shared storage and a shared limiter are added (see `docs/roadmap.md`).
 
 ## Contributing
 

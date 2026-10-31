@@ -72,10 +72,11 @@ function unblockHelpUrl(): string {
     return "https://support.google.com/chrome/answer/3220216";
 }
 
-export default function NotificationBell() {
+// The server passes its runtime VAPID public key; without one, the server can't send push, so it isn't offered.
+export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: string }) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [pushSupported] = useState(isPushSupported);
+    const [pushSupported] = useState(() => Boolean(vapidPublicKey) && isPushSupported());
     const [pushEnabled, setPushEnabled] = useState(false);
 
     const fetchNotifications = useCallback(async () => {
@@ -98,11 +99,11 @@ export default function NotificationBell() {
 
     useEffect(() => {
         if (!pushSupported) return;
-        registerServiceWorker()
-            .then(() => syncExistingSubscription())
+        registerServiceWorker(vapidPublicKey)
+            .then(() => syncExistingSubscription(vapidPublicKey))
             .then(setPushEnabled)
             .catch(() => {});
-    }, [pushSupported]);
+    }, [pushSupported, vapidPublicKey]);
 
     useEffect(() => {
         if (!pushSupported) return;
@@ -155,7 +156,7 @@ export default function NotificationBell() {
             }
             const permission = await window.Notification.requestPermission();
             if (permission !== "granted") return;
-            await subscribeToPush();
+            await subscribeToPush(vapidPublicKey);
             setPushEnabled(true);
             toast.success("Push notifications enabled.");
         } catch {

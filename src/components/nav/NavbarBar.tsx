@@ -11,11 +11,12 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface NavbarBarProps {
     user: { name?: string | null; email?: string | null; image?: string | null } | null;
+    vapidPublicKey: string;
 }
 
 const BASE_LINKS = [{ href: "/posts", label: "Posts" }];
 
-export default function NavbarBar({ user }: NavbarBarProps) {
+export default function NavbarBar({ user, vapidPublicKey }: NavbarBarProps) {
     const links = user ? [...BASE_LINKS, { href: "/dashboard", label: "Dashboard" }] : BASE_LINKS;
 
     return (
@@ -31,7 +32,7 @@ export default function NavbarBar({ user }: NavbarBarProps) {
                     <ThemeToggle />
                     {user ? (
                         <>
-                            <NotificationBell />
+                            <NotificationBell vapidPublicKey={vapidPublicKey} />
                             <UserMenu name={user.name} email={user.email} image={user.image} />
                         </>
                     ) : (

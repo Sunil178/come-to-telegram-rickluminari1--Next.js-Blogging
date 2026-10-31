@@ -28,7 +28,8 @@ test("an author's post goes live only after a moderator approves it", async ({ b
 
     await anonymous.goto(`/posts/${slug}`);
     await expect(anonymous.getByRole("heading", { name: title })).toBeVisible();
-    await expect(anonymous.getByText("Body text typed into the rich-text editor.")).toBeVisible();
+    // Scoped: while streaming, React briefly keeps a hidden copy of the segment outside the article.
+    await expect(anonymous.getByRole("article").getByText("Body text typed into the rich-text editor.")).toBeVisible();
 });
 
 test("a reader's comment notifies the post's author", async ({ browser }) => {

@@ -34,9 +34,14 @@ Review round 1 (`/code-review high 770ab7b`): 10 findings. Fixed: e2e DB reset m
 - [x] OPS-03 `onRequestError` in `src/instrumentation.ts`
 - [x] OPS-04 Playwright suite (`npm run test:e2e`): register/login, wrong password, gated redirect and return, CSP, author → approval → public post, comment → author notification
 
-## M4 Containers
+## M4 Containers — base `4e13423`
 
-- [ ] OPS-05 Dockerfile + compose (+ Caddy, Mailpit)
+Verification: image built with standalone output (non-root `node`, health-checked); e2e suite 7/7 against the container (`E2E_BASE_URL`) three times in a row, including an upload round-trip persisted to the `/app/uploads` volume. The bundled `mongo` image refuses to start on the host's kernel 7.0 (SERVER-121912), so the container ran against the host MongoDB's `blog_e2e`; documented in the README.
+
+Review round 1 (`/code-review high 4e13423`): 10 findings, all fixed. `robots.txt` renders per request (it had been prerendered with the build-time `SITE_URL`); legacy `NEXT_PUBLIC_*` fallbacks are read by computed key (Next inlines literal accesses at build time, even on the server); the bell offers push only when the server configured VAPID successfully (`pushPublicKey()`); upload caching is `immutable` only for UUID names (seed banners and legacy files get 1 h); uploads are streamed; one image MIME allowlist in `src/libs/uploads.ts`; e2e uploads go to `.e2e-uploads/`, not the owner's `uploads/`; the e2e date regex accepts the unpadded date folders; the traversal e2e check targets a real image outside the root; Compose publishes MongoDB on loopback port 27018 and the README covers bootstrapping the first admin. Found while stabilizing e2e: comment and vote updates after an `await` left the transition, so a new comment briefly rendered twice and a vote briefly double-counted; both are re-wrapped in `startTransition`. E2E 7/7 on four consecutive runs.
+
+- [~] OPS-05 Dockerfile (standalone output) + compose (app, mongo, Caddy `proxy` profile, Mailpit `mail` profile); runtime `SITE_URL` / `VAPID_PUBLIC_KEY` so one image fits every environment
+- [~] DOC-09 uploads served by `src/app/uploads/[...path]/route.ts` from `UPLOAD_DIR` (traversal-safe, typed, immutable caching); machine-specific `public/uploads` symlink removed
 
 ## M5 Accounts
 

@@ -2,6 +2,8 @@
 
 const nextConfig = {
   reactStrictMode: false,
+  // Self-contained server for the Docker image (node server.js); `next start` keeps the default output.
+  output: process.env.BUILD_STANDALONE === "1" ? "standalone" : undefined,
   async headers() {
     return [
       {

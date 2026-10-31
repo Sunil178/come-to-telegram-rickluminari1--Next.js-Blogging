@@ -78,11 +78,15 @@ export default function VoteButtons({ voteUrl, initialState, isLoggedIn, size = 
                     toast.error(result.message || "Failed to record vote.");
                     return;
                 }
-                setState({
-                    upvoteCount: result.data.upvoteCount,
-                    downvoteCount: result.data.downvoteCount,
-                    myVote: result.data.myVote,
-                });
+                // Updates after an await leave the transition unless re-wrapped; unwrapped, the optimistic
+                // vote is re-applied on top of the server's counts until the transition ends.
+                startTransition(() =>
+                    setState({
+                        upvoteCount: result.data.upvoteCount,
+                        downvoteCount: result.data.downvoteCount,
+                        myVote: result.data.myVote,
+                    })
+                );
             } catch {
                 toast.error("Failed to record vote.");
             }

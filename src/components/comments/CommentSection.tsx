@@ -147,12 +147,16 @@ export default function CommentSection({
                     toast.error(result.message || "Failed to post comment.");
                     return;
                 }
-                setComments((prev) =>
-                    insertReply(removeComment(prev, tempId), parentId, {
-                        ...optimisticNode,
-                        id: result.data.id,
-                        createdAt: result.data.createdAt,
-                    })
+                // Updates after an await leave the transition unless re-wrapped; unwrapped, the saved
+                // comment renders next to its still-applied optimistic copy.
+                startTransition(() =>
+                    setComments((prev) =>
+                        insertReply(removeComment(prev, tempId), parentId, {
+                            ...optimisticNode,
+                            id: result.data.id,
+                            createdAt: result.data.createdAt,
+                        })
+                    )
                 );
             } catch {
                 toast.error("Failed to post comment.");
@@ -179,8 +183,10 @@ export default function CommentSection({
                     toast.error(result.message || "Failed to update comment.");
                     return;
                 }
-                setComments((prev) =>
-                    mapTree(prev, id, (node) => ({ ...node, content: result.data.content, editedAt: result.data.editedAt }))
+                startTransition(() =>
+                    setComments((prev) =>
+                        mapTree(prev, id, (node) => ({ ...node, content: result.data.content, editedAt: result.data.editedAt }))
+                    )
                 );
             } catch {
                 toast.error("Failed to update comment.");
@@ -202,7 +208,7 @@ export default function CommentSection({
                     toast.error(result.message || "Failed to delete comment.");
                     return;
                 }
-                setComments((prev) => removeComment(prev, id));
+                startTransition(() => setComments((prev) => removeComment(prev, id)));
             } catch {
                 toast.error("Failed to delete comment.");
             }

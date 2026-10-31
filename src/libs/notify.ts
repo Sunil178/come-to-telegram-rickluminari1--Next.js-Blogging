@@ -3,15 +3,17 @@ import Notification, { type NotificationType } from "@/models/Notification";
 import PushSubscription from "@/models/PushSubscription";
 import { isAllowedPushEndpoint } from "@/libs/push-endpoint";
 import { logger } from "@/libs/logger";
+import { vapidPublicKey } from "@/libs/runtime-config";
 
 // Missing or malformed VAPID keys (e.g. .env.example placeholders) degrade the feature
 // to in-app-only notifications instead of failing every route that imports this module.
 function configurePush(): boolean {
-    if (!process.env.VAPID_PRIVATE_KEY || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return false;
+    const publicKey = vapidPublicKey();
+    if (!process.env.VAPID_PRIVATE_KEY || !publicKey) return false;
     try {
         webpush.setVapidDetails(
             process.env.VAPID_CONTACT_EMAIL || "mailto:noreply@example.com",
-            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            publicKey,
             process.env.VAPID_PRIVATE_KEY
         );
         return true;
@@ -21,6 +23,11 @@ function configurePush(): boolean {
     }
 }
 const pushConfigured = configurePush();
+
+// The key clients subscribe with, or "" when the server can't send push (so the UI doesn't offer it).
+export function pushPublicKey(): string {
+    return pushConfigured ? vapidPublicKey() : "";
+}
 
 interface NotifyOptions {
     recipientId: string;

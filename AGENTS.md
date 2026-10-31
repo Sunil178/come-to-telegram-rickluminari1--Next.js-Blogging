@@ -68,6 +68,8 @@ Client components where only an action is gated (voting, commenting, deleting) d
 
 - Fix root causes and every instance of a pattern; write the failing test first for behavioural fixes.
 - Comments: short, about the non-obvious why.
+- Configuration is read at runtime so one Docker image fits every environment: no new `NEXT_PUBLIC_*` variables (Next inlines them at build); server components read env (`src/libs/runtime-config.ts`) and pass values to client components as props.
+- Uploaded files live in `UPLOAD_DIR` and are served by `src/app/uploads/[...path]/route.ts` (`src/libs/uploads.ts`), not from `public/`.
 - Server code logs through `logger` (`src/libs/logger.ts`), never `console.*`; client components may use `console`.
 - New user-facing flows get a Playwright test in `e2e/` alongside their unit tests.
 - Documentation changes in the same commit as the behaviour; reference docs describe the current system in the present tense.

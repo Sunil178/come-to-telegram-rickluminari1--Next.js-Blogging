@@ -1,0 +1,68 @@
+# Local and single-server deployment stack.
+#   docker compose up -d --build                      app + MongoDB on http://localhost:3000
+#   docker compose --profile proxy up -d --build      + Caddy (HTTPS) in front, on ports 80/443
+#   docker compose --profile mail up -d               + Mailpit (SMTP on 1025, inbox UI on http://localhost:8025)
+# Secrets and per-environment values come from .env (see .env.example).
+services:
+  app:
+    build: .
+    image: vedev-blog:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MONGODB_URI: ${COMPOSE_MONGODB_URI:-mongodb://mongo:27017/blog}
+      UPLOAD_DIR: /app/uploads
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    # Loopback only: lets host-side scripts (npm run bootstrap-admin, seed) reach the database.
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27018}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2
+    profiles: ["proxy"]
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+  mailpit:
+    image: axllent/mailpit:latest
+    profiles: ["mail"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  uploads:
+  mongo-data:
+  caddy-data:
+  caddy-config:
