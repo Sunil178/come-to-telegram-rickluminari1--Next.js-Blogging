@@ -14,6 +14,12 @@ const loginByAccount = new RateLimiterMemory({ points: 50, duration: 60 * 60 });
 const TRUSTED_IP_SECONDS = 24 * 24 * 60 * 60;
 const trustedAccountIps = new RateLimiterMemory({ points: 1, duration: TRUSTED_IP_SECONDS });
 const registrationsByIp = new RateLimiterMemory({ points: 10, duration: 60 * 60 });
+// Verification resends and password-reset requests: stops mail bombing one inbox or abusing our SMTP
+// reputation. Like login, the account-wide cap is skipped from IPs that have signed into the account,
+// so someone exhausting it can't block the owner's own reset from their usual network.
+const accountEmailsByIp = new RateLimiterMemory({ points: 10, duration: 60 * 60 });
+const accountEmailsByAccountAndIp = new RateLimiterMemory({ points: 3, duration: 60 * 60 });
+const accountEmailsByAccount = new RateLimiterMemory({ points: 10, duration: 60 * 60 });
 
 const accountKey = (account: string) => account.trim().toLowerCase();
 
@@ -41,4 +47,13 @@ export async function recordLoginSuccess(ip: string, account: string): Promise<v
 
 export function consumeRegistrationAttempt(ip: string): Promise<boolean> {
     return consumePoint(registrationsByIp, ipKey(ip));
+}
+
+export async function consumeAccountEmailAttempt(ip: string, account: string): Promise<boolean> {
+    const key = accountKey(account);
+    const ipBucket = ipKey(ip);
+    if (!(await consumePoint(accountEmailsByIp, ipBucket))) return false;
+    if (!(await consumePoint(accountEmailsByAccountAndIp, `${key}|${ipBucket}`))) return false;
+    if (await trustedAccountIps.get(`${key}|${ipBucket}`)) return true;
+    return consumePoint(accountEmailsByAccount, key);
 }

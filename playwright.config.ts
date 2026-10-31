@@ -4,7 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
 // Always an isolated database: e2e/seed.ts refuses names that don't end in `_e2e`.
 const PORT = Number(process.env.E2E_PORT ?? 5100);
 // E2E_BASE_URL targets an already-running deployment (e.g. the Docker image) instead of starting
-// `next start`; seed its database first with `MONGODB_URI=... npx tsx e2e/seed.ts`.
+// `next start`; seed its database first with `MONGODB_URI=... npx tsx e2e/seed.ts`, and point its
+// SMTP_HOST/SMTP_PORT and SITE_URL at the Mailpit and URL this suite uses (accounts.spec reads the emails).
 const EXTERNAL_BASE_URL = process.env.E2E_BASE_URL;
 const BASE_URL = EXTERNAL_BASE_URL ?? `http://localhost:${PORT}`;
 const E2E_MONGODB_URI = process.env.E2E_MONGODB_URI ?? "mongodb://127.0.0.1:27017/blog_e2e";
@@ -33,6 +34,10 @@ export default defineConfig({
             TRUSTED_PROXY_HOPS: "1",
             // Keeps test uploads out of the owner's uploads/ (gitignored, next to public/ like in the image).
             UPLOAD_DIR: ".e2e-uploads",
+            // Mailpit (docker compose --profile mail up -d mailpit) catches verification and reset emails.
+            SMTP_HOST: "127.0.0.1",
+            SMTP_PORT: process.env.E2E_SMTP_PORT ?? "1025",
+            SITE_URL: BASE_URL,
         },
     },
 });

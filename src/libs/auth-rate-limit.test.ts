@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginLoginAttempt, consumeRegistrationAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
+import { beginLoginAttempt, consumeAccountEmailAttempt, consumeRegistrationAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
 
 describe("login rate limiting", () => {
     it("blocks an account from one IP after 5 attempts, without locking the owner out from another IP", async () => {
@@ -54,5 +54,20 @@ describe("registration rate limiting", () => {
         for (let i = 0; i < 10; i++) expect(await consumeRegistrationAttempt("10.7.0.1")).toBe(true);
         expect(await consumeRegistrationAttempt("10.7.0.1")).toBe(false);
         expect(await consumeRegistrationAttempt("10.7.0.2")).toBe(true);
+    });
+});
+
+describe("account email rate limiting", () => {
+    it("allows 3 emails per account from one IP, then blocks that IP for the account only", async () => {
+        for (let i = 0; i < 3; i++) expect(await consumeAccountEmailAttempt("10.8.0.1", "mail@example.com")).toBe(true);
+        expect(await consumeAccountEmailAttempt("10.8.0.1", "mail@example.com")).toBe(false);
+        expect(await consumeAccountEmailAttempt("10.8.0.1", "other@example.com")).toBe(true);
+    });
+
+    it("caps an account at 10 emails per hour across IPs, except from IPs that have signed into it", async () => {
+        await recordLoginSuccess("10.8.9.9", "owner@example.com");
+        for (let i = 0; i < 10; i++) expect(await consumeAccountEmailAttempt(`10.8.${i + 1}.1`, "owner@example.com")).toBe(true);
+        expect(await consumeAccountEmailAttempt("10.8.100.1", "owner@example.com")).toBe(false);
+        expect(await consumeAccountEmailAttempt("10.8.9.9", "owner@example.com")).toBe(true);
     });
 });

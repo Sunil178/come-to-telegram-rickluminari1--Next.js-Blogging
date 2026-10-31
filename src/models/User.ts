@@ -21,6 +21,9 @@ export interface IUser extends IUserWithSoftDelete {
   upvoteCount: number;
   downvoteCount: number;
   lastLoginAt: Date;
+  // null = awaiting verification; absent on accounts created before verification existed (treated as verified).
+  emailVerifiedAt: Date | null;
+  passwordChangedAt: Date;
 }
 
 const schema = new Schema<IUser>(
@@ -40,6 +43,8 @@ const schema = new Schema<IUser>(
     upvoteCount: Number,
     downvoteCount: Number,
     lastLoginAt: Date,
+    emailVerifiedAt: Date,
+    passwordChangedAt: Date,
   },
   {
     timestamps: true,

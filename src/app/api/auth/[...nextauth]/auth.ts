@@ -5,6 +5,8 @@ import authConfig from "@/auth.config";
 import { compare } from "bcrypt";
 import { getClientIp } from "@/libs/client-ip";
 import { beginLoginAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
+import { isMailConfigured } from "@/libs/mailer";
+import { EMAIL_COLLATION } from "@/libs/email-match";
 
 // Compared against when no user has the email, so unknown and known emails take the same bcrypt time.
 const DUMMY_PASSWORD_HASH = "$2b$10$Wa7YqlKRAqvDxcY2MK7SguZiMttMUqMVARgq3kQJWHwRxgxniBAZO";
@@ -12,6 +14,11 @@ const DUMMY_PASSWORD_HASH = "$2b$10$Wa7YqlKRAqvDxcY2MK7SguZiMttMUqMVARgq3kQJWHwR
 // Surfaces as `code` on the client's signIn() result, so the login page can say why.
 class RateLimitedSignin extends CredentialsSignin {
     code = "rate_limited";
+}
+
+// Only after the password matched, so it doesn't reveal which emails have accounts.
+class EmailUnverifiedSignin extends CredentialsSignin {
+    code = "email_unverified";
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -35,10 +42,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     throw new RateLimitedSignin();
                 }
 
-                const user = await User.findOne({ email: credentials.username });
+                const user = await User.findOne({ email: credentials.username }).collation(EMAIL_COLLATION);
 
                 const passwordMatches = await compare(credentials.password, user?.password ?? DUMMY_PASSWORD_HASH);
                 if (user && passwordMatches) {
+                    // Without SMTP there's no way to verify, so the requirement is off with it. Checked before
+                    // recordLoginSuccess, so a refused login neither refunds attempts nor marks the IP trusted.
+                    if (user.emailVerifiedAt === null && isMailConfigured()) throw new EmailUnverifiedSignin();
                     await recordLoginSuccess(ip, credentials.username);
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {

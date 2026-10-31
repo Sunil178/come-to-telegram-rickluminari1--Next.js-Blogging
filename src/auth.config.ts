@@ -23,6 +23,7 @@ export default {
                 token.username = user.username;
                 token.role = user.role;
                 token.roleCheckedAt = Date.now();
+                token.authAt = Date.now();
                 return token;
             }
 
@@ -32,7 +33,10 @@ export default {
             if (token.id && isStale) {
                 // mongoose.model("User"), not the typed User import — importing that module here
                 // breaks .lean() type inference project-wide (verified in `next build`, not a tsc quirk).
-                const dbUser = await mongoose.model("User").findById(token.id).select("role").lean<{ role?: RoleName }>();
+                const dbUser = await mongoose.model("User").findById(token.id).select("role passwordChangedAt")
+                    .lean<{ role?: RoleName; passwordChangedAt?: Date }>();
+                // A password reset signs out every session that started before it (within this recheck interval).
+                if (dbUser?.passwordChangedAt && dbUser.passwordChangedAt.getTime() > (token.authAt ?? 0)) return null;
                 token.role = dbUser?.role ?? ROLES.READER;
                 token.roleCheckedAt = Date.now();
             }

@@ -1,21 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, PASSWORD, USERS } from "./fixtures";
-
-test("a visitor can register and then sign in", async ({ page }) => {
-    const id = Date.now();
-    await page.goto("/auth/register");
-    await page.getByLabel("Username").fill(`newbie${id}`);
-    await page.getByLabel("First Name").fill("New");
-    await page.getByLabel("Last Name").fill("Reader");
-    await page.getByLabel("Email").fill(`newbie${id}@example.com`);
-    await page.locator("#password").fill(PASSWORD);
-    await page.locator("#password_confirmation").fill(PASSWORD);
-    await page.getByRole("button", { name: "Create Account" }).click();
-
-    await expect(page).toHaveURL(/\/auth\/login/);
-    await login(page, `newbie${id}@example.com`);
-    await expect(page.getByRole("button", { name: "Notifications" })).toBeVisible();
-});
+import { PASSWORD, USERS } from "./fixtures";
 
 test("a wrong password is rejected with a clear message", async ({ page }) => {
     await page.goto("/auth/login");

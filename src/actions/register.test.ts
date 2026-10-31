@@ -1,13 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": "10.9.0.1" }) }));
+let clientIp = "10.9.0.1";
+vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": clientIp }) }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("bcrypt", () => ({ hash: async () => "hashed" }));
+vi.mock("next/server", () => ({ after: (callback: () => unknown) => callback() }));
+let mailConfigured = false;
+vi.mock("@/libs/mailer", () => ({ isMailConfigured: () => mailConfigured }));
+const sendVerificationMock = vi.fn();
+vi.mock("@/libs/account-emails", () => ({ sendVerificationEmail: (...args: unknown[]) => sendVerificationMock(...args) }));
 
 const findOneMock = vi.fn();
 const createMock = vi.fn();
 vi.mock("@/models/User", () => ({
-    default: { findOne: (...args: unknown[]) => findOneMock(...args), create: (...args: unknown[]) => createMock(...args) },
+    default: { findOne: (...args: unknown[]) => ({ collation: () => findOneMock(...args) }), create: (...args: unknown[]) => createMock(...args) },
 }));
 
 const { registerAction } = await import("@/actions/register");
@@ -39,5 +45,30 @@ describe("registerAction rate limiting", () => {
 
         expect(state.error).toMatch(/Too many registration attempts/);
         expect(createMock).toHaveBeenCalledTimes(10);
+    });
+});
+
+describe("registerAction email verification", () => {
+    beforeEach(() => {
+        findOneMock.mockReset().mockResolvedValue(null);
+        createMock.mockReset().mockResolvedValue({ id: "u1", email: "v@example.com", username: "verifyme" });
+        sendVerificationMock.mockReset().mockResolvedValue(true);
+        clientIp = "10.9.1.1";
+    });
+
+    it("creates the account unverified and emails a confirmation link when SMTP is configured", async () => {
+        mailConfigured = true;
+        await registerAction({}, form({ email: "v@example.com", username: "verifyme" }));
+
+        expect(createMock.mock.calls[0][0].emailVerifiedAt).toBeNull();
+        expect(sendVerificationMock).toHaveBeenCalledWith({ id: "u1", email: "v@example.com", username: "verifyme" });
+    });
+
+    it("creates the account verified when SMTP isn't configured", async () => {
+        mailConfigured = false;
+        await registerAction({}, form({ email: "w@example.com", username: "noverify" }));
+
+        expect(createMock.mock.calls[0][0].emailVerifiedAt).toBeInstanceOf(Date);
+        expect(sendVerificationMock).not.toHaveBeenCalled();
     });
 });

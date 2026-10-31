@@ -1,15 +1,9 @@
 import Post from "@/models/Post";
 import User from "@/models/User";
 import { SITE_URL } from "@/libs/site-url";
+import { escapeMarkup as escapeXml } from "@/libs/escape";
 
 const FEED_SIZE = 30;
-
-function escapeXml(value: string): string {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-}
 
 export async function GET() {
     const posts = await Post.find({ approval: "Approved", published: true, visibility: true })

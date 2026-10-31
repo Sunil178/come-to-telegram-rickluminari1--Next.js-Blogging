@@ -6,6 +6,7 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 
 - Rich-text posts with banner images, tags, categories, table of contents and reading time
 - Roles: reader → author → moderator → admin, with publish requests and post approval
+- Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions)
 - Threaded comments, votes on posts, comments and profiles
 - In-app notifications with Web Push (service worker), live bell updates
 - Deduplicated, rate-limited page-view counting
@@ -44,6 +45,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
 | `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
 | `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 
 ## Scripts
@@ -61,7 +63,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 ## Testing
 
 - `npm test` runs the Vitest unit and route tests (models are mocked; no database needed).
-- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. First run: `npx playwright install chromium`.
+- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. Account emails go to Mailpit, which must be running: `docker compose --profile mail up -d mailpit` (SMTP on 1025, API on 8025; `E2E_SMTP_PORT`, `E2E_MAILPIT_URL`). First run: `npx playwright install chromium`.
 
 ## Operations
 
@@ -88,7 +90,7 @@ The `Dockerfile` builds a self-contained Next.js server (standalone output, runs
 cp .env.example .env                               # fill in AUTH_SECRET, AUTH_URL, SITE_URL, VAPID keys
 docker compose up -d --build                       # app + MongoDB → http://localhost:3000
 docker compose --profile proxy up -d --build       # + Caddy with automatic HTTPS for SITE_DOMAIN (ports 80/443)
-docker compose --profile mail up -d                # + Mailpit: SMTP on localhost:1025, inbox at http://localhost:8025
+docker compose --profile mail up -d                # + Mailpit: SMTP on localhost:1025 (SMTP_HOST=mailpit for the app container), inbox at http://localhost:8025
 ```
 
 - **First admin:** the image ships only the server, so run the scripts from a checkout against the Compose database, which is published on loopback port `MONGO_PORT` (default 27018): `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin` (likewise `npm run seed` for demo data).
@@ -96,7 +98,7 @@ docker compose --profile mail up -d                # + Mailpit: SMTP on localhos
 - With the `proxy` profile, set `SITE_DOMAIN` to your domain (DNS pointing at the server), `AUTH_URL` and `SITE_URL` to `https://<domain>`, and keep `TRUSTED_PROXY_HOPS=1`. The Caddyfile is in `deploy/Caddyfile`.
 - **Linux kernel 6.19 or newer:** the official `mongo` images refuse to start there ("known incompatibility", [SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)) until MongoDB ships a fix. On such hosts, point the app at another MongoDB (a managed cluster, or a server on another host) with `COMPOSE_MONGODB_URI` and start it without the bundled database: `docker compose up -d --build --no-deps app`.
 - Without Compose: `docker build -t vedev-blog .` and `docker run -p 3000:3000 --env-file .env -v blog-uploads:/app/uploads vedev-blog`, with `MONGODB_URI` pointing at your database.
-- To run the end-to-end suite against a running deployment instead of a local build: seed its database (`MONGODB_URI=<…>_e2e npx tsx e2e/seed.ts`), then `E2E_BASE_URL=http://host:port npx playwright test`.
+- To run the end-to-end suite against a running deployment instead of a local build: seed its database (`MONGODB_URI=<…>_e2e npx tsx e2e/seed.ts`), point its `SMTP_HOST`/`SMTP_PORT` at Mailpit and `SITE_URL` at its own URL, then `E2E_BASE_URL=http://host:port npx playwright test`.
 
 ## Deploying to production
 

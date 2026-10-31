@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** M4 Containers
+**Current focus:** M5 Accounts
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -34,19 +34,22 @@ Review round 1 (`/code-review high 770ab7b`): 10 findings. Fixed: e2e DB reset m
 - [x] OPS-03 `onRequestError` in `src/instrumentation.ts`
 - [x] OPS-04 Playwright suite (`npm run test:e2e`): register/login, wrong password, gated redirect and return, CSP, author → approval → public post, comment → author notification
 
-## M4 Containers — base `4e13423`
+## M4 Containers — base `4e13423`, committed `a305e7d`
 
 Verification: image built with standalone output (non-root `node`, health-checked); e2e suite 7/7 against the container (`E2E_BASE_URL`) three times in a row, including an upload round-trip persisted to the `/app/uploads` volume. The bundled `mongo` image refuses to start on the host's kernel 7.0 (SERVER-121912), so the container ran against the host MongoDB's `blog_e2e`; documented in the README.
 
 Review round 1 (`/code-review high 4e13423`): 10 findings, all fixed. `robots.txt` renders per request (it had been prerendered with the build-time `SITE_URL`); legacy `NEXT_PUBLIC_*` fallbacks are read by computed key (Next inlines literal accesses at build time, even on the server); the bell offers push only when the server configured VAPID successfully (`pushPublicKey()`); upload caching is `immutable` only for UUID names (seed banners and legacy files get 1 h); uploads are streamed; one image MIME allowlist in `src/libs/uploads.ts`; e2e uploads go to `.e2e-uploads/`, not the owner's `uploads/`; the e2e date regex accepts the unpadded date folders; the traversal e2e check targets a real image outside the root; Compose publishes MongoDB on loopback port 27018 and the README covers bootstrapping the first admin. Found while stabilizing e2e: comment and vote updates after an `await` left the transition, so a new comment briefly rendered twice and a vote briefly double-counted; both are re-wrapped in `startTransition`. E2E 7/7 on four consecutive runs.
 
-- [~] OPS-05 Dockerfile (standalone output) + compose (app, mongo, Caddy `proxy` profile, Mailpit `mail` profile); runtime `SITE_URL` / `VAPID_PUBLIC_KEY` so one image fits every environment
-- [~] DOC-09 uploads served by `src/app/uploads/[...path]/route.ts` from `UPLOAD_DIR` (traversal-safe, typed, immutable caching); machine-specific `public/uploads` symlink removed
+- [x] OPS-05 Dockerfile (standalone output) + compose (app, mongo, Caddy `proxy` profile, Mailpit `mail` profile); runtime `SITE_URL` / `VAPID_PUBLIC_KEY` so one image fits every environment
+- [x] DOC-09 uploads served by `src/app/uploads/[...path]/route.ts` from `UPLOAD_DIR` (traversal-safe, typed, immutable caching); machine-specific `public/uploads` symlink removed
 
-## M5 Accounts
+## M5 Accounts — base `a305e7d`
 
-- [ ] ACC-01 email verification
-- [ ] ACC-02 password reset
+Review round 1 (`/code-review high a305e7d`): 10 findings, all fixed. Email-send limits are per account+IP (3/h) plus account-wide (10/h) with the login trusted-IP exemption, so a stranger can't block the owner's reset; email lookups (login, registration, resend, reset) are case-insensitive via collation; one live token per user and purpose in a single upsert (unique index), so concurrent sends can't leave an older link working; a login refused for an unverified email no longer refunds attempts or marks the IP trusted; verify and reset report a deleted account instead of claiming success, and reset is one pipeline update (bcrypt hash wrapped in `$literal`, since a pipeline reads a leading `$` as a field path); login banners go through `FormStatus` and never show success next to an error; one shared `escapeMarkup()` for the emails and RSS; e2e docs cover SMTP for `E2E_BASE_URL`. Also: Compose's Mailpit sets `MP_SMTP_DISABLE_RDNS`, because its reverse-DNS lookup of the Docker gateway delayed every SMTP greeting by 10 s.
+
+- [~] ACC-01 email verification: `emailVerifiedAt` (explicit `null` = pending; legacy accounts without the field count as verified), required only when `SMTP_HOST` is set; login refuses unverified accounts after the password matched (`email_unverified`) and offers a resend; links open a confirm button (POST) so mail scanners can't use them up
+- [~] ACC-02 password reset: forgot-password and reset pages; identical replies and timing for unknown emails (lookup and send in `after()`); 1 h one-time links; a reset completes pending verification and revokes older sessions through `passwordChangedAt` vs the JWT's `authAt` (within the 60 s recheck)
+- Shared: `AuthToken` model (SHA-256 of a 256-bit token, TTL index, atomic find-and-delete), `src/libs/mailer.ts` (nodemailer 10.1.7 with file/URL access disabled; every release up to 10.1.3 carries high advisories, and Auth.js's optional peer range is overridden since its email provider isn't used), email sends limited to 10/h per IP and 3/h per account. E2E: 9/9 three times with Mailpit after the review fixes (verification with resend, reset with reuse refused, unknown email sends nothing).
 
 ## M6 Notifications v2
 

@@ -21,6 +21,8 @@ declare module "next-auth/jwt" {
         role?: RoleName;
         // epoch ms the role was last checked — bounds staleness without re-querying every request
         roleCheckedAt?: number;
+        // epoch ms of sign-in; sessions from before the last password change are revoked
+        authAt?: number;
     }
 }
 
@@ -32,5 +34,7 @@ declare module "@auth/core/jwt" {
         username?: string;
         role?: RoleName;
         roleCheckedAt?: number;
+        // epoch ms of sign-in; sessions from before the last password change are revoked
+        authAt?: number;
     }
 }
