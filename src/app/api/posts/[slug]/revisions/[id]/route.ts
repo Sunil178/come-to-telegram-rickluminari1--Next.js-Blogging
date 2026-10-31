@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import Post from "@/models/Post";
 import PostRevision from "@/models/PostRevision";
 import { withApiGuard } from "@/libs/api-guard";
@@ -33,7 +33,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (!replaced) {
             return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });
         }
-        await recordRevision(replaced, restored, session.user.id);
+        after(() => recordRevision(replaced, restored, session.user.id));
 
         return NextResponse.json({ data: { slug }, message: "Success" });
     } catch (error) {

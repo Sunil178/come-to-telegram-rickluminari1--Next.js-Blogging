@@ -32,6 +32,15 @@ describe("recordRevision", () => {
         expect(createMock).not.toHaveBeenCalled();
     });
 
+    it("ignores Plate's per-load block ids when deciding whether content changed", async () => {
+        await recordRevision(
+            { ...before, content: '<p data-block-id="abc">same</p>' },
+            { ...before, content: '<p data-block-id="xyz">same</p>' },
+            "editor-1"
+        );
+        expect(createMock).not.toHaveBeenCalled();
+    });
+
     it("keeps only the newest revisions", async () => {
         staleMock.mockResolvedValue([{ _id: "r-old" }]);
         await recordRevision(before, { ...before, tags: ["a", "b"] }, "editor-1");

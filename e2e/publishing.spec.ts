@@ -1,10 +1,9 @@
-import { expect, test } from "@playwright/test";
-import { login, SEEDED_POST, USERS } from "./fixtures";
+import { expect, login, newPage, SEEDED_POST, test, USERS } from "./fixtures";
 
 test("an author's post goes live only after a moderator approves it", async ({ browser }) => {
     const title = `E2E post ${Date.now()}`;
 
-    const authorPage = await (await browser.newContext()).newPage();
+    const authorPage = await newPage(browser);
     await login(authorPage, USERS.author.email, undefined, "/posts/add");
     await authorPage.getByLabel("Title").fill(title);
     await authorPage.getByLabel("Description").fill("Written by the end-to-end suite");
@@ -15,13 +14,13 @@ test("an author's post goes live only after a moderator approves it", async ({ b
     await expect(authorPage).toHaveURL(/\/dashboard\/posts$/);
 
     const slug = title.toLowerCase().replace(/\s+/g, "-");
-    const anonymous = await (await browser.newContext()).newPage();
+    const anonymous = await newPage(browser);
     // Streaming (loading.tsx) sends a 200 before notFound() runs, so check what renders, not the status.
     await anonymous.goto(`/posts/${slug}`);
     await expect(anonymous.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await expect(anonymous.getByText(title)).toHaveCount(0);
 
-    const adminPage = await (await browser.newContext()).newPage();
+    const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/posts");
     await adminPage.getByRole("row", { name: new RegExp(title) }).getByRole("button", { name: "Approve post" }).click();
     await expect(adminPage.getByRole("row", { name: new RegExp(title) })).toHaveCount(0);
@@ -33,14 +32,14 @@ test("an author's post goes live only after a moderator approves it", async ({ b
 });
 
 test("a reader's comment notifies the post's author", async ({ browser }) => {
-    const readerPage = await (await browser.newContext()).newPage();
+    const readerPage = await newPage(browser);
     await login(readerPage, USERS.reader.email, undefined, `/posts/${SEEDED_POST.slug}`);
     const comment = `Great post! ${Date.now()}`;
     await readerPage.getByLabel("Comment").first().fill(comment);
     await readerPage.getByRole("button", { name: "Comment", exact: true }).click();
     await expect(readerPage.getByText(comment)).toBeVisible();
 
-    const authorPage = await (await browser.newContext()).newPage();
+    const authorPage = await newPage(browser);
     await login(authorPage, USERS.author.email);
     await authorPage.getByRole("button", { name: "Notifications" }).click();
     await expect(authorPage.getByText(`commented on your post "${SEEDED_POST.title}"`)).toBeVisible();

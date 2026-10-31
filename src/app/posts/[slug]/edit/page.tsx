@@ -4,6 +4,7 @@ import Post from "@/models/Post";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import PostForm from "@/components/posts/PostForm";
+import { isPubliclyVisible } from "@/libs/post-visibility";
 
 interface EditPostPageProps {
     params: Promise<{ slug: string }>;
@@ -26,6 +27,8 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
             </div>
             <PostForm
                 mode="edit"
+                userId={session.user.id}
+                isLive={isPubliclyVisible(post)}
                 initialPost={{
                     slug: post.slug,
                     title: post.title,

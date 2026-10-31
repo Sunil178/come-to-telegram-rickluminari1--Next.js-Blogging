@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { PASSWORD, USERS } from "./fixtures";
+import { expect, PASSWORD, test, USERS } from "./fixtures";
 
 test("a wrong password is rejected with a clear message", async ({ page }) => {
     await page.goto("/auth/login");

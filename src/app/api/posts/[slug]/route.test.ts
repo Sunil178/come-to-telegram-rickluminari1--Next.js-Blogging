@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+
 const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
@@ -104,7 +109,7 @@ describe("PATCH /api/posts/[slug] revisions and scheduling", () => {
         const [, pipeline, options] = findOneAndUpdateMock.mock.calls[0];
         expect(pipeline[0].$set.publishAt).toEqual({ $literal: new Date(at) });
         expect(pipeline[0].$set.publishedAt.$cond[0]).toEqual({ $eq: ["$approval", "Approved"] });
-        expect(pipeline[0].$set.publishedAt.$cond[1].$cond[1]).toEqual(new Date(at));
+        expect(pipeline[0].$set.publishedAt.$cond[1].$cond[1].$cond[1]).toEqual(new Date(at));
         expect(options).toEqual({ returnDocument: "before", updatePipeline: true });
         expect(updateOneMock).not.toHaveBeenCalled();
     });

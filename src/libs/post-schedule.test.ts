@@ -21,9 +21,12 @@ describe("parsePublishAt", () => {
 });
 
 describe("rescheduledPublishedAt", () => {
-    it("uses the new time when it's in the future, else publishes a still-scheduled post now", () => {
+    it("moves only a not-yet-live post: to the new future time, or to now when the schedule is cleared", () => {
         const at = new Date("2026-11-05T09:30:00Z");
-        expect(rescheduledPublishedAt(at).$cond[1]).toBe(at);
-        expect(rescheduledPublishedAt(null).$cond[0]).toEqual({ $gt: [null, "$$NOW"] });
+        const expr = rescheduledPublishedAt(at, now);
+        expect(expr.$cond[0]).toEqual({ $gt: ["$publishedAt", now] });
+        expect(expr.$cond[1]).toEqual({ $cond: [{ $gt: [at, now] }, at, now] });
+        // Already live: unchanged, so an author can't unpublish it by picking a future date.
+        expect(expr.$cond[2]).toBe("$publishedAt");
     });
 });

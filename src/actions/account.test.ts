@@ -101,7 +101,7 @@ describe("verifyEmailAction", () => {
         expect(consumeTokenMock).toHaveBeenCalledWith("t", "verify-email");
         const [filter, pipeline, options] = updateOneMock.mock.calls[0];
         expect(filter).toEqual({ _id: "u1" });
-        expect(pipeline[0].$set.emailVerifiedAt).toEqual({ $ifNull: ["$emailVerifiedAt", "$$NOW"] });
+        expect(pipeline[0].$set.emailVerifiedAt).toEqual({ $ifNull: ["$emailVerifiedAt", expect.any(Date)] });
         expect(options).toEqual({ updatePipeline: true });
         expect(redirectMock).toHaveBeenCalledWith("/auth/login?verified=1");
     });
@@ -130,8 +130,8 @@ describe("resetPasswordAction", () => {
         expect(filter).toEqual({ _id: "u1" });
         expect(pipeline[0].$set).toEqual({
             password: { $literal: "hashed:newsecret" },
-            passwordChangedAt: "$$NOW",
-            emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", "$$NOW"] },
+            passwordChangedAt: expect.any(Date),
+            emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", expect.any(Date)] },
         });
         expect(redirectMock).toHaveBeenCalledWith("/auth/login?reset=1");
     });

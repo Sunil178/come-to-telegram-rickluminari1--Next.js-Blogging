@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { login, USERS } from "./fixtures";
+import { expect, login, test, USERS } from "./fixtures";
 
 // 1x1 transparent PNG.
 const PNG = Buffer.from(

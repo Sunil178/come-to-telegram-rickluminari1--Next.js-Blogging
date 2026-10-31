@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { login, PASSWORD } from "./fixtures";
+import { type Page } from "@playwright/test";
+import { expect, login, PASSWORD, test } from "./fixtures";
 import { linkFromLatestEmail, messagesTo } from "./mailpit";
 
 async function register(page: Page, id: string) {

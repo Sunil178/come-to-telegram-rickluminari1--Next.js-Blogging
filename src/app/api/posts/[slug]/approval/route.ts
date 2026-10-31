@@ -27,7 +27,9 @@ export const PATCH = withApiGuard<RouteContext>(
             if (approval === ApprovalStatus.Approved) {
                 update.published = true;
                 // A scheduled post goes live at its publishAt; approving after that time publishes now.
-                update.publishedAt = { $max: ["$$NOW", { $ifNull: ["$publishAt", "$$NOW"] }] };
+                // The app's clock, which visibility checks also use.
+                const now = new Date();
+                update.publishedAt = { $max: [now, { $ifNull: ["$publishAt", now] }] };
             }
 
             // Returns the pre-update document, so a repeat click (or a second moderator) still applies

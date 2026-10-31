@@ -4,7 +4,7 @@ import User from "@/models/User";
 import Validator from "validatorjs";
 import { hash } from "bcrypt";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { sendVerificationEmail } from "@/libs/account-emails";
 import { isMailConfigured } from "@/libs/mailer";
@@ -12,6 +12,8 @@ import { EMAIL_COLLATION } from "@/libs/email-match";
 import { getClientIp } from "@/libs/client-ip";
 import { consumeRegistrationAttempt } from "@/libs/auth-rate-limit";
 import { logger } from "@/libs/logger";
+import { consentedVisitorId } from "@/libs/visitor";
+import { stitchVisitor } from "@/libs/visitor-events";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -68,6 +70,8 @@ export async function registerAction(initialState: RegisterState, formData: Form
             // Without SMTP there's no way to verify, so accounts start verified.
             emailVerifiedAt: mustVerify ? null : new Date(),
         });
+        const visitorId = consentedVisitorId(await cookies());
+        if (visitorId) await stitchVisitor(visitorId, user.id);
         if (mustVerify) {
             after(() => sendVerificationEmail({ id: user.id, email: user.email, username: user.username }).catch((error) => {
                 logger.error("Failed to send verification email", { error });

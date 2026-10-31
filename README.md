@@ -11,6 +11,7 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 - Threaded comments, votes on posts, comments and profiles
 - Notifications for replies, comments, upvotes, moderation decisions and publish requests: a live bell, a paginated notifications page, per-category in-app and push switches, Web Push via a service worker, and read notifications expiring after a configurable time
 - Deduplicated, rate-limited page-view counting
+- Consent-based reading history: with the visitor's consent, a first-party cookie records which posts they read (kept 180 days) and attaches that history to their account when they sign in or register; declining or withdrawing consent (footer "Cookie preferences") deletes it
 - SEO: sitemap, robots.txt, RSS feed (`/feed.xml`), Open Graph metadata
 - Security: nonce-based Content-Security-Policy, rate-limited login, registration and APIs, sanitized post HTML, SSRF-safe push endpoints
 
@@ -65,7 +66,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 ## Testing
 
 - `npm test` runs the Vitest unit and route tests (models are mocked; no database needed).
-- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. Account emails go to Mailpit, which must be running: `docker compose --profile mail up -d mailpit` (SMTP on 1025, API on 8025; `E2E_SMTP_PORT`, `E2E_MAILPIT_URL`). First run: `npx playwright install chromium`.
+- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. Test browsers start with a stored cookie-consent choice (`presetConsent` in `e2e/fixtures.ts`) so the banner doesn't cover controls; `e2e/consent.spec.ts` tests the banner itself. Account emails go to Mailpit, which must be running: `docker compose --profile mail up -d mailpit` (SMTP on 1025, API on 8025; `E2E_SMTP_PORT`, `E2E_MAILPIT_URL`). First run: `npx playwright install chromium`.
 
 ## Operations
 

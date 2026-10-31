@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { unsubscribeFromPush } from "@/libs/push-subscription";
+import { clearAllDrafts } from "@/libs/post-drafts";
 
 interface LogoutButtonProps {
     className?: string;
@@ -23,6 +24,8 @@ export default function LogoutButton({ className, children }: LogoutButtonProps)
 
             // redirect: false allows us to handle the transition smoothly in React
             await signOut({ redirect: false });
+            // Unsaved editor drafts belong to this account; the next person on this browser mustn't see them.
+            clearAllDrafts();
 
             // router.refresh ensures the Server Components (like Navbar)
             // re-sync with the now-empty session

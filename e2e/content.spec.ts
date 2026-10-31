@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { login, RELATED_POST, SEEDED_POST, USERS } from "./fixtures";
+import { type Page } from "@playwright/test";
+import { expect, login, newPage, RELATED_POST, SEEDED_POST, test, USERS } from "./fixtures";
 
 // datetime-local wants local wall-clock time without a zone.
 function localInputValue(date: Date) {
@@ -19,18 +19,18 @@ test("a scheduled post stays hidden after approval until its publish time, and g
     const title = `Scheduled ${Date.now()}`;
     const slug = title.toLowerCase().replace(/\s+/g, "-");
 
-    const authorPage = await (await browser.newContext()).newPage();
+    const authorPage = await newPage(browser);
     await login(authorPage, USERS.author.email, undefined, "/posts/add");
     await writePost(authorPage, title, new Date(Date.now() + 2 * 24 * 60 * 60 * 1000));
     await authorPage.getByRole("button", { name: "Publish" }).click();
     await expect(authorPage).toHaveURL(/\/dashboard\/posts$/);
 
-    const adminPage = await (await browser.newContext()).newPage();
+    const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/posts");
     await adminPage.getByRole("row", { name: new RegExp(title) }).getByRole("button", { name: "Approve post" }).click();
     await expect(adminPage.getByRole("row", { name: new RegExp(title) })).toHaveCount(0);
 
-    const anonymous = await (await browser.newContext()).newPage();
+    const anonymous = await newPage(browser);
     await anonymous.goto(`/posts/${slug}`);
     await expect(anonymous.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await anonymous.goto("/posts");

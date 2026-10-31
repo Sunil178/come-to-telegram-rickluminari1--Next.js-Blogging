@@ -68,6 +68,8 @@ schema.plugin(mongooseDelete, { deletedAt : true, deletedBy: true, overrideMetho
 schema.index({ slug: 1 }, { unique: true, partialFilterExpression: { deleted: false } });
 schema.index({ categoryId: 1 });
 schema.index({ userId: 1 });
+// Related posts match on shared tags (src/libs/related-posts.ts).
+schema.index({ tags: 1 });
 
 // Hide soft-delete metadata in API responses
 schema.set("toJSON", {

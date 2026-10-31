@@ -68,7 +68,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
                 approval: "Approved",
                 approvedAt: expect.any(Date),
                 published: true,
-                publishedAt: { $max: ["$$NOW", { $ifNull: ["$publishAt", "$$NOW"] }] },
+                publishedAt: { $max: [expect.any(Date), { $ifNull: ["$publishAt", expect.any(Date)] }] },
             }) }],
             { returnDocument: "before", updatePipeline: true }
         );

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type { SoftDeleteModel } from "mongoose-delete";
 import Post, { IPost } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
@@ -78,7 +78,8 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: 'Post not found' }, { status: 404 });
         }
 
-        await recordRevision(previous, changes, session.user.id);
+        // Off the save path; recordRevision never throws.
+        after(() => recordRevision(previous, changes, session.user.id));
 
         return NextResponse.json({ data: { slug: nextSlug }, message: 'Success' });
     } catch (error) {

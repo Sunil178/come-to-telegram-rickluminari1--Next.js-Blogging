@@ -6,7 +6,10 @@ export const REVISION_FIELDS = ["title", "titleDescription", "tags", "bannerImag
 
 type RevisionSource = { _id: unknown } & Partial<Record<(typeof REVISION_FIELDS)[number], unknown>>;
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+// Plate stamps every block with a random data-block-id on each load, so an unchanged post would
+// otherwise serialize differently on every save and record a revision each time.
+const comparable = (value: unknown) => (typeof value === "string" ? value.replace(/\sdata-block-id="[^"]*"/g, "") : value);
+const same = (a: unknown, b: unknown) => JSON.stringify(comparable(a) ?? null) === JSON.stringify(comparable(b) ?? null);
 
 // Snapshots `before` when the edit changed any revisioned field, then trims the post's history to
 // the newest MAX_REVISIONS_PER_POST. Never throws: losing a snapshot must not fail the save.

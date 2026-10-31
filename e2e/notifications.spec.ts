@@ -1,8 +1,8 @@
-import { expect, test, type Browser } from "@playwright/test";
-import { login, SEEDED_POST, USERS } from "./fixtures";
+import { type Browser } from "@playwright/test";
+import { expect, login, newPage, SEEDED_POST, test, USERS } from "./fixtures";
 
 async function upvoteSeededPost(browser: Browser, email: string) {
-    const page = await (await browser.newContext()).newPage();
+    const page = await newPage(browser);
     await login(page, email, undefined, `/posts/${SEEDED_POST.slug}`);
     const upvote = page.getByRole("button", { name: "Upvote" }).first();
     await upvote.click();
@@ -19,7 +19,7 @@ test("an author sees upvotes on the notifications page and can switch them off",
     await expect(upvote).toHaveAttribute("aria-pressed", "true");
     await readerPage.context().close();
 
-    const authorPage = await (await browser.newContext()).newPage();
+    const authorPage = await newPage(browser);
     await login(authorPage, USERS.author.email, undefined, "/dashboard/notifications");
     const readerUpvote = authorPage.getByText(`${USERS.reader.username} upvoted your post "${SEEDED_POST.title}"`);
     await expect(readerUpvote).toHaveCount(1);

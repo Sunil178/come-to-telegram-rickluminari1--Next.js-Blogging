@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import Wordmark from "@/components/marginalia/Wordmark";
+import CookiePreferencesButton from "@/components/consent/CookiePreferencesButton";
 
 const FOOTER_LINKS = [
     { href: "/", label: "Home" },
@@ -29,6 +30,7 @@ export default function Footer() {
                             {link.label}
                         </Link>
                     ))}
+                    <CookiePreferencesButton className="font-mono text-xs tracking-widest text-muted-foreground uppercase transition-colors hover:text-foreground" />
                 </nav>
             </div>
             <Separator />

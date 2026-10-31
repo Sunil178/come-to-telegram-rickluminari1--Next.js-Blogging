@@ -5,11 +5,15 @@ const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
 const updateOneMock = vi.fn();
+const findOneMock = vi.fn();
 vi.mock("@/models/Post", async () => {
     const actual = await vi.importActual<typeof import("@/models/Post")>("@/models/Post");
     return {
         ...actual,
-        default: { updateOne: (...args: unknown[]) => updateOneMock(...args) },
+        default: {
+            findOneAndUpdate: (...args: unknown[]) => updateOneMock(...args),
+            findOne: (...args: unknown[]) => ({ select: () => ({ lean: () => findOneMock(...args) }) }),
+        },
     };
 });
 
@@ -21,6 +25,9 @@ vi.mock("@/models/PostView", async () => {
         default: { create: (...args: unknown[]) => createViewMock(...args) },
     };
 });
+
+const recordPostViewMock = vi.fn();
+vi.mock("@/libs/visitor-events", () => ({ recordPostView: (...args: unknown[]) => recordPostViewMock(...args) }));
 
 const { POST } = await import("@/app/api/posts/[slug]/view/route");
 
@@ -37,8 +44,11 @@ function viewRequest(options: { cookie?: string; ip?: string } = {}) {
 
 describe("POST /api/posts/[slug]/view", () => {
     beforeEach(() => {
-        updateOneMock.mockReset();
+        updateOneMock.mockReset().mockResolvedValue({ _id: "post-1" });
         createViewMock.mockReset();
+        recordPostViewMock.mockReset();
+        findOneMock.mockReset().mockResolvedValue({ _id: "post-1" });
+        authMock.mockResolvedValue(null);
     });
 
     it("skips the DB entirely when the visitor already has the dedupe cookie", async () => {
@@ -57,7 +67,8 @@ describe("POST /api/posts/[slug]/view", () => {
         expect(createViewMock).toHaveBeenCalledWith(expect.objectContaining({ slug: "some-slug" }));
         expect(updateOneMock).toHaveBeenCalledWith(
             { slug: "some-slug", approval: "Approved", published: true, visibility: true, publishedAt: { $not: { $gt: expect.any(Date) } } },
-            { $inc: { visitorCount: 1 } }
+            { $inc: { visitorCount: 1 } },
+            { projection: { _id: 1 } }
         );
         expect(response.headers.get("set-cookie")).toContain("viewed:some-slug=1");
     });
@@ -80,5 +91,30 @@ describe("POST /api/posts/[slug]/view", () => {
 
         expect(response.status).toBe(500);
         expect(updateOneMock).not.toHaveBeenCalled();
+    });
+
+    it("records an interest event only for a consenting visitor, with the user when signed in", async () => {
+        createViewMock.mockResolvedValue({});
+        await POST(viewRequest({ ip: "9.9.9.1", cookie: "vid=0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" }), context("some-slug"));
+        expect(recordPostViewMock).not.toHaveBeenCalled();
+
+        authMock.mockResolvedValue({ user: { id: "user-7" } });
+        await POST(viewRequest({ ip: "9.9.9.2", cookie: "consent=granted; vid=0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" }), context("some-slug"));
+        expect(recordPostViewMock).toHaveBeenCalledWith({ visitorId: "0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10", userId: "user-7", postId: "post-1" });
+    });
+
+    it("ignores a forged visitor id and records nothing for a declined consent", async () => {
+        createViewMock.mockResolvedValue({});
+        await POST(viewRequest({ ip: "9.9.9.3", cookie: "consent=granted; vid=../../etc" }), context("some-slug"));
+        await POST(viewRequest({ ip: "9.9.9.4", cookie: "consent=denied; vid=0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" }), context("some-slug"));
+        expect(recordPostViewMock).not.toHaveBeenCalled();
+    });
+
+    it("records a consenting visitor's interest even when their IP was already counted", async () => {
+        createViewMock.mockRejectedValue(Object.assign(new Error("dup"), { code: 11000 }));
+        await POST(viewRequest({ ip: "9.9.9.5", cookie: "consent=granted; vid=0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" }), context("some-slug"));
+
+        expect(updateOneMock).not.toHaveBeenCalled();
+        expect(recordPostViewMock).toHaveBeenCalledWith({ visitorId: "0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10", userId: null, postId: "post-1" });
     });
 });

@@ -10,6 +10,7 @@ import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { MAX_REVISIONS_PER_POST } from "@/libs/post-revisions";
 import RestoreRevisionButton from "@/components/posts/RestoreRevisionButton";
+import LocalDateTime from "@/components/LocalDateTime";
 
 export const metadata = { title: "Revision history", robots: { index: false } };
 
@@ -64,7 +65,7 @@ export default async function RevisionsPage({ params, searchParams }: RevisionsP
                                         aria-current={id === selectedId ? "true" : undefined}
                                         className={`block px-3 py-2 text-sm hover:bg-accent ${id === selectedId ? "bg-muted" : ""}`}
                                     >
-                                        <span className="block text-foreground">{new Date(revision.createdAt).toLocaleString("en-US")}</span>
+                                        <LocalDateTime iso={new Date(revision.createdAt).toISOString()} className="block text-foreground" />
                                         <span className="block text-xs text-muted-foreground">
                                             replaced by {editor?.username ?? "unknown"} · {revision.title}
                                         </span>

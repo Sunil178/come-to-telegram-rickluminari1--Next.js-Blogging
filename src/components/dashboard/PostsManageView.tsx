@@ -173,7 +173,7 @@ export default async function PostsManageView({
                                     <TableCell className="font-mono text-xs">
                                         {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US") : "—"}
                                         {isScheduled(post) && <Badge variant="outline" className="ml-2 font-sans">Scheduled</Badge>}
-                                        {!post.publishedAt && post.publishAt && (
+                                        {post.approval === "Pending" && post.publishAt && new Date(post.publishAt) > new Date() && (
                                             <span className="ml-2 font-sans text-muted-foreground">
                                                 (scheduled for {new Date(post.publishAt).toLocaleDateString("en-US")})
                                             </span>

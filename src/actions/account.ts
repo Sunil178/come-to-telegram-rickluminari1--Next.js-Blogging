@@ -79,7 +79,7 @@ export async function verifyEmailAction(_state: AccountFormState, formData: Form
     if (!userId) return { error: "This confirmation link is invalid or has expired. Log in to request a new one." };
 
     // Matches already-verified accounts too (a second click is harmless); misses only deleted ones.
-    const result = await User.updateOne({ _id: userId }, [{ $set: { emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", "$$NOW"] } } }], { updatePipeline: true });
+    const result = await User.updateOne({ _id: userId }, [{ $set: { emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", new Date()] } } }], { updatePipeline: true });
     if (result.matchedCount === 0) return { error: "This account no longer exists." };
     redirect("/auth/login?verified=1");
 }
@@ -99,11 +99,13 @@ export async function resetPasswordAction(_state: AccountFormState, formData: Fo
     if (!userId) return { error: "This reset link is invalid, expired or already used. Request a new one." };
 
     const password = await hash(body.password as string, 10);
+    const now = new Date();
     const result = await User.updateOne(
         { _id: userId },
         // Following the emailed link proves the inbox, so a pending verification is complete too.
         // $literal: a bcrypt hash starts with "$", which a pipeline would read as a field path.
-        [{ $set: { password: { $literal: password }, passwordChangedAt: "$$NOW", emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", "$$NOW"] } } }],
+        // The app's clock: passwordChangedAt is compared with the JWT's authAt, also app time.
+        [{ $set: { password: { $literal: password }, passwordChangedAt: now, emailVerifiedAt: { $ifNull: ["$emailVerifiedAt", now] } } }],
         { updatePipeline: true }
     );
     if (result.matchedCount === 0) return { error: "This account no longer exists." };

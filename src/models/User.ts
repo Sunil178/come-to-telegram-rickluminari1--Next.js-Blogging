@@ -6,7 +6,6 @@ const { Types: { ObjectId } } = Schema;
 type IUserWithSoftDelete = Document & SoftDeleteDocument;
 
 export interface IUser extends IUserWithSoftDelete {
-  tempUserId: Types.ObjectId;
   username: string;
   firstName: string;
   middleName: string;
@@ -30,7 +29,6 @@ export interface IUser extends IUserWithSoftDelete {
 
 const schema = new Schema<IUser>(
   {
-    tempUserId: { type: ObjectId, ref: "TempUser" },
     username: String,
     firstName: String,
     middleName: String,

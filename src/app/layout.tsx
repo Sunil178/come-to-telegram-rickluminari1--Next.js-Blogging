@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import SessionWrapper from "@/components/SessionWrapper";
 import GlobalLoader from "@/components/GlobalLoader";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -15,6 +15,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { Newsreader, IBM_Plex_Mono, Literata } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SITE_URL } from "@/libs/site-url";
+import ConsentBanner from "@/components/consent/ConsentBanner";
+import { readConsent } from "@/libs/visitor";
 
 const fontDisplay = Newsreader({ subsets: ["latin"], variable: "--font-display" });
 const fontBody = Literata({ subsets: ["latin"], variable: "--font-body" });
@@ -37,6 +39,7 @@ export default async function RootLayout({
 }>) {
     // Set by proxy.ts; next-themes' inline theme script needs it to pass the CSP.
     const nonce = (await headers()).get("x-nonce") ?? undefined;
+    const consent = readConsent(await cookies());
     return (
         <SessionWrapper>
             <html
@@ -53,6 +56,7 @@ export default async function RootLayout({
                         <Navbar />
                         {children}
                         <Toaster />
+                        <ConsentBanner initialChoice={consent} />
                     </ThemeProvider>
                 </body>
             </html>

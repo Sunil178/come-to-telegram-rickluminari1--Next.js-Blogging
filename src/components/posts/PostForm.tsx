@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { Value } from "platejs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import PostBannerUpload from "@/components/posts/PostBannerUpload";
 import TagInput from "@/components/posts/TagInput";
 import { slugify } from "@/libs/slug";
 import { loginRedirectUrl } from "@/libs/auth-redirect";
+import { draftKey as buildDraftKey, pendingKey, readDraft, removeDraft, withoutNodeIds, writeDraft, type Draft } from "@/libs/post-drafts";
 
 interface InitialPost {
     slug: string;
@@ -31,42 +31,17 @@ function toLocalInputValue(iso: string | null | undefined): string {
 }
 
 // Autosaved to this browser while editing, so a crash, closed tab or expired session doesn't lose work.
-interface Draft {
-    savedAt: number;
-    title: string;
-    titleDescription: string;
-    slug: string;
-    tags: string[];
-    bannerImage: string;
-    publishAt: string;
-    content: Value;
-}
-
 const AUTOSAVE_DELAY_MS = 1000;
-
-function readDraft(key: string): Draft | null {
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? (JSON.parse(raw) as Draft) : null;
-    } catch {
-        return null;
-    }
-}
-
-function removeDraft(key: string) {
-    try {
-        localStorage.removeItem(key);
-    } catch {
-        // Storage unavailable (private mode, blocked): nothing to clean up.
-    }
-}
 
 interface PostFormProps {
     mode: "create" | "edit";
+    userId: string;
     initialPost?: InitialPost;
+    // Already public: its publish time can no longer be changed (that would take a live post down unmoderated).
+    isLive?: boolean;
 }
 
-export default function PostForm({ mode, initialPost }: PostFormProps) {
+export default function PostForm({ mode, userId, initialPost, isLive = false }: PostFormProps) {
     const router = useRouter();
     const editor = usePostEditor(initialPost?.contentHtml);
 
@@ -77,15 +52,20 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
     const [tags, setTags] = useState<string[]>(initialPost?.tags ?? []);
     const [bannerImage, setBannerImage] = useState(initialPost?.bannerImage ?? "");
     // Filled after mount: the local-time value depends on the browser's timezone, not the server's.
+    // The field stays disabled until then, so an edit made earlier can't be overwritten by it.
     const [publishAt, setPublishAt] = useState("");
+    const [publishAtReady, setPublishAtReady] = useState(false);
     useEffect(() => {
         const initial = toLocalInputValue(initialPost?.publishAt);
-        if (initial) Promise.resolve().then(() => setPublishAt(initial));
+        Promise.resolve().then(() => {
+            setPublishAt(initial);
+            setPublishAtReady(true);
+        });
     }, [initialPost?.publishAt]);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    const draftKey = `post-draft:${mode === "edit" ? initialPost!.slug : "new"}`;
+    const draftKey = buildDraftKey(userId, mode === "edit" ? initialPost!.slug : null);
     const [pendingDraft, setPendingDraft] = useState<Draft | null>(null);
     const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
     const [contentVersion, setContentVersion] = useState(0);
@@ -96,7 +76,11 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
     const saved = useRef(false);
 
     useEffect(() => {
-        const draft = readDraft(draftKey);
+        // The newest undecided draft: a main-key autosave, or one parked while an earlier banner was up.
+        const candidates = [readDraft(draftKey), readDraft(pendingKey(draftKey))].filter((d): d is Draft => d !== null);
+        const draft = candidates.sort((a, b) => b.savedAt - a.savedAt)[0];
+        removeDraft(draftKey);
+        removeDraft(pendingKey(draftKey));
         if (!draft) return;
         // A draft identical to the saved post (e.g. a click that changed nothing) isn't worth offering.
         // usePostEditor's effect has already loaded the post's content by now.
@@ -107,25 +91,22 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
             JSON.stringify(draft.tags) === JSON.stringify(initialPost?.tags ?? []) &&
             draft.bannerImage === (initialPost?.bannerImage ?? "") &&
             draft.publishAt === toLocalInputValue(initialPost?.publishAt) &&
-            JSON.stringify(draft.content) === JSON.stringify(editor.children);
-        if (unchanged) removeDraft(draftKey);
-        else Promise.resolve().then(() => setPendingDraft(draft));
+            JSON.stringify(withoutNodeIds(draft.content)) === JSON.stringify(withoutNodeIds(editor.children));
+        if (unchanged) return;
+        // Parked under its own key until the author decides, so autosaves meanwhile can't overwrite it.
+        writeDraft(pendingKey(draftKey), draft);
+        Promise.resolve().then(() => setPendingDraft(draft));
         // Runs once per post; initialPost and editor are stable for its lifetime.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [draftKey]);
 
     useEffect(() => {
-        // Keeps saving while the restore banner is up: the older draft stays restorable from memory.
+        // Keeps saving while the restore banner is up; the undecided draft is parked under pendingKey.
         if (!userEdited.current) return;
         const timer = setTimeout(() => {
             if (saved.current) return;
             const draft: Draft = { savedAt: Date.now(), title, titleDescription, slug, tags, bannerImage, publishAt, content: editor.children };
-            try {
-                localStorage.setItem(draftKey, JSON.stringify(draft));
-                setDraftSavedAt(draft.savedAt);
-            } catch {
-                // Quota exceeded or storage blocked: autosave is best-effort.
-            }
+            if (writeDraft(draftKey, draft)) setDraftSavedAt(draft.savedAt);
         }, AUTOSAVE_DELAY_MS);
         return () => clearTimeout(timer);
     }, [draftKey, title, titleDescription, slug, tags, bannerImage, publishAt, contentVersion, editor]);
@@ -140,12 +121,15 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
         setBannerImage(pendingDraft.bannerImage);
         setPublishAt(pendingDraft.publishAt);
         editor.tf.setValue(pendingDraft.content);
+        // Saved back under the main key right away, so a reload before the next autosave keeps it.
+        writeDraft(draftKey, { ...pendingDraft, savedAt: Date.now() });
+        removeDraft(pendingKey(draftKey));
         setPendingDraft(null);
         userEdited.current = true;
     };
 
     const discardDraft = () => {
-        removeDraft(draftKey);
+        removeDraft(pendingKey(draftKey));
         setPendingDraft(null);
         // The click itself isn't an edit; don't autosave the untouched post as a new draft.
         userEdited.current = false;
@@ -195,6 +179,7 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
 
             saved.current = true;
             removeDraft(draftKey);
+            removeDraft(pendingKey(draftKey));
             router.push("/dashboard/posts");
             router.refresh();
         } catch {
@@ -271,10 +256,13 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
                     type="datetime-local"
                     value={publishAt}
                     onChange={(e) => setPublishAt(e.target.value)}
+                    disabled={isLive || !publishAtReady}
                     className="w-fit"
                 />
                 <p className="text-xs text-muted-foreground">
-                    Leave empty to publish as soon as a moderator approves it. A future time keeps the approved post hidden until then.
+                    {isLive
+                        ? "This post is already published, so its publish time can't change."
+                        : "Leave empty to publish as soon as a moderator approves it. A future time keeps the approved post hidden until then."}
                 </p>
             </div>
 

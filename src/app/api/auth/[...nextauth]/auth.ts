@@ -7,6 +7,8 @@ import { getClientIp } from "@/libs/client-ip";
 import { beginLoginAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
 import { isMailConfigured } from "@/libs/mailer";
 import { EMAIL_COLLATION } from "@/libs/email-match";
+import { consentedVisitorId, cookiesFromHeader } from "@/libs/visitor";
+import { stitchVisitor } from "@/libs/visitor-events";
 
 // Compared against when no user has the email, so unknown and known emails take the same bcrypt time.
 const DUMMY_PASSWORD_HASH = "$2b$10$Wa7YqlKRAqvDxcY2MK7SguZiMttMUqMVARgq3kQJWHwRxgxniBAZO";
@@ -50,6 +52,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     // recordLoginSuccess, so a refused login neither refunds attempts nor marks the IP trusted.
                     if (user.emailVerifiedAt === null && isMailConfigured()) throw new EmailUnverifiedSignin();
                     await recordLoginSuccess(ip, credentials.username);
+                    const visitorId = consentedVisitorId(cookiesFromHeader(request.headers.get("cookie")));
+                    if (visitorId) await stitchVisitor(visitorId, user.id);
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {
                         id: user.id,

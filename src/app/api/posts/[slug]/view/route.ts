@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import Post from "@/models/Post";
 import PostView, { VIEW_DEDUPE_SECONDS } from "@/models/PostView";
-import { withApiGuard } from "@/libs/api-guard";
+import { getSession, withApiGuard } from "@/libs/api-guard";
 import { getClientIp, hashIp } from "@/libs/client-ip";
 import { logger } from "@/libs/logger";
 import { publicPostFilter } from "@/libs/post-visibility";
+import { consentedVisitorId } from "@/libs/visitor";
+import { recordPostView } from "@/libs/visitor-events";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -39,11 +41,24 @@ export const POST = withApiGuard<RouteContext>(
 
             // Only publicly visible posts accrue views, so an owner/moderator previewing an
             // unapproved post doesn't inflate the count before it's ever actually public.
+            let post: { _id: { toString(): string } } | null = null;
             if (isNewView) {
-                await Post.updateOne(
+                post = await Post.findOneAndUpdate(
                     { slug, ...publicPostFilter() },
-                    { $inc: { visitorCount: 1 } }
+                    { $inc: { visitorCount: 1 } },
+                    { projection: { _id: 1 } }
                 );
+            }
+
+            // Interest signal, only with consent. Per visitor, not per IP: readers sharing an address
+            // (an office, a household) are counted once but each have their own interests.
+            const visitorId = consentedVisitorId(request.cookies);
+            if (visitorId) {
+                post ??= await Post.findOne({ slug, ...publicPostFilter() }).select("_id").lean<{ _id: { toString(): string } }>();
+                if (post) {
+                    const session = await getSession();
+                    await recordPostView({ visitorId, userId: session?.user?.id ?? null, postId: post._id.toString() });
+                }
             }
 
             response.cookies.set(cookieName, "1", {

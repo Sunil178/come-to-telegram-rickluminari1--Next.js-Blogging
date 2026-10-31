@@ -1,4 +1,27 @@
-import { expect, type Page } from "@playwright/test";
+import { test as base, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+
+export { expect };
+
+// Every test browser starts with a stored consent choice, so the cookie banner (fixed at the bottom
+// of every page) doesn't cover the controls tests click. consent.spec.ts opts out to test the banner.
+export async function presetConsent(context: BrowserContext, baseURL: string | undefined) {
+    await context.addCookies([{ name: "consent", value: "denied", url: baseURL ?? "http://localhost:5100" }]);
+}
+
+export const test = base.extend({
+    // "provide" is Playwright's `use` callback, renamed so the React hooks lint rule doesn't mistake it for a hook.
+    context: async ({ context, baseURL }, provide) => {
+        await presetConsent(context, baseURL);
+        await provide(context);
+    },
+});
+
+// browser.newContext() inherits the config's baseURL; it just doesn't go through the context fixture.
+export async function newPage(browser: Browser): Promise<Page> {
+    const context = await browser.newContext();
+    await presetConsent(context, test.info().project.use.baseURL);
+    return context.newPage();
+}
 
 export const PASSWORD = "Passw0rd!";
 export const USERS = {

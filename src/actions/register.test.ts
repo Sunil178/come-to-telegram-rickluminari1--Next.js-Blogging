@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let clientIp = "10.9.0.1";
-vi.mock("next/headers", () => ({ headers: async () => new Headers({ "x-forwarded-for": clientIp }) }));
+let cookieJar: Record<string, string> = {};
+vi.mock("next/headers", () => ({
+    headers: async () => new Headers({ "x-forwarded-for": clientIp }),
+    cookies: async () => ({ get: (name: string) => (name in cookieJar ? { value: cookieJar[name] } : undefined) }),
+}));
+const stitchMock = vi.fn();
+vi.mock("@/libs/visitor-events", () => ({ stitchVisitor: (...args: unknown[]) => stitchMock(...args) }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("bcrypt", () => ({ hash: async () => "hashed" }));
 vi.mock("next/server", () => ({ after: (callback: () => unknown) => callback() }));
@@ -70,5 +76,27 @@ describe("registerAction email verification", () => {
 
         expect(createMock.mock.calls[0][0].emailVerifiedAt).toBeInstanceOf(Date);
         expect(sendVerificationMock).not.toHaveBeenCalled();
+    });
+});
+
+describe("registerAction identity stitching", () => {
+    beforeEach(() => {
+        findOneMock.mockReset().mockResolvedValue(null);
+        createMock.mockReset().mockResolvedValue({ id: "u9", email: "s@example.com", username: "stitched" });
+        stitchMock.mockReset();
+        clientIp = "10.9.2.1";
+        mailConfigured = false;
+    });
+
+    it("attaches a consenting visitor's anonymous events to the new account", async () => {
+        cookieJar = { consent: "granted", vid: "0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" };
+        await registerAction({}, form({ email: "s@example.com", username: "stitched" }));
+        expect(stitchMock).toHaveBeenCalledWith("0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10", "u9");
+    });
+
+    it("doesn't stitch without consent", async () => {
+        cookieJar = { vid: "0b6f6d4e-2d4f-4c1a-9a51-8f2a5c3e7d10" };
+        await registerAction({}, form({ email: "t@example.com", username: "nostitch" }));
+        expect(stitchMock).not.toHaveBeenCalled();
     });
 });

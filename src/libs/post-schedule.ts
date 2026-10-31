@@ -11,14 +11,16 @@ export function parsePublishAt(value: FormDataEntryValue | null, now: Date = new
     return { ok: true, value: date.getTime() > now.getTime() ? date : null };
 }
 
-// Pipeline expression applied to an approved post when its schedule is edited: a future publishAt
-// (re)schedules it, and clearing the schedule of a still-scheduled post publishes it now.
-export function rescheduledPublishedAt(publishAt: Date | null) {
+// Pipeline expression applied to an approved post when its schedule is edited. Only a post that
+// hasn't gone live yet moves: a future publishAt reschedules it, clearing it publishes now. A live post
+// keeps its publishedAt, so an author can't take it down without moderation. `now` is the app's clock,
+// which visibility checks also use (MongoDB's $$NOW could be skewed from it).
+export function rescheduledPublishedAt(publishAt: Date | null, now: Date = new Date()) {
     return {
         $cond: [
-            { $gt: [publishAt, "$$NOW"] },
-            publishAt,
-            { $cond: [{ $gt: ["$publishedAt", "$$NOW"] }, "$$NOW", "$publishedAt"] },
+            { $gt: ["$publishedAt", now] },
+            { $cond: [{ $gt: [publishAt, now] }, publishAt, now] },
+            "$publishedAt",
         ],
     };
 }
