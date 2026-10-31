@@ -6,6 +6,7 @@ import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
 import { notify } from "@/libs/notify";
+import { logger } from "@/libs/logger";
 
 const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
 
@@ -103,7 +104,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             message: "Success",
         });
     } catch (error) {
-        console.error("Failed to create comment:", error);
+        logger.error("Failed to create comment", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 }, { rateLimit: { points: 10, duration: 60 } });

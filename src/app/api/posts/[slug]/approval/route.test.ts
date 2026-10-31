@@ -70,7 +70,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
                 published: true,
                 publishedAt: expect.any(Date),
             }),
-            { new: false }
+            { returnDocument: "before" }
         );
     });
 
@@ -82,7 +82,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { slug: "some-slug" },
             expect.objectContaining({ approval: "Rejected", approvedAt: null }),
-            { new: false }
+            { returnDocument: "before" }
         );
         const updatePayload = findOneAndUpdateMock.mock.calls[0][1];
         expect(updatePayload).not.toHaveProperty("published");
@@ -142,7 +142,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
 
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ data: { slug: "some-slug", approval: "Approved" } });
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.objectContaining({ published: true }), { new: false });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.objectContaining({ published: true }), { returnDocument: "before" });
         expect(notifyMock).not.toHaveBeenCalled();
     });
 });

@@ -40,6 +40,8 @@ describe("trusted IPs", () => {
     it("lets an IP that has signed into the account before keep trying after an attacker exhausts the account-wide cap", async () => {
         expect(await beginLoginAttempt("10.8.0.1", "owner@example.com")).toBe(true);
         await recordLoginSuccess("10.8.0.1", "owner@example.com");
+        // Long enough to catch a marker that silently expires (setTimeout overflow turns it into 1 ms).
+        await new Promise((resolve) => setTimeout(resolve, 50));
         for (let i = 0; i < 60; i++) await beginLoginAttempt(`10.9.${i}.1`, "owner@example.com");
 
         expect(await beginLoginAttempt("10.9.250.1", "owner@example.com")).toBe(false);

@@ -5,6 +5,7 @@ import Post from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
 import { ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 const SoftDeleteCategory = Category as unknown as SoftDeleteModel<ICategory>;
 
@@ -23,7 +24,7 @@ export const PATCH = withApiGuard<RouteContext>(
                 return NextResponse.json({ data: null, message: "Title is required" }, { status: 400 });
             }
 
-            const category = await Category.findOneAndUpdate({ _id: id }, { title, slug: slugify(title) }, { new: true });
+            const category = await Category.findOneAndUpdate({ _id: id }, { title, slug: slugify(title) }, { returnDocument: "after" });
             if (!category) {
                 return NextResponse.json({ data: null, message: "Category not found" }, { status: 404 });
             }
@@ -33,7 +34,7 @@ export const PATCH = withApiGuard<RouteContext>(
             if ((error as { code?: number }).code === 11000) {
                 return NextResponse.json({ data: null, message: "A category with this name already exists" }, { status: 409 });
             }
-            console.error("Failed to update category:", error);
+            logger.error("Failed to update category", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
@@ -57,7 +58,7 @@ export const DELETE = withApiGuard<RouteContext>(
 
             return NextResponse.json({ data: null, message: "Success" });
         } catch (error) {
-            console.error("Failed to delete category:", error);
+            logger.error("Failed to delete category", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },

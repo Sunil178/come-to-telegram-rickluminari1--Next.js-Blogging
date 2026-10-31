@@ -41,3 +41,7 @@ next-env.d.ts
 # git worktrees (scratch, per subagent-driven-development plans)
 /.worktrees/
 /.superpowers/
+
+# playwright
+/playwright-report/
+/test-results/

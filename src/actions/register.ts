@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getClientIp } from "@/libs/client-ip";
 import { consumeRegistrationAttempt } from "@/libs/auth-rate-limit";
+import { logger } from "@/libs/logger";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -61,7 +62,7 @@ export async function registerAction(initialState: RegisterState, formData: Form
             password: await hash(body.password as string, 10),
         });
     } catch (error: any) {
-        console.error("Registration Error:", error);
+        logger.error("Registration Error", { error });
         return { error: "An internal server error occurred." };
     }
 

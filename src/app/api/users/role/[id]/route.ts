@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
 import { ROLE_RANK, ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -30,14 +31,14 @@ export const PATCH = withApiGuard<RouteContext>(
                 }
             }
 
-            const user = await User.findOneAndUpdate({ _id: id }, { role }, { new: true });
+            const user = await User.findOneAndUpdate({ _id: id }, { role }, { returnDocument: "after" });
             if (!user) {
                 return NextResponse.json({ data: null, message: "User not found" }, { status: 404 });
             }
 
             return NextResponse.json({ data: { id: user._id.toString(), role: user.role }, message: "Success" });
         } catch (error) {
-            console.error("Failed to update user role:", error);
+            logger.error("Failed to update user role", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },

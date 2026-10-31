@@ -3,6 +3,7 @@ import Notification from "@/models/Notification";
 import User from "@/models/User";
 import Post from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
+import { logger } from "@/libs/logger";
 
 export const GET = withApiGuard(async (request, { session }) => {
     try {
@@ -33,7 +34,7 @@ export const GET = withApiGuard(async (request, { session }) => {
 
         return NextResponse.json({ data: { notifications: data, unreadCount }, message: "Success" });
     } catch (error) {
-        console.error("Failed to fetch notifications:", error);
+        logger.error("Failed to fetch notifications", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 });

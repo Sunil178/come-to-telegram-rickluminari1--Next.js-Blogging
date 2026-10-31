@@ -3,6 +3,7 @@ import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -23,7 +24,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
         const comment = await Comment.findOneAndUpdate(
             { _id: id, userId: session.user.id },
             { content, editedAt: new Date() },
-            { new: true }
+            { returnDocument: "after" }
         );
 
         if (!comment) {
@@ -35,7 +36,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             message: "Success",
         });
     } catch (error) {
-        console.error("Failed to update comment:", error);
+        logger.error("Failed to update comment", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 }, { objectIdParams: ["id"] });
@@ -55,7 +56,7 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
 
         return NextResponse.json({ data: null, message: "Success" });
     } catch (error) {
-        console.error("Failed to delete comment:", error);
+        logger.error("Failed to delete comment", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 }, { objectIdParams: ["id"] });

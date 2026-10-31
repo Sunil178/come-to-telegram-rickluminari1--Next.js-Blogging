@@ -3,6 +3,7 @@ import PublishRequest from "@/models/PublishRequest";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 export const POST = withApiGuard(async (request, { session }) => {
     try {
@@ -19,7 +20,7 @@ export const POST = withApiGuard(async (request, { session }) => {
         const publishRequest = await PublishRequest.create({ userId: session.user.id });
         return NextResponse.json({ data: { id: publishRequest._id.toString() }, message: "Success" });
     } catch (error) {
-        console.error("Failed to create publish request:", error);
+        logger.error("Failed to create publish request", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 });

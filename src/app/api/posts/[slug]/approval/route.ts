@@ -3,6 +3,7 @@ import Post, { ApprovalStatus } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { ROLES } from "@/libs/roles";
 import { notify } from "@/libs/notify";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -30,7 +31,7 @@ export const PATCH = withApiGuard<RouteContext>(
 
             // Returns the pre-update document, so a repeat click (or a second moderator) still applies
             // the update (re-approving publishes) but doesn't re-notify the author.
-            const post = await Post.findOneAndUpdate({ slug }, update, { new: false });
+            const post = await Post.findOneAndUpdate({ slug }, update, { returnDocument: "before" });
 
             if (!post) {
                 return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });
@@ -53,7 +54,7 @@ export const PATCH = withApiGuard<RouteContext>(
 
             return NextResponse.json({ data: { slug: post.slug, approval }, message: "Success" });
         } catch (error) {
-            console.error("Failed to update post approval:", error);
+            logger.error("Failed to update post approval", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },

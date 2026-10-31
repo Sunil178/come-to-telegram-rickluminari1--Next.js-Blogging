@@ -3,6 +3,7 @@ import Category from "@/models/Category";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
 import { ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 export const POST = withApiGuard(
     async (request) => {
@@ -20,7 +21,7 @@ export const POST = withApiGuard(
             if ((error as { code?: number }).code === 11000) {
                 return NextResponse.json({ data: null, message: "A category with this name already exists" }, { status: 409 });
             }
-            console.error("Failed to create category:", error);
+            logger.error("Failed to create category", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },

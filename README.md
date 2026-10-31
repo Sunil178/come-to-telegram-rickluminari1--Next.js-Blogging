@@ -43,6 +43,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `TRUSTED_PROXY_HOPS` | behind a proxy | Number of trusted proxies appending to `X-Forwarded-For` (default 1) |
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
+| `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 
 ## Scripts
 
@@ -51,9 +52,20 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `npm run dev` | Development server (use `-- --port=5000`) |
 | `npm run build` / `npm start` | Production build and server |
 | `npm test` | Unit and route tests (Vitest) |
+| `npm run test:e2e` | Production build, then the Playwright end-to-end suite (see below) |
 | `npm run lint` | ESLint |
 | `npm run seed` | Seed demo data into `MONGODB_URI` |
 | `npm run bootstrap-admin` | Create or promote the first admin |
+
+## Testing
+
+- `npm test` runs the Vitest unit and route tests (models are mocked; no database needed).
+- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. First run: `npx playwright install chromium`.
+
+## Operations
+
+- **Health check:** `GET /api/health` returns `200 {"status":"ok","db":"up"}` when MongoDB answers a ping, `503` otherwise. Use it for container health checks and uptime monitors.
+- **Logs:** server code logs through `src/libs/logger.ts`: one JSON object per line in production (`level`, `time`, `msg`, fields; errors with name, message and stack). Every unhandled server error (render, Route Handler, Server Action, proxy) is logged by `onRequestError` in `src/instrumentation.ts` with its route and digest, never with request headers.
 
 ## Project structure
 

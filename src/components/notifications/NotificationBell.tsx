@@ -165,7 +165,7 @@ export default function NotificationBell() {
 
     return (
         <DropdownMenu onOpenChange={(open) => open && fetchNotifications()}>
-            <DropdownMenuTrigger className="relative rounded-full p-2 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
+            <DropdownMenuTrigger aria-label="Notifications" className="relative rounded-full p-2 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
                 <Bell className="size-5" />
                 {unreadCount > 0 && (
                     <Badge

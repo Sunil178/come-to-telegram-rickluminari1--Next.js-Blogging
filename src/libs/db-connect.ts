@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { logger } from "@/libs/logger";
 
 // Don't call this from routes/pages/components — `src/instrumentation-node.ts` already
 // calls it once when the server boots, and mongoose's default connection is shared
@@ -8,7 +9,7 @@ import mongoose from "mongoose";
 const MONGODB_URI = process.env.MONGODB_URI
 
 if (!MONGODB_URI) {
-    console.error('Please define the MONGODB_URI environment variable inside .env')
+    logger.error("Please define the MONGODB_URI environment variable inside .env")
 }
 
 /**
@@ -24,7 +25,7 @@ if (!cached) {
 
 async function dbConnect() {
     if (cached.conn) {
-        console.log('Using cached DB connection');
+        logger.debug("Using cached DB connection");
         return cached.conn
     }
 
@@ -33,7 +34,7 @@ async function dbConnect() {
             bufferCommands: false,
         }
         cached.promise = mongoose.connect(MONGODB_URI!, opts).then(mongoose => {
-            console.log('New MongoDB connection established');
+            logger.info("New MongoDB connection established");
             return mongoose
         })
     }

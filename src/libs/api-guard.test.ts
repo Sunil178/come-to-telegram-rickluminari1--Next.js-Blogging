@@ -152,4 +152,17 @@ describe("withApiGuard", () => {
 
         expect(response.status).toBe(401);
     });
+
+    it("turns an uncaught handler error into the standard 500 response", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        const guarded = withApiGuard(async () => {
+            throw new Error("db exploded");
+        });
+
+        const response = await guarded(makeRequest(), {});
+
+        expect(response.status).toBe(500);
+        expect(await response.json()).toEqual({ data: null, message: "Something went wrong" });
+    });
 });

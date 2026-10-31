@@ -4,6 +4,7 @@ import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { withApiGuard } from "@/libs/api-guard";
 import { ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
@@ -72,7 +73,7 @@ export const POST = withApiGuard(async (request) => {
 
         return NextResponse.json({ data: `/${relativePath}`, location: `/${relativePath}`, message: "Success" });
     } catch (error) {
-        console.error('Failed to upload file:', error);
+        logger.error("Failed to upload file", { error });
         return NextResponse.json({ data: null, location: null, message: "Something went wrong" }, { status: 500 });
     }
 }, { role: ROLES.AUTHOR });

@@ -24,6 +24,7 @@ A multi-author blogging platform: Next.js 16 App Router (Turbopack, `src/proxy.t
 |---|---|
 | `npm run dev -- --port=5000` | Dev server (port 5000, never 3000) |
 | `npm test` | Vitest suite |
+| `npm run test:e2e` | Build + Playwright suite (`e2e/`, port 5100, `blog_e2e` DB) |
 | `npx tsc --noEmit` | Typecheck |
 | `npm run lint` | ESLint |
 | `npm run build` / `npm start` | Production build / server |
@@ -67,6 +68,8 @@ Client components where only an action is gated (voting, commenting, deleting) d
 
 - Fix root causes and every instance of a pattern; write the failing test first for behavioural fixes.
 - Comments: short, about the non-obvious why.
+- Server code logs through `logger` (`src/libs/logger.ts`), never `console.*`; client components may use `console`.
+- New user-facing flows get a Playwright test in `e2e/` alongside their unit tests.
 - Documentation changes in the same commit as the behaviour; reference docs describe the current system in the present tense.
 - No hard wrapping in prose (docs, commit messages): one paragraph or list item per line.
 

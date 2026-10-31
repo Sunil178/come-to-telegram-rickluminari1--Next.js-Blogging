@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import PushSubscription from "@/models/PushSubscription";
 import { withApiGuard } from "@/libs/api-guard";
+import { logger } from "@/libs/logger";
 
 export const POST = withApiGuard(async (request, { session }) => {
     try {
@@ -13,7 +14,7 @@ export const POST = withApiGuard(async (request, { session }) => {
         await PushSubscription.deleteOne({ endpoint, userId: session.user.id });
         return NextResponse.json({ data: null, message: "Success" });
     } catch (error) {
-        console.error("Failed to remove push subscription:", error);
+        logger.error("Failed to remove push subscription", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 });

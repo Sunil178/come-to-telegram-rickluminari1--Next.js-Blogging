@@ -4,6 +4,7 @@ import Comment from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
 import { withApiGuard } from "@/libs/api-guard";
 import { toggleVote } from "@/libs/toggle-vote";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -54,7 +55,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             message: "Success",
         });
     } catch (error) {
-        console.error("Failed to toggle comment vote:", error);
+        logger.error("Failed to toggle comment vote", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 }, { objectIdParams: ["id"] });

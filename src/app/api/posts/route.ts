@@ -7,6 +7,7 @@ import { escapeRegExp } from "@/libs/search-query";
 import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
 import { ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 export const GET = withApiGuard(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
@@ -81,7 +82,7 @@ export const POST = withApiGuard(async (request, { session }) => {
         if ((error as { code?: number }).code === 11000) {
             return NextResponse.json({ data: null, message: 'A post with this slug already exists. Please choose a different slug.' }, { status: 409 });
         }
-        console.error('Failed to create post:', error);
+        logger.error("Failed to create post", { error });
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
 }, { role: ROLES.AUTHOR });

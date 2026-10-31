@@ -58,7 +58,7 @@ describe("PATCH /api/publish-requests/[id]", () => {
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { _id: "6500000000000000000000a1", status: "Pending" },
             expect.objectContaining({ status: "Approved", reviewedBy: "admin1", reviewedAt: expect.any(Date) }),
-            { new: true }
+            { returnDocument: "after" }
         );
         expect(updateOneMock).toHaveBeenCalledWith({ _id: "reader1" }, { role: "author" });
     });

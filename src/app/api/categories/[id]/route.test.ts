@@ -43,7 +43,7 @@ describe("PATCH /api/categories/[id]", () => {
         const response = await PATCH(request, context("6500000000000000000000c1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" }, { title: "AI & ML", slug: "ai-ml" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" }, { title: "AI & ML", slug: "ai-ml" }, { returnDocument: "after" });
     });
 });
 

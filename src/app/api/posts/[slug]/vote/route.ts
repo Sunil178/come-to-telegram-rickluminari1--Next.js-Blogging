@@ -3,6 +3,7 @@ import Post from "@/models/Post";
 import PostVote from "@/models/PostVote";
 import { withApiGuard } from "@/libs/api-guard";
 import { toggleVote } from "@/libs/toggle-vote";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -48,7 +49,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             message: "Success",
         });
     } catch (error) {
-        console.error("Failed to toggle post vote:", error);
+        logger.error("Failed to toggle post vote", { error });
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
 });

@@ -5,6 +5,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
 import { hasRole, ROLES } from "@/libs/roles";
+import { logger } from "@/libs/logger";
 
 // Post's exported type is loosened by `mongoose.models?.Post || mongoose.model<...>()`;
 // narrow it back here so the soft-delete plugin's `.delete()` is visible.
@@ -52,7 +53,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
                 bannerImage: body.get('postBannerPath'),
                 content: await serializePostContent(value),
             },
-            { new: true }
+            { returnDocument: "after" }
         );
 
         if (!post) {
@@ -64,7 +65,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
         if ((error as { code?: number }).code === 11000) {
             return NextResponse.json({ data: null, message: 'A post with this slug already exists. Please choose a different slug.' }, { status: 409 });
         }
-        console.error('Failed to update post:', error);
+        logger.error("Failed to update post", { error });
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
 });
@@ -90,7 +91,7 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
 
         return NextResponse.json({ data: null, message: 'Success' });
     } catch (error) {
-        console.error('Failed to delete post:', error);
+        logger.error("Failed to delete post", { error });
         return NextResponse.json({ data: null, message: 'Something went wrong' }, { status: 500 });
     }
 });

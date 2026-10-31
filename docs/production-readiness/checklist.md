@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** M3 Ops
+**Current focus:** M4 Containers
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -15,7 +15,7 @@ Review round 1 (`/code-review high d394f58`): 10 findings. Fixed: login-limit ra
 - [x] SEC-03 nonce-based CSP via `proxy.ts` on every page
 - [x] SEC-04 client IP from the trusted proxy hop (`TRUSTED_PROXY_HOPS`) or `CLIENT_IP_HEADER` (fail closed)
 
-## M2 Hygiene and docs — base `421c26b`
+## M2 Hygiene and docs — base `421c26b`, committed `c81b5d4` (M1 follow-ups) and `770ab7b`
 
 Review round 1 (`/code-review high 421c26b`, covering M1 and M2): 10 findings. Fixed (M1 follow-ups): IPs that have signed into an account skip its account-wide cap (lockout DoS), IPv6 rate-limited per /64, client IP fails closed when the proxy chain is short or only `X-Real-IP` is present, login `callbackUrl` open redirect (`/\evil.com`) via `safeCallbackPath()`, constant-time login for unknown emails (dummy bcrypt), stale `config.matcher` wording in comments and docs, shared `consumePoint()` helper, static files skipped by the proxy matcher. Dismissed: the fail-closed shared `unknown` bucket (intended: only requests bypassing the proxy/CDN share it); refused attempts draining earlier buckets (intended; the trusted-IP exemption covers the lockout case); excluding prefetches from the proxy (would let a forged prefetch header fetch gated pages without the auth gate). Playwright: `/\example.org` callback lands on `/posts`; category dialog resets on reopen; no console errors; matcher skips static files and keeps CSP on pages.
 
@@ -25,12 +25,14 @@ Review round 1 (`/code-review high 421c26b`, covering M1 and M2): 10 findings. F
 - [x] DOC-04 vote-route tests (22)
 - [x] DOC-05 / DOC-06 / DOC-07 / DOC-08 deferred items documented in `docs/roadmap.md`
 
-## M3 Ops
+## M3 Ops — base `770ab7b`
 
-- [ ] OPS-01 health route
-- [ ] OPS-02 structured logging
-- [ ] OPS-03 onRequestError
-- [ ] OPS-04 Playwright e2e
+Review round 1 (`/code-review high 770ab7b`): 10 findings. Fixed: e2e DB reset moved before `next start` (Playwright starts the web server before globalSetup, so the drop was wiping the server's indexes); logger never throws (cycle guard, BigInt) and keeps nested errors and `cause`, with native formatting in development; query string stripped from `onRequestError` paths; health check clears its timer, is rate-limited (60/min) and no longer exposes uptime; trusted-IP window 24 days (the in-memory store's setTimeout overflows past ~24.8 days, which had silently made the 30-day marker expire in 1 ms; regression test proven to fail on the old value); `withApiGuard` catch-all (logs, standard 500, `unstable_rethrow` for Next control flow); redirect test now checks the return after login; checklist. Dismissed: duplicate error output (Next prints its own error line regardless of `onRequestError`; no supported switch). Also: deprecated Mongoose `{ new }` option replaced by `returnDocument` everywhere; the bell button got an accessible name. E2E: 6/6 green on a production build with the isolated DB.
+
+- [x] OPS-01 `GET /api/health` (DB ping, 503 when down, rate-limited)
+- [x] OPS-02 structured logger (`src/libs/logger.ts`), all server `console.*` replaced
+- [x] OPS-03 `onRequestError` in `src/instrumentation.ts`
+- [x] OPS-04 Playwright suite (`npm run test:e2e`): register/login, wrong password, gated redirect and return, CSP, author → approval → public post, comment → author notification
 
 ## M4 Containers
 
@@ -73,7 +75,7 @@ Review round 1 (`/code-review high 421c26b`, covering M1 and M2): 10 findings. F
 |---|---|
 | M1 | 6 / 6 |
 | M2 | 5 / 5 |
-| M3 | 0 / 4 |
+| M3 | 4 / 4 |
 | M4 | 0 / 1 |
 | M5 | 0 / 2 |
 | M6 | 0 / 5 |
@@ -85,3 +87,4 @@ Review round 1 (`/code-review high 421c26b`, covering M1 and M2): 10 findings. F
 - 2026-10-31 — Initiative planned; findings, plan and checklist written.
 - 2026-10-31 — M1 Security done and committed.
 - 2026-10-31 — M2 Hygiene and docs done and committed.
+- 2026-10-31 — M3 Ops done and committed.

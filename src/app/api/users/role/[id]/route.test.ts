@@ -59,7 +59,7 @@ describe("PATCH /api/users/[id]/role", () => {
         const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000b1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { returnDocument: "after" });
     });
 
     it("blocks demoting the last remaining admin", async () => {
@@ -80,6 +80,6 @@ describe("PATCH /api/users/[id]/role", () => {
         const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000b1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { returnDocument: "after" });
     });
 });

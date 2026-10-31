@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import type { NextRequest } from "next/server";
 import type { Session } from "next-auth";
 import { isValidObjectId } from "mongoose";
@@ -8,6 +9,7 @@ import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import { hasRole, type RoleName } from "@/libs/roles";
 import { getClientIp } from "@/libs/client-ip";
 import { consumePoint, ipKey } from "@/libs/rate-limit";
+import { logger } from "@/libs/logger";
 
 // Memoized per request/render pass, per Next.js's recommended Data Access Layer pattern:
 // https://nextjs.org/docs/app/guides/authentication#creating-a-data-access-layer-dal
@@ -84,11 +86,23 @@ export function withApiGuard<Context = unknown>(
                 return NextResponse.json({ data: null, message: "Forbidden" }, { status: 403 });
             }
             if (await hasInvalidObjectIdParam(context, options.objectIdParams)) return invalidIdResponse();
-            return handler(request, { ...context, session: session as AuthenticatedSession });
+            return runHandler(request, () => handler(request, { ...context, session: session as AuthenticatedSession }));
         }
         if (await hasInvalidObjectIdParam(context, options.objectIdParams)) return invalidIdResponse();
-        return handler(request, context);
+        return runHandler(request, () => handler(request, context));
     };
+}
+
+// Safety net for anything a handler doesn't catch itself: one log entry and the standard 500 shape,
+// so routes only need try/catch for errors they translate (e.g. duplicate key -> 409).
+async function runHandler(request: NextRequest, run: () => Promise<Response> | Response): Promise<Response> {
+    try {
+        return await run();
+    } catch (error) {
+        unstable_rethrow(error);
+        logger.error("Unhandled API route error", { error, method: request.method, path: request.nextUrl.pathname });
+        return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
+    }
 }
 
 async function hasInvalidObjectIdParam(context: unknown, names: string[] | undefined): Promise<boolean> {

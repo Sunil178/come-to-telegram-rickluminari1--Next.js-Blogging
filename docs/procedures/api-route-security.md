@@ -61,3 +61,7 @@ If a rate limiter is needed: prefer `rate-limiter-flexible` (MIT, supports in-me
 
 - `proxy.ts` (`isGatedPath()`) → optimistic page-level redirect
 - `withApiGuard` → actual enforcement at every mutation-capable API route
+
+## Errors
+
+`withApiGuard` catches anything a handler throws, logs it through `logger` (method and path, no query string) and returns `{ data: null, message: "Something went wrong" }` with status 500. Next.js's own control-flow errors (`redirect()`, `notFound()`) are re-thrown via `unstable_rethrow`. New handlers only need a `try/catch` for errors they translate into a specific response, such as a duplicate-key error into a 409.

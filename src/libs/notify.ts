@@ -2,6 +2,7 @@ import webpush from "web-push";
 import Notification, { type NotificationType } from "@/models/Notification";
 import PushSubscription from "@/models/PushSubscription";
 import { isAllowedPushEndpoint } from "@/libs/push-endpoint";
+import { logger } from "@/libs/logger";
 
 // Missing or malformed VAPID keys (e.g. .env.example placeholders) degrade the feature
 // to in-app-only notifications instead of failing every route that imports this module.
@@ -15,7 +16,7 @@ function configurePush(): boolean {
         );
         return true;
     } catch (error) {
-        console.error("Invalid VAPID configuration, push notifications disabled:", error);
+        logger.error("Invalid VAPID configuration, push notifications disabled", { error });
         return false;
     }
 }
@@ -43,7 +44,7 @@ export async function notify(options: NotifyOptions): Promise<void> {
     try {
         createdNotification = await Notification.create({ recipientId, actorId, type, postId, commentId });
     } catch (error) {
-        console.error("Failed to write notification:", error);
+        logger.error("Failed to write notification", { error });
     }
 
     if (!pushConfigured) return;
@@ -52,7 +53,7 @@ export async function notify(options: NotifyOptions): Promise<void> {
     try {
         subscriptions = await PushSubscription.find({ userId: recipientId }).lean();
     } catch (error) {
-        console.error("Failed to load push subscriptions:", error);
+        logger.error("Failed to load push subscriptions", { error });
         return;
     }
 
@@ -70,7 +71,7 @@ export async function notify(options: NotifyOptions): Promise<void> {
                     if (statusCode === 404 || statusCode === 410) {
                         await PushSubscription.deleteOne({ _id: sub._id }).catch(() => {});
                     } else {
-                        console.error("Failed to send push notification:", error);
+                        logger.error("Failed to send push notification", { error });
                     }
                 }
             })

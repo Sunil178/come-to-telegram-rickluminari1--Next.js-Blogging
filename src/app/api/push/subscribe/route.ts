@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import PushSubscription from "@/models/PushSubscription";
 import { withApiGuard } from "@/libs/api-guard";
 import { isAllowedPushEndpoint } from "@/libs/push-endpoint";
+import { logger } from "@/libs/logger";
 
 const MAX_KEY_LENGTH = 256;
 // Bounds the fan-out of every notify() call; the oldest devices are evicted first.
@@ -66,7 +67,7 @@ export const POST = withApiGuard(
 
             return NextResponse.json({ data: null, message: "Success" });
         } catch (error) {
-            console.error("Failed to save push subscription:", error);
+            logger.error("Failed to save push subscription", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },

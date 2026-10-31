@@ -4,6 +4,7 @@ import Post from "@/models/Post";
 import PostView, { VIEW_DEDUPE_SECONDS } from "@/models/PostView";
 import { withApiGuard } from "@/libs/api-guard";
 import { getClientIp, hashIp } from "@/libs/client-ip";
+import { logger } from "@/libs/logger";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -52,7 +53,7 @@ export const POST = withApiGuard<RouteContext>(
             });
             return response;
         } catch (error) {
-            console.error("Failed to record post view:", error);
+            logger.error("Failed to record post view", { error });
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
