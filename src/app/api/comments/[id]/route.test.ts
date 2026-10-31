@@ -39,10 +39,10 @@ describe("DELETE /api/comments/[id]", () => {
         const comment = makeComment({ userId: "owner1" });
         findOneMock.mockResolvedValue(comment);
 
-        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("c1"));
+        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("6500000000000000000000c1"));
 
         expect(response.status).toBe(200);
-        expect(findOneMock).toHaveBeenCalledWith({ _id: "c1", userId: "owner1" });
+        expect(findOneMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1", userId: "owner1" });
         expect(comment.delete).toHaveBeenCalledWith("owner1");
     });
 
@@ -50,10 +50,10 @@ describe("DELETE /api/comments/[id]", () => {
         authMock.mockResolvedValue({ user: { id: "other1", role: "author" } });
         findOneMock.mockResolvedValue(null); // scoped filter excludes it, so lookup returns nothing
 
-        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("c1"));
+        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("6500000000000000000000c1"));
 
         expect(response.status).toBe(404);
-        expect(findOneMock).toHaveBeenCalledWith({ _id: "c1", userId: "other1" });
+        expect(findOneMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1", userId: "other1" });
     });
 
     it("lets a moderator delete a comment they don't own", async () => {
@@ -61,10 +61,10 @@ describe("DELETE /api/comments/[id]", () => {
         const comment = makeComment({ userId: "owner1" });
         findOneMock.mockResolvedValue(comment);
 
-        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("c1"));
+        const response = await DELETE(new NextRequest("http://localhost/api/comments/c1", { method: "DELETE" }), context("6500000000000000000000c1"));
 
         expect(response.status).toBe(200);
-        expect(findOneMock).toHaveBeenCalledWith({ _id: "c1" });
+        expect(findOneMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" });
         expect(comment.delete).toHaveBeenCalledWith("mod1");
     });
 });

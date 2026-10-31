@@ -32,18 +32,18 @@ describe("PATCH /api/categories/[id]", () => {
 
     it("rejects an empty title", async () => {
         const request = new NextRequest("http://localhost/api/categories/c1", { method: "PATCH", body: JSON.stringify({ title: "" }) });
-        const response = await PATCH(request, context("c1"));
+        const response = await PATCH(request, context("6500000000000000000000c1"));
         expect(response.status).toBe(400);
         expect(findOneAndUpdateMock).not.toHaveBeenCalled();
     });
 
     it("updates the title and re-derives the slug", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "c1", title: "AI & ML", slug: "ai-ml" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000c1", title: "AI & ML", slug: "ai-ml" });
         const request = new NextRequest("http://localhost/api/categories/c1", { method: "PATCH", body: JSON.stringify({ title: "AI & ML" }) });
-        const response = await PATCH(request, context("c1"));
+        const response = await PATCH(request, context("6500000000000000000000c1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "c1" }, { title: "AI & ML", slug: "ai-ml" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" }, { title: "AI & ML", slug: "ai-ml" }, { new: true });
     });
 });
 
@@ -55,7 +55,7 @@ describe("DELETE /api/categories/[id]", () => {
 
     it("blocks deleting a category that still has posts", async () => {
         existsMock.mockResolvedValue({ _id: "p1" });
-        const response = await DELETE(new NextRequest("http://localhost/api/categories/c1", { method: "DELETE" }), context("c1"));
+        const response = await DELETE(new NextRequest("http://localhost/api/categories/c1", { method: "DELETE" }), context("6500000000000000000000c1"));
 
         expect(response.status).toBe(400);
         expect(softDeleteMock).not.toHaveBeenCalled();
@@ -64,9 +64,9 @@ describe("DELETE /api/categories/[id]", () => {
     it("soft-deletes a category with no posts", async () => {
         existsMock.mockResolvedValue(null);
         softDeleteMock.mockResolvedValue({ matchedCount: 1 });
-        const response = await DELETE(new NextRequest("http://localhost/api/categories/c1", { method: "DELETE" }), context("c1"));
+        const response = await DELETE(new NextRequest("http://localhost/api/categories/c1", { method: "DELETE" }), context("6500000000000000000000c1"));
 
         expect(response.status).toBe(200);
-        expect(softDeleteMock).toHaveBeenCalledWith({ _id: "c1" }, "admin1");
+        expect(softDeleteMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" }, "admin1");
     });
 });

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { Session } from "next-auth";
+import { isValidObjectId } from "mongoose";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import { hasRole, type RoleName } from "@/libs/roles";
@@ -24,6 +25,8 @@ interface ApiGuardOptions {
     role?: RoleName;
     /** Max requests per IP within `duration` seconds; excess requests get a 429 before the handler runs. */
     rateLimit?: RateLimitOptions;
+    /** Route params that must be Mongo ObjectIds; a malformed one gets a 400 instead of a CastError 500. */
+    objectIdParams?: string[];
 }
 
 /**
@@ -38,23 +41,24 @@ interface ApiGuardOptions {
  *   export const GET = withApiGuard(async (request) => { ... }, { auth: false }); // public route
  *   export const PATCH = withApiGuard(async (request, { session }) => { ... }, { role: ROLES.MODERATOR });
  *   export const POST = withApiGuard(async (request) => { ... }, { auth: false, rateLimit: { points: 20, duration: 60 } }); // public + rate-limited
+ *   export const PATCH = withApiGuard<RouteContext>(async (request, { params }) => { ... }, { objectIdParams: ["id"] });
  *
  * Next.js's own docs endorse wrapping Route Handlers this way ("factory" pattern):
  * https://nextjs.org/docs/app/guides/backend-for-frontend#library-patterns
  */
 export function withApiGuard<Context = unknown>(
     handler: (request: NextRequest, context: Context & { session: AuthenticatedSession }) => Promise<Response> | Response,
-    options: { auth?: true; role: RoleName; rateLimit?: RateLimitOptions }
+    options: { auth?: true; role: RoleName; rateLimit?: RateLimitOptions; objectIdParams?: string[] }
 ): (request: NextRequest, context: Context) => Promise<Response>;
 
 export function withApiGuard<Context = unknown>(
     handler: (request: NextRequest, context: Context & { session: AuthenticatedSession }) => Promise<Response> | Response,
-    options?: { auth?: true; rateLimit?: RateLimitOptions }
+    options?: { auth?: true; rateLimit?: RateLimitOptions; objectIdParams?: string[] }
 ): (request: NextRequest, context: Context) => Promise<Response>;
 
 export function withApiGuard<Context = unknown>(
     handler: (request: NextRequest, context: Context) => Promise<Response> | Response,
-    options: { auth: false; rateLimit?: RateLimitOptions }
+    options: { auth: false; rateLimit?: RateLimitOptions; objectIdParams?: string[] }
 ): (request: NextRequest, context: Context) => Promise<Response>;
 
 export function withApiGuard<Context = unknown>(
@@ -82,8 +86,20 @@ export function withApiGuard<Context = unknown>(
             if (options.role && !hasRole(session.user.role, options.role)) {
                 return NextResponse.json({ data: null, message: "Forbidden" }, { status: 403 });
             }
+            if (await hasInvalidObjectIdParam(context, options.objectIdParams)) return invalidIdResponse();
             return handler(request, { ...context, session: session as AuthenticatedSession });
         }
+        if (await hasInvalidObjectIdParam(context, options.objectIdParams)) return invalidIdResponse();
         return handler(request, context);
     };
+}
+
+async function hasInvalidObjectIdParam(context: unknown, names: string[] | undefined): Promise<boolean> {
+    if (!names?.length) return false;
+    const params = await (context as { params?: Promise<Record<string, string>> } | undefined)?.params;
+    return names.some((name) => !isValidObjectId(params?.[name]));
+}
+
+function invalidIdResponse() {
+    return NextResponse.json({ data: null, message: "Invalid id" }, { status: 400 });
 }

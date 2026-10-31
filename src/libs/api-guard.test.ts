@@ -121,4 +121,35 @@ describe("withApiGuard", () => {
         expect(second.status).toBe(200);
         expect(handler).toHaveBeenCalledTimes(2);
     });
+
+    it("returns 400 without calling the handler when an objectIdParams param is malformed", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        const handler = vi.fn();
+        const guarded = withApiGuard(handler, { objectIdParams: ["id"] });
+
+        const response = await guarded(makeRequest(), { params: Promise.resolve({ id: "not-an-id" }) });
+
+        expect(response.status).toBe(400);
+        expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("calls the handler when every objectIdParams param is a valid ObjectId", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        const handler = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+        const guarded = withApiGuard(handler, { objectIdParams: ["id"] });
+
+        const response = await guarded(makeRequest(), { params: Promise.resolve({ id: "507f1f77bcf86cd799439011" }) });
+
+        expect(response.status).toBe(200);
+        expect(handler).toHaveBeenCalled();
+    });
+
+    it("still returns 401 before validating params for an unauthenticated request", async () => {
+        authMock.mockResolvedValue(null);
+        const guarded = withApiGuard(vi.fn(), { objectIdParams: ["id"] });
+
+        const response = await guarded(makeRequest(), { params: Promise.resolve({ id: "not-an-id" }) });
+
+        expect(response.status).toBe(401);
+    });
 });

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
-    auth: vi.fn().mockResolvedValue({ user: { id: "admin1", role: "admin" } }),
+    auth: vi.fn().mockResolvedValue({ user: { id: "6500000000000000000000ad", role: "admin" } }),
 }));
 
 const findOneAndUpdateMock = vi.fn();
@@ -37,36 +37,36 @@ describe("PATCH /api/users/[id]/role", () => {
     });
 
     it("rejects an invalid role value", async () => {
-        const response = await PATCH(requestWithBody({ role: "superuser" }), context("u1"));
+        const response = await PATCH(requestWithBody({ role: "superuser" }), context("6500000000000000000000b1"));
         expect(response.status).toBe(400);
         expect(findOneAndUpdateMock).not.toHaveBeenCalled();
     });
 
     it("blocks an admin from changing their own role", async () => {
-        const response = await PATCH(requestWithBody({ role: "reader" }), context("admin1"));
+        const response = await PATCH(requestWithBody({ role: "reader" }), context("6500000000000000000000ad"));
         expect(response.status).toBe(400);
         expect(findOneAndUpdateMock).not.toHaveBeenCalled();
     });
 
     it("returns 404 when the target user doesn't exist", async () => {
         findOneAndUpdateMock.mockResolvedValue(null);
-        const response = await PATCH(requestWithBody({ role: "moderator" }), context("missing"));
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000ff"));
         expect(response.status).toBe(404);
     });
 
     it("updates the target user's role", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "u1", role: "moderator" });
-        const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000b1", role: "moderator" });
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000b1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "u1" }, { role: "moderator" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { new: true });
     });
 
     it("blocks demoting the last remaining admin", async () => {
         selectMock.mockResolvedValue({ role: "admin" });
         countDocumentsMock.mockResolvedValue(1);
 
-        const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000b1"));
 
         expect(response.status).toBe(400);
         expect(findOneAndUpdateMock).not.toHaveBeenCalled();
@@ -75,11 +75,11 @@ describe("PATCH /api/users/[id]/role", () => {
     it("allows demoting an admin when other admins remain", async () => {
         selectMock.mockResolvedValue({ role: "admin" });
         countDocumentsMock.mockResolvedValue(2);
-        findOneAndUpdateMock.mockResolvedValue({ _id: "u1", role: "moderator" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000b1", role: "moderator" });
 
-        const response = await PATCH(requestWithBody({ role: "moderator" }), context("u1"));
+        const response = await PATCH(requestWithBody({ role: "moderator" }), context("6500000000000000000000b1"));
 
         expect(response.status).toBe(200);
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "u1" }, { role: "moderator" }, { new: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ _id: "6500000000000000000000b1" }, { role: "moderator" }, { new: true });
     });
 });

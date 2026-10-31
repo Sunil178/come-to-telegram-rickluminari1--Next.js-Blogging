@@ -57,4 +57,4 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         console.error("Failed to toggle comment vote:", error);
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
-});
+}, { objectIdParams: ["id"] });

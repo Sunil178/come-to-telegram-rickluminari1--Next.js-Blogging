@@ -43,18 +43,20 @@ export const GET = withApiGuard(async (request) => { ... }, { auth: false });
 - The `proxy.js` API reference also warns that Server Actions are handled as POST requests to whatever route they're used on, so a proxy matcher change can silently stop protecting a route with no error raised. Enforcing at the handler layer avoids that failure mode.
 - Historical precedent: CVE-2025-29927 let attackers bypass Next.js middleware entirely via a spoofed header. Apps that relied on middleware as their only auth gate had every "protected" route fully exposed until patched. This is not theoretical caution — middleware-only protection has failed in production before, industry-wide.
 
-## Adding a new cross-cutting concern later (rate limiting, roles, etc.)
+## Options
 
-Do **not** nest wrapper calls (`withApiAuth(withRateLimit(handler))` was explicitly tried and rejected here as unreadable). Instead extend `ApiGuardOptions` in `src/libs/api-guard.ts` with a new key and enforce it inside the single `withApiGuard` implementation:
+| Option | Effect |
+|---|---|
+| `auth` (default `true`) | No session → 401 before the handler runs. |
+| `role` | Session role below this rank → 403. Implies `auth`. |
+| `rateLimit: { points, duration }` | More than `points` requests per IP in `duration` seconds → 429. In-memory (`rate-limiter-flexible`), per route. Use it on any route whose side effects fan out, e.g. comment creation, which triggers notifications and push. |
+| `objectIdParams: ["id"]` | A named route param that isn't a valid Mongo ObjectId → 400. Without it, Mongoose throws a CastError and the handler's catch turns it into a 500. Every `[id]` route that queries by `_id` declares it. |
 
-```ts
-interface ApiGuardOptions {
-  auth?: boolean;      // existing, defaults to true
-  rateLimit?: { max: number; windowMs: number }; // example of a future addition
-}
-```
+Order of checks: rate limit → auth → role → `objectIdParams` → handler.
 
-Call sites add the new option only where needed (`{ rateLimit: { max: 20, windowMs: 60_000 } }`); routes that don't need it are unaffected and unchanged. Route handler files should never contain the enforcement logic itself, only the declared options passed to `withApiGuard`.
+## Adding a new cross-cutting concern
+
+Do **not** nest wrapper calls (`withApiAuth(withRateLimit(handler))` was explicitly tried and rejected here as unreadable). Instead extend `ApiGuardOptions` in `src/libs/api-guard.ts` with a new key, enforce it inside the single `withApiGuard` implementation, and add it to the overload signatures. Call sites add the new option only where needed; routes that don't need it are unaffected and unchanged. Route handler files should never contain the enforcement logic itself, only the declared options passed to `withApiGuard`.
 
 If a rate limiter is needed: prefer `rate-limiter-flexible` (MIT, supports in-memory/Redis/Postgres/MySQL, no vendor lock-in) over `@upstash/ratelimit` (its client is open source, but it's architected around Upstash's *hosted* Redis over HTTP — a poor fit here given this project deliberately keeps uploads on the local filesystem instead of cloud storage, i.e. it's optimized for self-hosting, not a serverless/edge deployment).
 

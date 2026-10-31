@@ -40,23 +40,23 @@ describe("PATCH /api/publish-requests/[id]", () => {
     });
 
     it("rejects an invalid action", async () => {
-        const response = await PATCH(requestWithBody({ action: "delete" }), context("r1"));
+        const response = await PATCH(requestWithBody({ action: "delete" }), context("6500000000000000000000a1"));
         expect(response.status).toBe(400);
     });
 
     it("returns 404 when there's no matching pending request", async () => {
         findOneAndUpdateMock.mockResolvedValue(null);
-        const response = await PATCH(requestWithBody({ action: "approve" }), context("r1"));
+        const response = await PATCH(requestWithBody({ action: "approve" }), context("6500000000000000000000a1"));
         expect(response.status).toBe(404);
     });
 
     it("approving sets the requester's role to author", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "r1", userId: "reader1", status: "Approved" });
-        const response = await PATCH(requestWithBody({ action: "approve" }), context("r1"));
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000a1", userId: "reader1", status: "Approved" });
+        const response = await PATCH(requestWithBody({ action: "approve" }), context("6500000000000000000000a1"));
 
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-            { _id: "r1", status: "Pending" },
+            { _id: "6500000000000000000000a1", status: "Pending" },
             expect.objectContaining({ status: "Approved", reviewedBy: "admin1", reviewedAt: expect.any(Date) }),
             { new: true }
         );
@@ -64,8 +64,8 @@ describe("PATCH /api/publish-requests/[id]", () => {
     });
 
     it("rejecting doesn't change the requester's role", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "r1", userId: "reader1", status: "Rejected" });
-        const response = await PATCH(requestWithBody({ action: "reject" }), context("r1"));
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000a1", userId: "reader1", status: "Rejected" });
+        const response = await PATCH(requestWithBody({ action: "reject" }), context("6500000000000000000000a1"));
 
         expect(response.status).toBe(200);
         expect(updateOneMock).not.toHaveBeenCalled();
@@ -73,8 +73,8 @@ describe("PATCH /api/publish-requests/[id]", () => {
 
     it("approving a requester already promoted (e.g. to moderator) since the request was made doesn't overwrite their role", async () => {
         userSelectMock.mockResolvedValue({ role: "moderator" });
-        findOneAndUpdateMock.mockResolvedValue({ _id: "r1", userId: "reader1", status: "Approved" });
-        const response = await PATCH(requestWithBody({ action: "approve" }), context("r1"));
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000a1", userId: "reader1", status: "Approved" });
+        const response = await PATCH(requestWithBody({ action: "approve" }), context("6500000000000000000000a1"));
 
         expect(response.status).toBe(200);
         expect(updateOneMock).not.toHaveBeenCalled();

@@ -43,5 +43,5 @@ export const PATCH = withApiGuard<RouteContext>(
             return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
         }
     },
-    { role: ROLES.ADMIN }
+    { role: ROLES.ADMIN, objectIdParams: ["id"] }
 );

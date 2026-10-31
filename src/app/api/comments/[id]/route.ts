@@ -38,7 +38,7 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
         console.error("Failed to update comment:", error);
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
-});
+}, { objectIdParams: ["id"] });
 
 export const DELETE = withApiGuard<RouteContext>(async (request, { params, session }) => {
     try {
@@ -58,4 +58,4 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
         console.error("Failed to delete comment:", error);
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
-});
+}, { objectIdParams: ["id"] });
