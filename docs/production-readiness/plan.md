@@ -9,7 +9,7 @@ Follows the review-gated delivery workflow (`~/.claude/delivery-workflow.md`) wi
 | M1 | Security | SEC-01, SEC-02, SEC-03, SEC-04 |
 | M2 | Hygiene and docs | DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06, DOC-08 (documented) |
 | M3 | Ops | OPS-01, OPS-02, OPS-03, OPS-04 |
-| M4 | Containers | OPS-05 |
+| M4 | Containers | OPS-05, DOC-09 |
 | M5 | Accounts | ACC-01, ACC-02 |
 | M6 | Notifications v2 | NTF-01 … NTF-05, DOC-07 (documented) |
 | M7 | Content | CNT-01 … CNT-04 |

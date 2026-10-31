@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -28,9 +28,11 @@ export default function CategoryFormDialog({ category }: CategoryFormDialogProps
     const [pending, startTransition] = useTransition();
     const isEdit = Boolean(category);
 
-    useEffect(() => {
-        if (open) setTitle(category?.title ?? "");
-    }, [open, category]);
+    // Reset on open (in the event handler, not an effect) so a reopened dialog shows the current title.
+    const handleOpenChange = (next: boolean) => {
+        if (next) setTitle(category?.title ?? "");
+        setOpen(next);
+    };
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
@@ -56,7 +58,7 @@ export default function CategoryFormDialog({ category }: CategoryFormDialogProps
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 {isEdit ? (
                     <Button variant="ghost" size="icon-sm">

@@ -25,6 +25,8 @@ Severity: Critical / High / Medium / Low / Feature.
 - **DOC-07 — Deferred — PWA icons.** The install prompt needs real 192×192 and 512×512 PNGs from the owner's logo; generated placeholders ship in M6.
 - **DOC-08 — Deferred — GitHub Actions CI/CD.** Workflow design documented; not added yet.
 
+- **DOC-09 — Medium — uploads served through a machine-specific symlink** (appended 2026-10-31). `public/uploads` is a tracked symlink to an absolute path on the owner's machine (`/home/sunil/.../uploads`), which is how `/uploads/...` URLs resolve. It breaks on any other machine and in containers. Fix in M4: serve uploads from the configured upload directory through a Route Handler (path-traversal safe, correct content types), keeping the storage location unchanged.
+
 ## Ops (OPS)
 
 - **OPS-01 — Medium — no health check.** Add `/api/health` (process up + DB ping) for containers and uptime monitors.
