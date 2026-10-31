@@ -15,6 +15,7 @@ Follows the review-gated delivery workflow (`~/.claude/delivery-workflow.md`) wi
 | M7 | Content | CNT-01 … CNT-04 |
 | M8 | Visitor interests | VIS-01 … VIS-04 |
 | — | Final re-audit | new Critical/High findings appended and fixed |
+| M9 | Launch QA and hardening | LCH-01 … LCH-10 (from the owner's launch review, listed in the checklist) |
 
 M1–M4 come first so later features get end-to-end tests and container support from the start.
 
@@ -45,3 +46,6 @@ Re-verify → find every instance of the pattern → failing test first (except 
 - **D-06:** Notification TTL applies to read notifications only, `NOTIFICATION_READ_TTL_DAYS` (default 90; `0` disables).
 - **D-07:** Visitor tracking uses a first-party random cookie plus TTL'd events, stitched to the user on login/registration, gated by a consent banner. Replaces the fingerprint.js idea and the unused `TempUser` / `UserInterest` models.
 - **D-08:** PWA icons are generated from the wordmark until the owner supplies a logo.
+- **D-09 (2026-10-31):** Account deletion is self-service and permanent. The user record, their posts (with revisions, comments, votes and notifications on them), votes, notifications they received or caused, push subscriptions, tokens, publish requests and reading history are hard-deleted, and vote counts on other content are corrected. Their comments on other people's posts are emptied and soft-deleted, so replies keep their thread under a "[deleted]" placeholder. Revision entries recording their edits of other people's posts stay, because they hold the post owner's earlier text; the editor then shows as unknown. Uploaded images are removed unless another post still uses them. The last admin can't delete their account (admin deletions are serialized). The data export includes the same records, plus revisions of their posts and the versions their edits replaced.
+- **D-10 (2026-10-31):** The bundled `mongo:8` service sets `GLIBC_TUNABLES=glibc.pthread.rseq=1`, the published workaround for SERVER-121912 (mongod 8 refuses to start on Linux 6.19+). Costs some allocator performance; remove once MongoDB ships a fix.
+- **D-11 (2026-10-31):** Local staging runs the full Compose stack with Caddy's internal CA on `https://localhost:8443` and `skip_install_trust`, so nothing is installed into the host's trust store; Mailpit stands in for the SMTP provider.

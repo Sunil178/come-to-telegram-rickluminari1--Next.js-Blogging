@@ -14,6 +14,7 @@ import { consumeRegistrationAttempt } from "@/libs/auth-rate-limit";
 import { logger } from "@/libs/logger";
 import { consentedVisitorId } from "@/libs/visitor";
 import { stitchVisitor } from "@/libs/visitor-events";
+import { PASSWORD_RULE } from "@/libs/password-policy";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -31,7 +32,7 @@ export async function registerAction(initialState: RegisterState, formData: Form
         firstName: "required",
         lastName: "required",
         email: "required|email",
-        password: "required|min:6|confirmed", // Requires password_confirmation field in UI
+        password: PASSWORD_RULE, // Requires password_confirmation field in UI
     };
 
     const validation = new Validator(body, rules);

@@ -13,6 +13,7 @@ import { getClientIp } from "@/libs/client-ip";
 import { isMailConfigured } from "@/libs/mailer";
 import { EMAIL_COLLATION } from "@/libs/email-match";
 import { logger } from "@/libs/logger";
+import { PASSWORD_RULE } from "@/libs/password-policy";
 
 export type AccountFormState = {
     error?: string;
@@ -90,7 +91,7 @@ export async function resetPasswordAction(_state: AccountFormState, formData: Fo
         password_confirmation: formData.get("password_confirmation"),
     };
     // Validated before the token is consumed, so a typo doesn't burn the link.
-    const validation = new Validator(body, { password: "required|min:6|confirmed" });
+    const validation = new Validator(body, { password: PASSWORD_RULE });
     if (validation.fails()) {
         return { error: "Please check the password fields.", validationErrors: validation.errors.all() as Record<string, string[]> };
     }

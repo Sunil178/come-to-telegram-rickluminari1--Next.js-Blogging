@@ -91,6 +91,17 @@ describe("notify", () => {
         expect(payload.notificationId).toBe("notif-1");
     });
 
+    // A kept-alive socket opened while handling a request holds on to that request's context (see db-connect.ts).
+    it("sends without keep-alive sockets", async () => {
+        findSubscriptionsMock.mockResolvedValue([
+            { _id: "sub-1", endpoint: "https://fcm.googleapis.com/fcm/send/1", keys: { p256dh: "a", auth: "b" } },
+        ]);
+
+        await notify(baseOptions);
+
+        expect(sendNotificationMock.mock.calls[0][2].agent.keepAlive).toBe(false);
+    });
+
     it("deletes a subscription that reports 410 Gone, without throwing", async () => {
         findSubscriptionsMock.mockResolvedValue([
             { _id: "sub-1", endpoint: "https://fcm.googleapis.com/fcm/send/1", keys: { p256dh: "a", auth: "b" } },

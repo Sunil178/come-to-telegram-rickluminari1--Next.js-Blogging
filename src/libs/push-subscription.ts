@@ -75,14 +75,31 @@ export async function syncExistingSubscription(serverKey: string): Promise<boole
     return true;
 }
 
+// Chrome's first registration with its push service can take tens of seconds; some browsers never answer at all
+// (push service blocked or switched off), and the toggle must fail visibly instead of hanging.
+export const PUSH_SUBSCRIBE_TIMEOUT_MS = 90_000;
+
 export async function subscribeToPush(serverKey: string): Promise<void> {
     if (!(await getRegistration())) throw new Error("Service worker is not registered");
     // Safe to await now that a registration exists; subscribe() needs an active worker.
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+    const subscribing = registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(serverKey) as BufferSource,
     });
+    // A subscription that arrives after we gave up was never saved; drop it so the browser and server agree.
+    subscribing.then((late) => { if (timedOut) late.unsubscribe().catch(() => {}); }, () => {});
+    const subscription = await Promise.race([
+        subscribing,
+        new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+                timedOut = true;
+                reject(new Error("The browser's push service didn't respond"));
+            }, PUSH_SUBSCRIBE_TIMEOUT_MS);
+        }),
+    ]).finally(() => clearTimeout(timer));
     await saveSubscription(subscription);
 }
 

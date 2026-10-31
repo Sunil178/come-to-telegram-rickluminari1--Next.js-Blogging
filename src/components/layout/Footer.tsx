@@ -6,6 +6,7 @@ import CookiePreferencesButton from "@/components/consent/CookiePreferencesButto
 const FOOTER_LINKS = [
     { href: "/", label: "Home" },
     { href: "/posts", label: "Posts" },
+    { href: "/privacy", label: "Privacy" },
 ];
 
 export default function Footer() {

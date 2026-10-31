@@ -1,3 +1,4 @@
+import { Agent } from "node:https";
 import webpush from "web-push";
 import Notification, { type NotificationType } from "@/models/Notification";
 import PushSubscription from "@/models/PushSubscription";
@@ -14,6 +15,9 @@ import {
 import { isAllowedPushEndpoint } from "@/libs/push-endpoint";
 import { logger } from "@/libs/logger";
 import { vapidPublicKey } from "@/libs/runtime-config";
+
+// No keep-alive: a pooled socket opened while handling a request would keep that request's context in memory.
+const PUSH_AGENT = new Agent({ keepAlive: false });
 
 // Missing or malformed VAPID keys (e.g. .env.example placeholders) degrade the feature
 // to in-app-only notifications instead of failing every route that imports this module.
@@ -117,7 +121,7 @@ export async function notify(options: NotifyOptions): Promise<void> {
             .filter((sub) => isAllowedPushEndpoint(sub.endpoint))
             .map(async (sub) => {
                 try {
-                    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
+                    await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload, { agent: PUSH_AGENT });
                 } catch (error) {
                     const statusCode = (error as { statusCode?: number }).statusCode;
                     if (statusCode === 404 || statusCode === 410) {

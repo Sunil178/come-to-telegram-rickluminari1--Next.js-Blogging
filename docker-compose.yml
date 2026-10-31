@@ -2,14 +2,15 @@
 #   docker compose up -d --build                      app + MongoDB on http://localhost:3000
 #   docker compose --profile proxy up -d --build      + Caddy (HTTPS) in front, on ports 80/443
 #   docker compose --profile mail up -d               + Mailpit (SMTP on 1025, inbox UI on http://localhost:8025)
-# Secrets and per-environment values come from .env (see .env.example).
+#   deploy/staging.sh up                              local staging of the whole stack on https://localhost:8443
+# Secrets and per-environment values come from .env (see .env.example), or the file APP_ENV_FILE names.
 services:
   app:
     build: .
     image: vedev-blog:latest
     restart: unless-stopped
     env_file:
-      - path: .env
+      - path: ${APP_ENV_FILE:-.env}
         required: false
     environment:
       MONGODB_URI: ${COMPOSE_MONGODB_URI:-mongodb://mongo:27017/blog}
@@ -26,6 +27,9 @@ services:
   mongo:
     image: mongo:8
     restart: unless-stopped
+    environment:
+      # mongod 8 refuses to start on Linux 6.19+ without this (SERVER-121912); remove once MongoDB ships a fix.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     # Loopback only: lets host-side scripts (npm run bootstrap-admin, seed) reach the database.
     ports:
       - "127.0.0.1:${MONGO_PORT:-27018}:27017"
@@ -44,8 +48,8 @@ services:
     environment:
       SITE_DOMAIN: ${SITE_DOMAIN:-localhost}
     ports:
-      - "80:80"
-      - "443:443"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
@@ -61,8 +65,8 @@ services:
       # Skips reverse DNS on each SMTP connection, which otherwise delays the greeting until the lookup times out.
       MP_SMTP_DISABLE_RDNS: "true"
     ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
   uploads:

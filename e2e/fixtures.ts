@@ -32,6 +32,14 @@ export const USERS = {
 export const SEEDED_POST = { slug: "e2e-welcome", title: "Welcome to the end-to-end suite" };
 export const RELATED_POST = { slug: "e2e-related", title: "A related end-to-end post" };
 
+// Notifications are written after the response (after()), so a page can render before they exist: reload until it shows.
+export async function expectNotification(page: Page, text: string, atLeast = 1) {
+    await expect.poll(async () => {
+        await page.goto("/dashboard/notifications");
+        return page.getByText(text).count();
+    }, { timeout: 15_000 }).toBeGreaterThanOrEqual(atLeast);
+}
+
 export async function login(page: Page, email: string, password = PASSWORD, callbackUrl = "/posts") {
     await page.goto(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
     await page.getByLabel("Email").fill(email);

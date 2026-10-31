@@ -6,7 +6,7 @@ import { BaseEditorKit } from "@/components/editor/editor-base-kit";
 // the HTML string stored in Post.content. Server-only — shared by
 // POST /api/posts and PATCH /api/posts/[slug] so the two routes never
 // diverge on how a post body gets persisted. Read-time sanitization
-// (DOMPurify+jsdom in posts/[slug]/page.tsx) remains the actual XSS
+// (DOMPurify in src/libs/render-post-html.ts) remains the actual XSS
 // defense; this function only produces markup, it doesn't sanitize it.
 export async function serializePostContent(value: Value): Promise<string> {
     const editor = createSlateEditor({ plugins: BaseEditorKit, value });

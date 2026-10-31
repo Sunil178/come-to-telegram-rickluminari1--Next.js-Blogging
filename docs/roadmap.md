@@ -24,8 +24,33 @@ Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifes
 
 ### CI/CD (GitHub Actions)
 
-Planned workflow, not yet added:
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: lint, typecheck, unit tests and build, and the Playwright suite (Chromium) against MongoDB and Mailpit service containers. Next steps:
 
-- On every push and pull request: `npm ci`, `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run build`, then the Playwright end-to-end suite against a MongoDB service container.
 - On `main`: build the Docker image and push it to GitHub Container Registry (`ghcr.io`), tagged with the commit SHA and `latest`.
 - Deploy: a manually triggered job that pulls the image on the target host (SSH or the host's webhook), since the deployment target is chosen later. GitHub-hosted runners' free tier covers this; no paid runners are needed.
+
+## Later work
+
+### Recommendations from reading history
+
+Consenting visitors' reads are already recorded (`VisitorEvent`, 180-day TTL, stitched to the account at sign-in; `src/libs/visitor-events.ts`), but nothing reads them yet. Next: a "Recommended for you" list from the tags of recently read posts, weighted by recency and excluding posts already read, falling back to related posts when there's no history.
+
+### Image metadata (EXIF)
+
+Uploaded photos are stored as sent, including EXIF metadata, which can contain the GPS location and time a photo was taken. Stripping it on upload (keeping only the orientation) with `sharp` protects authors who don't realise their photos carry their location. Pending the owner's decision.
+
+### Upload quotas and orphan cleanup
+
+Authors can upload without limit (10 MB per file). A per-user daily upload cap, a per-author storage cap, and a periodic job deleting files no post references would stop one compromised account filling the disk.
+
+### Search and related posts at scale
+
+Search matches posts with a case-insensitive regular expression and related posts score shared tags across all posts, so both scan more documents as the blog grows. Next: a MongoDB text index for search (relevance-ranked, uses the index), related posts limited to an indexed tag lookup over recent posts, and Atlas Search or Meilisearch once there are tens of thousands of posts.
+
+### Error tracking
+
+Server errors are logged as JSON lines; an error tracker (Sentry or self-hosted GlitchTip) hooked into `onRequestError` and the client error boundary would group them and alert. See `docs/deployment-checklist.md`.
+
+### Not-found status on streamed pages
+
+The root `loading.tsx` makes every page stream, so a missing post renders the not-found page with status 200 (Next.js adds `noindex` instead). Route-level loading boundaries that leave the post page unstreamed would return a real 404.

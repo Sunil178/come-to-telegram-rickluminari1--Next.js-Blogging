@@ -7,7 +7,8 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 - Rich-text posts with banner images, tags, categories, table of contents, reading time and related posts
 - Scheduled publishing (an approved post stays hidden until its publish time), revision history with restore, and editor drafts autosaved in the browser
 - Roles: reader → author → moderator → admin, with publish requests and post approval
-- Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions)
+- Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions), passwords of at least 8 characters
+- Privacy: a privacy policy page (`/privacy`), a JSON download of everything stored about the account, and self-service account deletion (`/dashboard/account`)
 - Threaded comments, votes on posts, comments and profiles
 - Notifications for replies, comments, upvotes, moderation decisions and publish requests: a live bell, a paginated notifications page, per-category in-app and push switches, Web Push via a service worker, and read notifications expiring after a configurable time
 - Deduplicated, rate-limited page-view counting
@@ -49,6 +50,8 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
 | `NOTIFICATION_READ_TTL_DAYS` | no | Days read notifications are kept before MongoDB's TTL monitor deletes them (default 90; `0` keeps them forever). Applied at server start; unread notifications never expire |
+| `PRIVACY_CONTACT_EMAIL` | no | Address shown on `/privacy` for data requests; without it the page says to contact the site administrator |
+| `MONGODB_POOL_SIZE` | no | Size of the MongoDB connection pool (default 10), filled from server start. Fixed-size because a connection opened on demand during a request keeps that request's memory alive (Node 24 async context) |
 | `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 
 ## Scripts
@@ -58,7 +61,8 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `npm run dev` | Development server (use `-- --port=5000`) |
 | `npm run build` / `npm start` | Production build and server |
 | `npm test` | Unit and route tests (Vitest) |
-| `npm run test:e2e` | Production build, then the Playwright end-to-end suite (see below) |
+| `npm run test:e2e` | Production build, then the Playwright end-to-end suite in Chromium (see below) |
+| `npm run test:e2e:browsers` | The same suite in Chromium, Google Chrome, Microsoft Edge, Firefox and a phone viewport |
 | `npm run lint` | ESLint |
 | `npm run seed` | Seed demo data into `MONGODB_URI` |
 | `npm run bootstrap-admin` | Create or promote the first admin |
@@ -66,7 +70,8 @@ To make an existing account the first admin (or create one), run `npm run bootst
 ## Testing
 
 - `npm test` runs the Vitest unit and route tests (models are mocked; no database needed).
-- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. Test browsers start with a stored cookie-consent choice (`presetConsent` in `e2e/fixtures.ts`) so the banner doesn't cover controls; `e2e/consent.spec.ts` tests the banner itself. Account emails go to Mailpit, which must be running: `docker compose --profile mail up -d mailpit` (SMTP on 1025, API on 8025; `E2E_SMTP_PORT`, `E2E_MAILPIT_URL`). First run: `npx playwright install chromium`.
+- `npm run test:e2e` builds the app and runs the Playwright suite in `e2e/` against `next start` on port 5100 (`E2E_PORT`), using an isolated database (`E2E_MONGODB_URI`, default `mongodb://127.0.0.1:27017/blog_e2e`) that is dropped and re-seeded on every run. The setup refuses database names that don't end in `_e2e`. Test browsers start with a stored cookie-consent choice (`presetConsent` in `e2e/fixtures.ts`) so the banner doesn't cover controls; `e2e/consent.spec.ts` tests the banner itself. Account emails go to Mailpit, which must be running: `docker compose --profile mail up -d mailpit` (SMTP on 1025, API on 8025; `E2E_SMTP_PORT`, `E2E_MAILPIT_URL`). First run: `npx playwright install chromium` (and `firefox` for the browsers run).
+- `npm run test:e2e:browsers` adds the `chrome` and `msedge` projects (the installed Google Chrome and Microsoft Edge; `E2E_EDGE_PATH` points at Edge, default the Flathub install), Playwright's `firefox` and `mobile` (Pixel 7). Each project runs in its own invocation (`npx playwright test --project=firefox`; the script loops over them) so each starts on a freshly seeded database. `e2e/push.spec.ts` delivers a real Web Push notification through Google's and Microsoft's push services, so it runs only in `chrome` and `msedge` (bundled Chromium has no push service, and Playwright's Firefox build never answers the subscription request) and needs internet access.
 
 ## Operations
 
@@ -99,11 +104,15 @@ docker compose --profile mail up -d                # + Mailpit: SMTP on localhos
 - **First admin:** the image ships only the server, so run the scripts from a checkout against the Compose database, which is published on loopback port `MONGO_PORT` (default 27018): `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin` (likewise `npm run seed` for demo data).
 - Compose points the app at its own `mongo` service (`COMPOSE_MONGODB_URI` overrides it) and keeps data in named volumes: `mongo-data` for the database and `uploads` for uploaded images (mounted at `UPLOAD_DIR=/app/uploads`).
 - With the `proxy` profile, set `SITE_DOMAIN` to your domain (DNS pointing at the server), `AUTH_URL` and `SITE_URL` to `https://<domain>`, and keep `TRUSTED_PROXY_HOPS=1`. The Caddyfile is in `deploy/Caddyfile`.
-- **Linux kernel 6.19 or newer:** the official `mongo` images refuse to start there ("known incompatibility", [SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)) until MongoDB ships a fix. On such hosts, point the app at another MongoDB (a managed cluster, or a server on another host) with `COMPOSE_MONGODB_URI` and start it without the bundled database: `docker compose up -d --build --no-deps app`.
+- **Linux kernel 6.19 or newer:** `mongod` 8 refuses to start there ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)) unless `GLIBC_TUNABLES=glibc.pthread.rseq=1` is set, which the `mongo` service does. To use another MongoDB instead (a managed cluster), set `COMPOSE_MONGODB_URI` and start the app without the bundled database: `docker compose up -d --build --no-deps app`.
+- **Local staging:** `deploy/staging.sh up` builds the image and runs the whole stack (MongoDB, app, Caddy, Mailpit) as the separate Compose project `vedev-staging` on `https://localhost:8443`, with generated secrets in `deploy/staging/app.env` and its own ports and volumes. Caddy's certificate comes from its local CA, which is never installed into the host's trust store, so browsers show a certificate warning. `deploy/staging.sh e2e` re-seeds its `blog_e2e` database and runs the Playwright suite against it (`deploy/staging.sh e2e --project=chrome` for push); `deploy/staging.sh down` removes it.
+- **Backups:** `deploy/backup.sh` and `deploy/restore.sh` (database and uploads); see [docs/procedures/backup-restore.md](docs/procedures/backup-restore.md).
 - Without Compose: `docker build -t vedev-blog .` and `docker run -p 3000:3000 --env-file .env -v blog-uploads:/app/uploads vedev-blog`, with `MONGODB_URI` pointing at your database.
-- To run the end-to-end suite against a running deployment instead of a local build: seed its database (`MONGODB_URI=<…>_e2e npx tsx e2e/seed.ts`), point its `SMTP_HOST`/`SMTP_PORT` at Mailpit and `SITE_URL` at its own URL, then `E2E_BASE_URL=http://host:port npx playwright test`.
+- To run the end-to-end suite against a running deployment instead of a local build: seed its database (`MONGODB_URI=<…>_e2e npx tsx e2e/seed.ts`), point its `SMTP_HOST`/`SMTP_PORT` at Mailpit and `SITE_URL` at its own URL, then `E2E_BASE_URL=http://host:port npx playwright test --project=chromium`.
 
 ## Deploying to production
+
+Step-by-step: [docs/deployment-checklist.md](docs/deployment-checklist.md) (server, DNS, email deliverability, configuration, backups, monitoring).
 
 - **Run behind a reverse proxy** (Caddy, nginx, or a platform/CDN proxy) that terminates HTTPS and sets the client IP; set `TRUSTED_PROXY_HOPS` or `CLIENT_IP_HEADER` to match. Directly exposed, client IPs can be spoofed and per-IP rate limits bypassed.
 - **Set** `AUTH_SECRET`, `AUTH_URL`, `SITE_URL` and the VAPID keys. All configuration is read at runtime, so one build (or Docker image) works in every environment.

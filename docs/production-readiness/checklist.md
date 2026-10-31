@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** none — M1–M8 and the final re-audit are committed; awaiting the owner's end review
+**Current focus:** none — M9 committed; open items need the owner: EXIF stripping, upload quotas and search scaling decisions (docs/roadmap.md), and a real server, domain and SMTP provider (docs/deployment-checklist.md)
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -85,6 +85,22 @@ Each milestone already passed `/code-review high` with all findings fixed. The r
 
 - [x] Re-audit and fix new Critical/High
 
+## M9 Launch QA and hardening — base `1b7d4ce`
+
+Items from the owner's launch review (2026-10-31); findings.md stays frozen.
+
+Review round 1 (`/code-review high 1b7d4ce`): 10 findings, all fixed: the e2e DB helper could fall back to `MONGODB_URI` (now `blog_e2e` only, with the `_e2e` guard); the browsers script ran every project on one seeded database (now one invocation per project; staging e2e defaults to chromium); account deletion could unlink another author's reused image (now only site-relative uploads no remaining post references); two admins deleting at once could both pass the last-admin check (admin deletions serialized); revisions missing from the export (added; revisions on others' posts are kept, D-09); pool comment overstated and pool size unvalidated; render cache unbounded in bytes (50 MB budget, posts over 1 MB not cached); a push subscription arriving after the timeout stayed unsaved (now unsubscribed); `deleteAccount` unit tests added; stale sanitizer comment. Also fixed while re-verifying: every e2e notification check now reloads until the after()-written notification exists, and the consent test waits for the choice to be stored. Final verification: 310 unit tests, tsc, lint (2 pre-existing warnings), Chromium e2e 25/25 locally and on the rebuilt staging stack, push in Chrome and Edge locally and on staging.
+
+- [x] LCH-01 password minimum 8 characters (registration and reset), shared `PASSWORD_RULE`, form hint and `minlength`
+- [x] LCH-02 privacy policy page (`/privacy`), linked from the footer, the consent banner and the account page; `PRIVACY_CONTACT_EMAIL`
+- [x] LCH-03 account data export (JSON download) and self-service account deletion (D-09); a deleted account's session is now revoked at its next check (it used to stay valid as a reader)
+- [x] LCH-04 backup and restore (`deploy/backup.sh`, `deploy/restore.sh`, `docs/procedures/backup-restore.md`): checksum-verified; drill into a second database matched every collection (host and Compose modes); full disaster restore on staging brought back deleted posts and an uploaded image
+- [x] LCH-05 e2e for publish-request notifications and role upgrade, comment-upvote notifications, push preference switches, session revocation after a reset, read-notification TTL expiry, and real Web Push delivery (Chrome via FCM, Edge via WNS; needs persistent profiles, as regular Playwright contexts are incognito-like)
+- [x] LCH-06 cross-browser: the suite passes in Chromium, Google Chrome, Microsoft Edge, Firefox and a Pixel 7 viewport; fixed on the way: push subscription with no timeout (the toggle hung forever where the push service never answers), a Firefox navigation race and a test-order collision; dark mode and phone screenshots of the new pages checked
+- [x] LCH-07 staging (`deploy/staging.sh`): image built, MongoDB 8 with the SERVER-121912 workaround (D-10), Caddy HTTPS from its local CA without touching the host trust store (D-11), Mailpit; 25/25 e2e plus real push in Chrome and Edge through HTTPS
+- [x] LCH-08 load test (`docs/production-readiness/load-test.md`): found and fixed a memory leak that crashed the server (on-demand MongoDB sockets kept request contexts alive; now a fixed pool opened at boot and push without keep-alive) and the post page's per-request JSDOM (shared sanitizer plus render cache, twice the throughput)
+- [x] LCH-09 CI workflow `.github/workflows/ci.yml` (not yet run on GitHub)
+- [x] LCH-10 `docs/deployment-checklist.md` (server, DNS, SPF/DKIM/DMARC, configuration, monitoring), roadmap later-work entries (recommendations, EXIF, upload quotas, search scaling, error tracking, not-found status)
 ## Progress
 
 | Milestone | Done / total |
@@ -97,6 +113,7 @@ Each milestone already passed `/code-review high` with all findings fixed. The r
 | M6 | 5 / 5 |
 | M7 | 4 / 4 |
 | M8 | 4 / 4 |
+| M9 | 10 / 10 |
 
 ## Progress log
 
@@ -107,3 +124,4 @@ Each milestone already passed `/code-review high` with all findings fixed. The r
 - 2026-10-31 — M4 Containers, M5 Accounts, M6 Notifications v2 and M7 Content done and committed.
 - 2026-10-31 — M8 Visitor interests done and committed.
 - 2026-10-31 — Final re-audit done and committed.
+- 2026-11-01 — M9 Launch QA and hardening done and committed.

@@ -1,18 +1,11 @@
 import { expect, test as base } from "@playwright/test";
-import mongoose from "mongoose";
 import { login, SEEDED_POST, USERS } from "./fixtures";
+import { withDb } from "./db";
 
 // Uses the plain Playwright test: these browsers start without a stored consent choice.
 const test = base;
-const E2E_MONGODB_URI = process.env.E2E_MONGODB_URI ?? process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/blog_e2e";
-
-async function eventsFor(visitorId: string) {
-    const connection = await mongoose.createConnection(E2E_MONGODB_URI).asPromise();
-    try {
-        return await connection.collection("visitor_events").find({ visitorId }).toArray();
-    } finally {
-        await connection.close();
-    }
+function eventsFor(visitorId: string) {
+    return withDb((db) => db.collection("visitor_events").find({ visitorId }).toArray());
 }
 
 test("accepting consent records reads and stitches them to the account at sign-in", async ({ page, context }) => {
@@ -39,6 +32,8 @@ test("accepting consent records reads and stitches them to the account at sign-i
 test("declining sets no visitor cookie and records nothing, and the choice can be changed later", async ({ page, context }) => {
     await page.goto("/");
     await page.getByRole("dialog", { name: "Cookie consent" }).getByRole("button", { name: "Decline" }).click();
+    // The banner closes once the choice is stored; navigating earlier would cancel the server action.
+    await expect(page.getByRole("dialog", { name: "Cookie consent" })).toHaveCount(0);
     await page.goto(`/posts/${SEEDED_POST.slug}`);
     await expect(page.getByRole("dialog", { name: "Cookie consent" })).toHaveCount(0);
     expect((await context.cookies()).find((cookie) => cookie.name === "vid")).toBeUndefined();

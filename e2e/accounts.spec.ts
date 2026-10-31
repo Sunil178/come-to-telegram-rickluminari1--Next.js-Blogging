@@ -1,5 +1,6 @@
 import { type Page } from "@playwright/test";
-import { expect, login, PASSWORD, test } from "./fixtures";
+import { expect, login, newPage, PASSWORD, test } from "./fixtures";
+import { createUser } from "./db";
 import { linkFromLatestEmail, messagesTo } from "./mailpit";
 
 async function register(page: Page, id: string) {
@@ -82,4 +83,27 @@ test("a reset request for an unknown email looks the same and sends nothing", as
 
     await page.waitForTimeout(1_000);
     expect(await messagesTo(request, email)).toHaveLength(0);
+});
+
+test("a password reset signs the account out of its other browsers", async ({ browser, page, request }) => {
+    test.setTimeout(150_000);
+    const user = await createUser(`e2e.resetter${Date.now()}`);
+    const otherBrowser = await newPage(browser);
+    await login(otherBrowser, user.email, undefined, "/dashboard/notifications");
+
+    await page.goto("/auth/forgot-password");
+    await page.getByLabel("Email").fill(user.email);
+    await page.getByRole("button", { name: "Send reset link" }).click();
+    await page.goto(await linkFromLatestEmail(request, user.email, /Reset your/));
+    await page.locator("#password").fill("a-fresh-password");
+    await page.locator("#password_confirmation").fill("a-fresh-password");
+    await page.getByRole("button", { name: "Set new password" }).click();
+    await expect(page).toHaveURL(/\/auth\/login\?reset=1$/);
+
+    // Sessions re-check the account at most once a minute.
+    await expect.poll(async () => {
+        await otherBrowser.goto("/dashboard/notifications");
+        return new URL(otherBrowser.url()).pathname;
+    }, { timeout: 90_000, intervals: [5_000] }).toBe("/auth/login");
+    await otherBrowser.context().close();
 });

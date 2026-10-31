@@ -26,4 +26,9 @@ describe("jwt callback", () => {
         const token = await jwt({ token: { id: "u1", authAt: 2_000, roleCheckedAt: 0, role: "reader" } });
         expect(token?.role).toBe("author");
     });
+
+    it("revokes the session of an account that no longer exists", async () => {
+        leanMock.mockResolvedValueOnce(null);
+        expect(await jwt({ token: { id: "u1", authAt: 2_000, roleCheckedAt: 0, role: "admin" } })).toBeNull();
+    });
 });

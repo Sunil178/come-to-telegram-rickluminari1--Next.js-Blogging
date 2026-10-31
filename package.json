@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "seed": "tsx --env-file=.env ./src/seeds/seeder.ts",
     "bootstrap-admin": "tsx --env-file=.env ./src/scripts/bootstrap-admin.ts",
-    "test:e2e": "next build && playwright test"
+    "test:e2e": "next build && playwright test --project=chromium",
+    "test:e2e:browsers": "next build && for p in chromium chrome msedge firefox mobile; do playwright test --project=$p || exit 1; done"
   },
   "dependencies": {
     "@11ty/gray-matter": "^3.0.0",

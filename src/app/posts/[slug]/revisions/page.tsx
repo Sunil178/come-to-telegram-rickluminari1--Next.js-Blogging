@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import DOMPurify from "dompurify";
-import { JSDOM } from "jsdom";
 import { isValidObjectId } from "mongoose";
 import Post from "@/models/Post";
+import { sanitizePostHtml } from "@/libs/render-post-html";
 import PostRevision from "@/models/PostRevision";
 import User from "@/models/User";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
@@ -37,11 +36,7 @@ export default async function RevisionsPage({ params, searchParams }: RevisionsP
         ? await PostRevision.findOne({ _id: selectedId, postId: post._id }).lean()
         : null;
 
-    let previewHtml = "";
-    if (selected) {
-        const window = new JSDOM("").window;
-        previewHtml = DOMPurify(window as unknown as Window & typeof globalThis).sanitize(selected.content || "");
-    }
+    const previewHtml = selected ? sanitizePostHtml(selected.content || "") : "";
 
     return (
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[18rem_minmax(0,1fr)]">

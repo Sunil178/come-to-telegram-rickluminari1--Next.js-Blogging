@@ -115,7 +115,7 @@ describe("verifyEmailAction", () => {
 
 describe("resetPasswordAction", () => {
     it("validates the new password before using up the link", async () => {
-        const state = await resetPasswordAction({}, form({ token: "t", password: "abc", password_confirmation: "abc" }));
+        const state = await resetPasswordAction({}, form({ token: "t", password: "abc1234", password_confirmation: "abc1234" }));
         expect(state.validationErrors?.password).toBeDefined();
         expect(consumeTokenMock).not.toHaveBeenCalled();
     });

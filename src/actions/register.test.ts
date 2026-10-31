@@ -37,6 +37,12 @@ describe("registerAction rate limiting", () => {
         createMock.mockReset().mockResolvedValue({});
     });
 
+    it("requires a password of at least 8 characters", async () => {
+        const state = await registerAction({}, form({ password: "abc1234", password_confirmation: "abc1234" }));
+        expect(state.validationErrors?.password).toBeDefined();
+        expect(createMock).not.toHaveBeenCalled();
+    });
+
     it("doesn't count submissions that fail validation", async () => {
         for (let i = 0; i < 12; i++) {
             const state = await registerAction({}, form({ email: "not-an-email" }));

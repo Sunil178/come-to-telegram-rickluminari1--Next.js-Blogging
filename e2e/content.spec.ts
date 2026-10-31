@@ -62,6 +62,8 @@ test("an edit keeps the previous version, which can be restored from the revisio
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Restore this version" }).click();
     await expect(page.getByText("Revision restored.")).toBeVisible();
+    // Let the app's own navigation finish; Firefox aborts a second navigation started on top of it.
+    await expect(page).toHaveURL(new RegExp(`/posts/${SEEDED_POST.slug}/revisions$`));
 
     await page.goto(`/posts/${SEEDED_POST.slug}`);
     await expect(page.getByRole("heading", { level: 1, name: SEEDED_POST.title })).toBeVisible();

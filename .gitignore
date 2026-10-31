@@ -46,3 +46,8 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /.e2e-uploads/
+
+# deploy/backup.sh output
+/backups/
+# deploy/staging.sh generated secrets
+/deploy/staging/

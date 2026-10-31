@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-Initiative M1–M8 plus final re-audit (all committed 2026-10-31; the owner's end review is pending), tracked in `docs/production-readiness/checklist.md` (resume point after compaction). Owner explicitly authorized (2026-10-31) committing each milestone myself after vitest/tsc/lint/build, `/code-review high <base>`, and Playwright real-user verification — no per-milestone owner review; never push. GitHub token exposure in the `origin` remote URL is known; the owner will rotate it later — never print `git remote -v`.
+Initiative M1–M8 plus final re-audit (committed 2026-10-31) and M9 launch QA and hardening (from the owner's launch review; EXIF, upload quotas and search scaling await owner decisions), tracked in `docs/production-readiness/checklist.md` (resume point after compaction). Owner explicitly authorized (2026-10-31) committing each milestone myself after vitest/tsc/lint/build, `/code-review high <base>`, and Playwright real-user verification — no per-milestone owner review; never push. GitHub token exposure in the `origin` remote URL is known; the owner will rotate it later — never print `git remote -v`.
 
 **Why:** owner wants to review only at the end and asked me to verify as a real user with Playwright.
 

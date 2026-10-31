@@ -35,9 +35,10 @@ export default {
                 // breaks .lean() type inference project-wide (verified in `next build`, not a tsc quirk).
                 const dbUser = await mongoose.model("User").findById(token.id).select("role passwordChangedAt")
                     .lean<{ role?: RoleName; passwordChangedAt?: Date }>();
-                // A password reset signs out every session that started before it (within this recheck interval).
-                if (dbUser?.passwordChangedAt && dbUser.passwordChangedAt.getTime() > (token.authAt ?? 0)) return null;
-                token.role = dbUser?.role ?? ROLES.READER;
+                // A deleted account, or a password reset after the session started, signs it out (within this recheck interval).
+                if (!dbUser) return null;
+                if (dbUser.passwordChangedAt && dbUser.passwordChangedAt.getTime() > (token.authAt ?? 0)) return null;
+                token.role = dbUser.role ?? ROLES.READER;
                 token.roleCheckedAt = Date.now();
             }
             return token;

@@ -1,4 +1,4 @@
-import { expect, login, newPage, SEEDED_POST, test, USERS } from "./fixtures";
+import { expect, expectNotification, login, newPage, SEEDED_POST, test, USERS } from "./fixtures";
 
 test("an author's post goes live only after a moderator approves it", async ({ browser }) => {
     const title = `E2E post ${Date.now()}`;
@@ -41,6 +41,7 @@ test("a reader's comment notifies the post's author", async ({ browser }) => {
 
     const authorPage = await newPage(browser);
     await login(authorPage, USERS.author.email);
+    await expectNotification(authorPage, `${USERS.reader.username} commented on your post "${SEEDED_POST.title}"`);
     await authorPage.getByRole("button", { name: "Notifications" }).click();
-    await expect(authorPage.getByText(`commented on your post "${SEEDED_POST.title}"`)).toBeVisible();
+    await expect(authorPage.getByRole("menuitem", { name: new RegExp(`${USERS.reader.username} commented on your post`) }).first()).toBeVisible();
 });

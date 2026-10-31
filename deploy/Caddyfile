@@ -1,4 +1,9 @@
-# Reverse proxy with automatic HTTPS (Let's Encrypt) for SITE_DOMAIN; "localhost" serves a local certificate.
+# Reverse proxy with automatic HTTPS (Let's Encrypt) for SITE_DOMAIN; "localhost" serves a certificate from
+# Caddy's own local CA, which stays in the caddy-data volume: skip_install_trust keeps it out of any trust store.
+{
+	skip_install_trust
+}
+
 {$SITE_DOMAIN:localhost} {
 	encode zstd gzip
 

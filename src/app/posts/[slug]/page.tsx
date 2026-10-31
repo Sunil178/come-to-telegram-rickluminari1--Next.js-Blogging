@@ -2,8 +2,6 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import DOMPurify from "dompurify";
-import { JSDOM } from "jsdom";
 import type { SoftDeleteModel } from "mongoose-delete";
 import Post from "@/models/Post";
 import User from "@/models/User";
@@ -14,7 +12,7 @@ import type { IComment } from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
 import { getSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
-import { processPostContent } from "@/libs/post-content";
+import { renderPostContent } from "@/libs/render-post-html";
 import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
 import { Badge } from "@/components/ui/badge";
 import BannerImage from "@/components/posts/BannerImage";
@@ -125,10 +123,7 @@ export default async function PostPage({ params }: PostPageProps) {
         findRelatedPosts({ _id: post._id, tags: post.tags, categoryId: (post.categoryId as unknown as { _id?: Types.ObjectId } | null)?._id ?? null }),
     ]);
 
-    const window = new JSDOM("").window;
-    const purify = DOMPurify(window as unknown as Window & typeof globalThis);
-    const sanitized = purify.sanitize(post.content || "");
-    const { html, toc, readingTime } = processPostContent(window.document, sanitized);
+    const { html, toc, readingTime } = renderPostContent(post.content || "");
 
     const author = post.userId as unknown as { username?: string } | null;
     const category = post.categoryId as unknown as { title?: string } | null;
