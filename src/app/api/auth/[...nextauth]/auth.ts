@@ -1,8 +1,15 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import User from "@/models/User";
 import authConfig from "@/auth.config";
-import { compareSync } from "bcrypt";
+import { compare } from "bcrypt";
+import { getClientIp } from "@/libs/client-ip";
+import { beginLoginAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
+
+// Surfaces as `code` on the client's signIn() result, so the login page can say why.
+class RateLimitedSignin extends CredentialsSignin {
+    code = "rate_limited";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
     ...authConfig,
@@ -13,16 +20,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 username: { label: "Username", type: "text" },
                 password: { label: "Password", type: "password" },
             },
-            async authorize(credentials) {
+            async authorize(credentials, request) {
                 // credentials is untyped — without this, an object like { $ne: null } here
                 // would act as a Mongo query operator instead of a literal value.
                 if (typeof credentials?.username !== "string" || typeof credentials?.password !== "string") {
                     return null;
                 }
 
+                const ip = getClientIp(request);
+                if (!(await beginLoginAttempt(ip, credentials.username))) {
+                    throw new RateLimitedSignin();
+                }
+
                 const user = await User.findOne({ email: credentials.username });
 
-                if (user && compareSync(credentials.password, user.password)) {
+                if (user && (await compare(credentials.password, user.password))) {
+                    await recordLoginSuccess(ip, credentials.username);
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {
                         id: user.id,

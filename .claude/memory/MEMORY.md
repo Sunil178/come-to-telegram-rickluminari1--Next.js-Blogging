@@ -7,3 +7,4 @@
 - [Keep comments terse](feedback_terse_comments.md) — 1-2 lines max, even for tricky framework-quirk explanations; corrected twice in one session.
 - [Usage pacing](feedback_usage_pacing.md) — weekly limit must last across many repos; prefer direct tools, diff-scoped medium reviews, no fan-out unless asked.
 - [Mandatory todo list](feedback_mandatory_todo.md) — every multi-step task in every chat gets a live todo list (load deferred TodoWrite first).
+- [Production readiness initiative](project_production_readiness.md) — M1–M8 in docs/production-readiness/; owner authorized per-milestone commits; never push; never print git remote.

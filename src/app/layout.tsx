@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import SessionWrapper from "@/components/SessionWrapper";
 import GlobalLoader from "@/components/GlobalLoader";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -28,11 +29,13 @@ export const metadata: Metadata = {
     },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    // Set by proxy.ts; next-themes' inline theme script needs it to pass the CSP.
+    const nonce = (await headers()).get("x-nonce") ?? undefined;
     return (
         <SessionWrapper>
             <html
@@ -41,7 +44,7 @@ export default function RootLayout({
                 suppressHydrationWarning
             >
                 <body>
-                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange nonce={nonce}>
                         <EmberField />
                         <Suspense fallback={null}>
                             <GlobalLoader />

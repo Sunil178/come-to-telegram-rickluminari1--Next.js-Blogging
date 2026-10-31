@@ -1,7 +1,10 @@
 import authConfig from "./auth.config";
 import NextAuth from "next-auth";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { hasRole, ROLES, type RoleName } from "@/libs/roles";
+import { buildContentSecurityPolicy } from "@/libs/csp";
+import { isGatedPath } from "@/libs/route-gates";
+import { SITE_URL } from "@/libs/site-url";
 
 const { auth } = NextAuth(authConfig);
 
@@ -18,7 +21,24 @@ const ROLE_REQUIREMENTS: { prefix: string; minimum: RoleName }[] = [
     { prefix: "/dashboard/admin/comments", minimum: ROLES.MODERATOR },
 ];
 
-export default auth((req) => {
+// Fresh nonce per request; Next.js reads it from the request's CSP header and applies it to its own scripts.
+function withCsp(request: NextRequest) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+    const csp = buildContentSecurityPolicy({
+        nonce,
+        isDev: process.env.NODE_ENV === "development",
+        upgradeInsecureRequests: SITE_URL.startsWith("https://"),
+    });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-nonce", nonce);
+    requestHeaders.set("Content-Security-Policy", csp);
+
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set("Content-Security-Policy", csp);
+    return response;
+}
+
+const gatedProxy = auth((req) => {
     if (!req.auth) {
         const loginUrl = new URL("/auth/login", req.nextUrl.origin);
         loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
@@ -29,8 +49,18 @@ export default auth((req) => {
     if (requirement && !hasRole(req.auth.user.role, requirement.minimum)) {
         return NextResponse.redirect(new URL("/dashboard/posts", req.nextUrl.origin));
     }
+    return withCsp(req);
 });
 
+// The Auth.js wrapper runs only on gated pages: elsewhere it would re-issue the session cookie on
+// every response and re-check the role in the DB for no reason.
+export default function proxy(request: NextRequest, event: Parameters<typeof gatedProxy>[1]) {
+    return isGatedPath(request.nextUrl.pathname) ? gatedProxy(request, event) : withCsp(request);
+}
+
 export const config = {
-    matcher: ["/posts/add", "/posts/:slug/edit", "/dashboard/:path*"],
+    // Every page (for the CSP nonce); API routes, static assets, and non-HTML metadata routes are skipped.
+    matcher: [
+        "/((?!api/|_next/static|_next/image|uploads/|assets/|favicon.ico|icon.ico|sw.js|manifest.webmanifest|robots.txt|sitemap.xml|feed.xml).*)",
+    ],
 };

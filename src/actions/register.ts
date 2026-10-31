@@ -2,8 +2,11 @@
 
 import User from "@/models/User";
 import Validator from "validatorjs";
-import { hashSync } from "bcrypt";
+import { hash } from "bcrypt";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { getClientIp } from "@/libs/client-ip";
+import { consumeRegistrationAttempt } from "@/libs/auth-rate-limit";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -33,6 +36,11 @@ export async function registerAction(initialState: RegisterState, formData: Form
         };
     }
 
+    // Counted after validation, so fixing form errors doesn't use up the budget.
+    if (!(await consumeRegistrationAttempt(getClientIp({ headers: await headers() })))) {
+        return { error: "Too many registration attempts. Please try again later." };
+    }
+
     try {
         // 2. Check if user already exists
         const existingUser = await User.findOne({
@@ -50,7 +58,7 @@ export async function registerAction(initialState: RegisterState, formData: Form
             middleName: body.middleName || "",
             lastName: body.lastName,
             email: body.email,
-            password: hashSync(body.password as string, 10),
+            password: await hash(body.password as string, 10),
         });
     } catch (error: any) {
         console.error("Registration Error:", error);
