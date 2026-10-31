@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
 import Post from "@/models/Post";
 import { SITE_URL } from "@/libs/site-url";
 
-// DB-backed, so re-generate hourly rather than only once at build time.
-export const revalidate = 3600;
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    // Render per request: the build skips instrumentation's register(), so there is no DB connection to prerender with.
+    await connection();
     const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
         .select("slug updatedAt")
         .sort({ publishedAt: -1 })
