@@ -1,0 +1,9 @@
+- [Commit message style](feedback_commit_message_style.md) — length should track the change; shorten only if a draft turns out too long/padded, not a fixed single-line rule.
+- [Close dev server port after testing](feedback_close_dev_server_port.md) — always kill any dev server I start manually so port 5000 stays free for the user's own terminal. Violated twice — verify with a real command before ending the turn, don't assume.
+- [Never unstage git changes](feedback_never_unstage_git.md) — never run `git restore --staged`/`reset` even to fix my own staging mistake; tell the user and let them decide.
+- [git commit with no pathspec](feedback_git_commit_pathspec.md) — commits the whole index, not just what was just `git add`-ed; always check `git status` first and pass an explicit pathspec.
+- [dbConnect is centralized](feedback_dbconnect_centralized.md) — never call `dbConnect()` outside `instrumentation-node.ts`/`seeder.ts`; the server-boot hook already connects once.
+- [Next.js proxy.ts, not middleware.ts](feedback_nextjs_proxy_not_middleware.md) — check for `proxy.ts` (the renamed convention) before concluding a repo has no route-protection middleware.
+- [Keep comments terse](feedback_terse_comments.md) — 1-2 lines max, even for tricky framework-quirk explanations; corrected twice in one session.
+- [Usage pacing](feedback_usage_pacing.md) — weekly limit must last across many repos; prefer direct tools, diff-scoped medium reviews, no fan-out unless asked.
+- [Mandatory todo list](feedback_mandatory_todo.md) — every multi-step task in every chat gets a live todo list (load deferred TodoWrite first).
