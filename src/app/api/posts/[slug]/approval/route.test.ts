@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
     auth: vi.fn().mockResolvedValue({ user: { id: "mod1", role: "moderator" } }),
 }));
@@ -10,9 +15,14 @@ vi.mock("@/models/Post", async () => {
     const actual = await vi.importActual<typeof import("@/models/Post")>("@/models/Post");
     return {
         ...actual,
-        default: { findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args) },
+        default: {
+            findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args),
+        },
     };
 });
+
+const notifyMock = vi.fn();
+vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
 
 const { PATCH } = await import("@/app/api/posts/[slug]/approval/route");
 
@@ -30,6 +40,7 @@ function context(slug: string) {
 describe("PATCH /api/posts/[slug]/approval", () => {
     beforeEach(() => {
         findOneAndUpdateMock.mockReset();
+        notifyMock.mockReset();
     });
 
     it("rejects a body with an invalid approval value", async () => {
@@ -59,7 +70,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
                 published: true,
                 publishedAt: expect.any(Date),
             }),
-            { new: true }
+            { new: false }
         );
     });
 
@@ -71,10 +82,67 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { slug: "some-slug" },
             expect.objectContaining({ approval: "Rejected", approvedAt: null }),
-            { new: true }
+            { new: false }
         );
         const updatePayload = findOneAndUpdateMock.mock.calls[0][1];
         expect(updatePayload).not.toHaveProperty("published");
         expect(updatePayload).not.toHaveProperty("publishedAt");
+    });
+
+    it("notifies the post's author on approval", async () => {
+        findOneAndUpdateMock.mockResolvedValue({
+            _id: "post-1",
+            slug: "some-slug",
+            title: "Docker for Developers",
+            approval: "Pending",
+            userId: "author-1",
+        });
+
+        await PATCH(requestWithBody({ approval: "Approved" }), context("some-slug"));
+
+        expect(notifyMock).toHaveBeenCalledWith(
+            expect.objectContaining({ recipientId: "author-1", type: "post_approved", postId: "post-1" })
+        );
+    });
+
+    it("notifies the post's author on rejection", async () => {
+        findOneAndUpdateMock.mockResolvedValue({
+            _id: "post-1",
+            slug: "some-slug",
+            title: "Docker for Developers",
+            approval: "Pending",
+            userId: "author-1",
+        });
+
+        await PATCH(requestWithBody({ approval: "Rejected" }), context("some-slug"));
+
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "author-1", type: "post_rejected" }));
+    });
+
+    it("still delegates the self-approval case to notify's own guard, passing matching ids", async () => {
+        findOneAndUpdateMock.mockResolvedValue({
+            _id: "post-1",
+            slug: "some-slug",
+            title: "Docker for Developers",
+            approval: "Pending",
+            userId: "mod1",
+        });
+
+        await PATCH(requestWithBody({ approval: "Approved" }), context("some-slug"));
+
+        expect(notifyMock).toHaveBeenCalledWith(
+            expect.objectContaining({ recipientId: "mod1", actorId: "mod1" })
+        );
+    });
+
+    it("re-applies the update but doesn't re-notify when the post already has the requested status", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "post-1", slug: "some-slug", approval: "Approved", userId: "author-1" });
+
+        const response = await PATCH(requestWithBody({ approval: "Approved" }), context("some-slug"));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ data: { slug: "some-slug", approval: "Approved" } });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.objectContaining({ published: true }), { new: false });
+        expect(notifyMock).not.toHaveBeenCalled();
     });
 });

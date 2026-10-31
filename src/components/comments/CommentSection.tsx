@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CommentNode } from "@/libs/comment-tree";
@@ -82,6 +82,28 @@ export default function CommentSection({
     const [comments, setComments] = useState(initialComments);
     const [optimisticComments, applyOptimistic] = useOptimistic(comments, reduceComments);
     const [, startTransition] = useTransition();
+    const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+    // Scrolls to the #comment-... target itself rather than relying on the browser/Next.js's
+    // one-shot hash scroll, which races hydration of this client-rendered tree and can miss.
+    // One listener for the whole tree, so a later notification click re-targets without a reload.
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const checkHash = () => {
+            const match = window.location.hash.match(/^#comment-(.+)$/);
+            if (!match) return;
+            document.getElementById(`comment-${match[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            setHighlightedId(match[1]);
+            clearTimeout(timer);
+            timer = setTimeout(() => setHighlightedId(null), 2500);
+        };
+        Promise.resolve().then(checkHash);
+        window.addEventListener("hashchange", checkHash);
+        return () => {
+            window.removeEventListener("hashchange", checkHash);
+            clearTimeout(timer);
+        };
+    }, []);
 
     const requireLogin = () => {
         router.push(loginRedirectUrl(location.pathname));
@@ -206,6 +228,7 @@ export default function CommentSection({
                         key={node.id}
                         node={node}
                         currentUserId={currentUserId}
+                        highlightedId={highlightedId}
                         isLoggedIn={isLoggedIn}
                         onReply={(content, parentId) => handleAdd(content, parentId)}
                         onEdit={handleEdit}

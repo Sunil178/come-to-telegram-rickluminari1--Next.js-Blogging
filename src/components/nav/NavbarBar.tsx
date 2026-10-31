@@ -7,6 +7,7 @@ import UserMenu from "@/components/nav/UserMenu";
 import MobileNav from "@/components/nav/MobileNav";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 import Wordmark from "@/components/marginalia/Wordmark";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface NavbarBarProps {
     user: { name?: string | null; email?: string | null; image?: string | null } | null;
@@ -29,7 +30,10 @@ export default function NavbarBar({ user }: NavbarBarProps) {
                 <div className="flex items-center gap-3">
                     <ThemeToggle />
                     {user ? (
-                        <UserMenu name={user.name} email={user.email} image={user.image} />
+                        <>
+                            <NotificationBell />
+                            <UserMenu name={user.name} email={user.email} image={user.image} />
+                        </>
                     ) : (
                         <Button asChild size="sm" className="hidden md:inline-flex">
                             <Link href="/auth/login">Login</Link>

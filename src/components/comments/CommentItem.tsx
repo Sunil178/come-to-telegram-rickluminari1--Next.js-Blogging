@@ -4,6 +4,7 @@ import { useState, useTransition, type MouseEvent } from "react";
 import Link from "next/link";
 import { MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,13 +23,14 @@ import type { CommentNode } from "@/libs/comment-tree";
 interface CommentItemProps {
     node: CommentNode;
     currentUserId: string | null;
+    highlightedId: string | null;
     isLoggedIn: boolean;
     onReply: (content: string, parentId: string) => void;
     onEdit: (id: string, content: string) => void;
     onDelete: (id: string) => void;
 }
 
-export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, onEdit, onDelete }: CommentItemProps) {
+export default function CommentItem({ node, currentUserId, highlightedId, isLoggedIn, onReply, onEdit, onDelete }: CommentItemProps) {
     const [replying, setReplying] = useState(false);
     const [editing, setEditing] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -36,6 +38,7 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
 
     const isOwner = Boolean(currentUserId) && node.authorId === currentUserId;
     const isTempId = node.id.startsWith("temp-");
+    const highlighted = highlightedId === node.id;
 
     const handleDelete = (event: MouseEvent) => {
         event.preventDefault();
@@ -46,7 +49,13 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
     };
 
     return (
-        <div className="border-l-2 border-border pl-4">
+        <div
+            id={`comment-${node.id}`}
+            className={cn(
+                "scroll-mt-16 rounded-md border-l-2 pl-4 transition-colors duration-700",
+                highlighted ? "border-teal bg-teal/10" : "border-border"
+            )}
+        >
             {node.deleted ? (
                 <p className="text-sm text-muted-foreground italic">[deleted]</p>
             ) : (
@@ -156,6 +165,7 @@ export default function CommentItem({ node, currentUserId, isLoggedIn, onReply, 
                             key={reply.id}
                             node={reply}
                             currentUserId={currentUserId}
+                            highlightedId={highlightedId}
                             isLoggedIn={isLoggedIn}
                             onReply={onReply}
                             onEdit={onEdit}

@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { isValidObjectId } from "mongoose";
 import type { SoftDeleteModel } from "mongoose-delete";
 import type { IComment } from "@/models/Comment";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
+import { notify } from "@/libs/notify";
 
 const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
 
@@ -24,6 +26,9 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         if (content.length > 5000) {
             return NextResponse.json({ data: null, message: "Comment is too long (max 5000 characters)" }, { status: 400 });
         }
+        if (parentId && !isValidObjectId(parentId)) {
+            return NextResponse.json({ data: null, message: "Parent comment not found" }, { status: 400 });
+        }
 
         const post = await Post.findOne({ slug });
         if (!post) {
@@ -36,8 +41,9 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });
         }
 
+        let parent = null;
         if (parentId) {
-            const parent = await SoftDeleteComment.findOneWithDeleted({ _id: parentId, postId: post._id });
+            parent = await SoftDeleteComment.findOneWithDeleted({ _id: parentId, postId: post._id });
             if (!parent) {
                 return NextResponse.json({ data: null, message: "Parent comment not found" }, { status: 400 });
             }
@@ -52,6 +58,41 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
 
         await Post.updateOne({ _id: post._id }, { $inc: { commentCount: 1 } });
 
+        const parentAuthorId = parent && !parent.deleted ? parent.userId.toString() : null;
+        const postAuthorId = post.userId?.toString();
+
+        if (parentAuthorId) {
+            after(() =>
+                notify({
+                    recipientId: parentAuthorId,
+                    actorId: session.user.id,
+                    type: "comment_reply",
+                    postId: post._id.toString(),
+                    commentId: comment._id.toString(),
+                    title: "New reply",
+                    body: `Someone replied to your comment on "${post.title}"`,
+                    url: `/posts/${post.slug}#comment-${comment._id}`,
+                })
+            );
+        }
+
+        // Skip when the reply's parent is already the post's author -- they'd get the comment_reply
+        // notification above for the same comment, and a second one here would be a duplicate.
+        if (postAuthorId && postAuthorId !== parentAuthorId) {
+            after(() =>
+                notify({
+                    recipientId: postAuthorId,
+                    actorId: session.user.id,
+                    type: "post_comment",
+                    postId: post._id.toString(),
+                    commentId: comment._id.toString(),
+                    title: "New comment",
+                    body: `Someone commented on your post "${post.title}"`,
+                    url: `/posts/${post.slug}#comment-${comment._id}`,
+                })
+            );
+        }
+
         return NextResponse.json({
             data: {
                 id: comment._id.toString(),
@@ -65,4 +106,4 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         console.error("Failed to create comment:", error);
         return NextResponse.json({ data: null, message: "Something went wrong" }, { status: 500 });
     }
-});
+}, { rateLimit: { points: 10, duration: 60 } });
