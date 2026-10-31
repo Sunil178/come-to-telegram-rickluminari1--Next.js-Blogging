@@ -36,6 +36,17 @@ describe("login rate limiting", () => {
     });
 });
 
+describe("trusted IPs", () => {
+    it("lets an IP that has signed into the account before keep trying after an attacker exhausts the account-wide cap", async () => {
+        expect(await beginLoginAttempt("10.8.0.1", "owner@example.com")).toBe(true);
+        await recordLoginSuccess("10.8.0.1", "owner@example.com");
+        for (let i = 0; i < 60; i++) await beginLoginAttempt(`10.9.${i}.1`, "owner@example.com");
+
+        expect(await beginLoginAttempt("10.9.250.1", "owner@example.com")).toBe(false);
+        expect(await beginLoginAttempt("10.8.0.1", "owner@example.com")).toBe(true);
+    });
+});
+
 describe("registration rate limiting", () => {
     it("allows 10 registration attempts per IP per hour, then blocks", async () => {
         for (let i = 0; i < 10; i++) expect(await consumeRegistrationAttempt("10.7.0.1")).toBe(true);

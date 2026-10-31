@@ -3,7 +3,7 @@ import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-    // proxy.ts's matcher redirects unauthenticated requests before this renders.
+    // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const role = session.user.role;
 

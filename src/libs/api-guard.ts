@@ -7,13 +7,14 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import { hasRole, type RoleName } from "@/libs/roles";
 import { getClientIp } from "@/libs/client-ip";
+import { consumePoint, ipKey } from "@/libs/rate-limit";
 
 // Memoized per request/render pass, per Next.js's recommended Data Access Layer pattern:
 // https://nextjs.org/docs/app/guides/authentication#creating-a-data-access-layer-dal
 export const getSession = cache(auth);
 
-// Also the trusted session type for pages matched in proxy.ts's `config.matcher`,
-// which guarantees a session is present before they render.
+// Also the trusted session type for gated pages (isGatedPath() in route-gates.ts): proxy.ts
+// guarantees a session is present before they render.
 export type AuthenticatedSession = Session & { user: NonNullable<Session["user"]> & { id: string } };
 
 type RateLimitOptions = { points: number; duration: number };
@@ -71,12 +72,8 @@ export function withApiGuard<Context = unknown>(
     const limiter = options.rateLimit ? new RateLimiterMemory(options.rateLimit) : null;
 
     return async (request: NextRequest, context: Context) => {
-        if (limiter) {
-            try {
-                await limiter.consume(getClientIp(request));
-            } catch {
-                return NextResponse.json({ data: null, message: "Too many requests" }, { status: 429 });
-            }
+        if (limiter && !(await consumePoint(limiter, ipKey(getClientIp(request))))) {
+            return NextResponse.json({ data: null, message: "Too many requests" }, { status: 429 });
         }
         if (requireAuth) {
             const session = await getSession();

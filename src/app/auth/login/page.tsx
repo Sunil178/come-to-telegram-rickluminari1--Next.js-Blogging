@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { safeCallbackPath } from "@/libs/auth-redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +27,6 @@ function LoginForm() {
     // Catch errors passed in the URL (e.g. from the proxy redirect on an expired session)
     const urlError = searchParams.get("error");
 
-    // Only follow same-site paths; reject protocol-relative URLs (e.g. "//evil.com") to avoid an open redirect.
-    const callbackUrl = searchParams.get("callbackUrl");
-    const redirectTo = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/posts";
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -52,7 +50,8 @@ function LoginForm() {
                 );
                 return;
             }
-            router.push(redirectTo);
+            // Only follow same-site paths, to avoid an open redirect.
+            router.push(safeCallbackPath(searchParams.get("callbackUrl"), window.location.origin));
             router.refresh(); // forces a refresh to pick up the new session
         } catch {
             setError("An unexpected error occurred. Please try again.");
@@ -78,12 +77,12 @@ function LoginForm() {
 
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="username">Email</Label>
-                            <Input type="email" id="username" name="username" required />
+                            <Input type="email" id="username" name="username" autoComplete="email" required />
                         </div>
 
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="password">Password</Label>
-                            <Input type="password" id="password" name="password" required />
+                            <Input type="password" id="password" name="password" autoComplete="current-password" required />
                         </div>
 
                         <Button type="submit" className="mt-2" disabled={loading}>

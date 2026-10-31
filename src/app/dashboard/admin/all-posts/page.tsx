@@ -5,7 +5,7 @@ interface AllPostsPageProps {
 }
 
 export default async function AllPostsPage({ searchParams }: AllPostsPageProps) {
-    // proxy.ts's matcher redirects unauthenticated/under-privileged requests before this renders.
+    // proxy.ts (isGatedPath) redirects unauthenticated/under-privileged requests before this renders.
     const resolvedSearchParams = await searchParams;
 
     return (

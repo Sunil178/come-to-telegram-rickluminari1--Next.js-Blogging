@@ -6,6 +6,9 @@ import { compare } from "bcrypt";
 import { getClientIp } from "@/libs/client-ip";
 import { beginLoginAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
 
+// Compared against when no user has the email, so unknown and known emails take the same bcrypt time.
+const DUMMY_PASSWORD_HASH = "$2b$10$Wa7YqlKRAqvDxcY2MK7SguZiMttMUqMVARgq3kQJWHwRxgxniBAZO";
+
 // Surfaces as `code` on the client's signIn() result, so the login page can say why.
 class RateLimitedSignin extends CredentialsSignin {
     code = "rate_limited";
@@ -34,7 +37,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
                 const user = await User.findOne({ email: credentials.username });
 
-                if (user && (await compare(credentials.password, user.password))) {
+                const passwordMatches = await compare(credentials.password, user?.password ?? DUMMY_PASSWORD_HASH);
+                if (user && passwordMatches) {
                     await recordLoginSuccess(ip, credentials.username);
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
                     return {

@@ -10,7 +10,7 @@ interface DashboardPostsPageProps {
 }
 
 export default async function DashboardPostsPage({ searchParams }: DashboardPostsPageProps) {
-    // proxy.ts's matcher redirects unauthenticated requests before this renders.
+    // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const resolvedSearchParams = await searchParams;
 

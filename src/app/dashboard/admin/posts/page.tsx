@@ -22,7 +22,7 @@ interface AdminPostsPageProps {
 }
 
 export default async function AdminPostsPage({ searchParams }: AdminPostsPageProps) {
-    // proxy.ts's matcher redirects unauthenticated/under-privileged requests before this renders.
+    // proxy.ts (isGatedPath) redirects unauthenticated/under-privileged requests before this renders.
     const { approval: approvalParam } = await searchParams;
     const approval = APPROVAL_OPTIONS.includes(approvalParam as ApprovalStatus) ? (approvalParam as ApprovalStatus) : ApprovalStatus.Pending;
 

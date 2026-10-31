@@ -61,6 +61,8 @@ export default function proxy(request: NextRequest, event: Parameters<typeof gat
 export const config = {
     // Every page (for the CSP nonce); API routes, static assets, and non-HTML metadata routes are skipped.
     matcher: [
-        "/((?!api/|_next/static|_next/image|uploads/|assets/|favicon.ico|icon.ico|sw.js|manifest.webmanifest|robots.txt|sitemap.xml|feed.xml).*)",
+        // Prefetches are deliberately NOT excluded (unlike the CSP guide's example): skipping proxy.ts for
+        // them would let a forged prefetch header fetch gated pages' data without the auth gate.
+        "/((?!api/|_next/static|_next/image|uploads/|assets/|manifest.webmanifest|robots.txt|sitemap.xml|feed.xml|.*\\.(?:svg|png|jpe?g|gif|webp|ico|txt|xml|js|css|woff2?)$).*)",
     ],
 };

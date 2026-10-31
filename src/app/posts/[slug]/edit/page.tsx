@@ -10,7 +10,7 @@ interface EditPostPageProps {
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
     const { slug } = await params;
-    // proxy.ts's matcher redirects unauthenticated requests before this renders.
+    // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
     const post = await Post.findOne(isAdmin ? { slug } : { slug, userId: session.user.id }).lean();
