@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** Final re-audit
+**Current focus:** none — M1–M8 and the final re-audit are committed; awaiting the owner's end review
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -70,7 +70,7 @@ Review round 1 (`/code-review high 686a028`): 10 findings, all fixed. `GET /api/
 - [x] CNT-03 autosaved drafts: the editor saves to `localStorage` per post a second after real input (not the initial content load), offers restore or discard on return, and clears the draft on a successful save
 - [x] CNT-04 related posts: up to 3 public posts ranked by shared tags, then same category, then recency, below the post
 
-## M8 Visitor interests — base `001b797` (committed with this checklist update)
+## M8 Visitor interests — base `001b797`, committed `b77fcc8`
 
 Review round 1 (`/code-review high 001b797`, which also caught M7 issues in surrounding code): 10 findings, all fixed. Revision snapshots ignore Plate's per-load `data-block-id`s (unchanged saves no longer push real versions out) and run in `after()`; editor drafts are keyed per user (`src/libs/post-drafts.ts`) and cleared on logout; the undecided draft is parked under its own key while the restore banner is up, so autosaves can't overwrite it; the identical-draft check ignores node ids; restoring writes the draft back immediately; the publish-time field stays disabled until its client-side value is set (a fast edit could otherwise be overwritten); an author can no longer take a live post down by setting a future publish time (only not-yet-live posts move, and the field is locked on live posts); publish and password-change times use the app clock rather than MongoDB's `$$NOW`, matching the visibility and session checks; `tags` is indexed for related posts; revision times render in the viewer's timezone; the dashboard's "scheduled for" note shows only for pending posts. Found while testing: interest events were tied to the per-IP view counter, so readers sharing an address shared one event; they're now per visitor. E2E 17/17 three times (consent accept with event and stitching checked in the database, decline, cookie preferences).
 
@@ -81,7 +81,9 @@ Review round 1 (`/code-review high 001b797`, which also caught M7 issues in surr
 
 ## Final re-audit
 
-- [ ] Re-audit and fix new Critical/High
+Each milestone already passed `/code-review high` with all findings fixed. The re-audit checked the cross-cutting invariants over the whole initiative: no raw MongoDB driver, `dbConnect()` only at boot and in the standalone scripts, no `console.*` in server code, every pipeline update either validates or `$literal`-wraps user input, production `npm audit` clean, and every Route Handler behind `withApiGuard` except the Auth.js handler (sign-in is rate-limited in `authorize`). One gap found and fixed: `/feed.xml` queried the DB on every request with no rate limit; it now goes through the guard (30/min per IP). Also corrected stale memory notes (the `dbConnect()` callers) and marked the 2026-10-31 review report as a point-in-time document.
+
+- [x] Re-audit and fix new Critical/High
 
 ## Progress
 
@@ -104,3 +106,4 @@ Review round 1 (`/code-review high 001b797`, which also caught M7 issues in surr
 - 2026-10-31 — M3 Ops done and committed.
 - 2026-10-31 — M4 Containers, M5 Accounts, M6 Notifications v2 and M7 Content done and committed.
 - 2026-10-31 — M8 Visitor interests done and committed.
+- 2026-10-31 — Final re-audit done and committed.

@@ -1,6 +1,6 @@
 ---
 name: feedback-dbconnect-centralized
-description: "Never call dbConnect() from routes/pages/components in this repo — instrumentation.ts already connects once at server boot. Only src/instrumentation-node.ts and src/seeds/seeder.ts may call it."
+description: "Never call dbConnect() from routes/pages/components in this repo — instrumentation.ts already connects once at server boot. Only src/instrumentation-node.ts and the standalone scripts src/seeds/seeder.ts and src/scripts/bootstrap-admin.ts may call it."
 metadata:
   type: feedback
   originSessionId: 1e1cae2a-8e4b-42f8-91ca-a74066b02baa

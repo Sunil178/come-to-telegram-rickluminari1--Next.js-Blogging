@@ -1,5 +1,7 @@
 # Project review — 2026-10-31
 
+> Point-in-time report. The staged notification work it discusses was committed (`b89269c`, `14dd586`), and every finding and suggestion it raised is tracked and resolved in [docs/production-readiness/](../production-readiness/); read the checklist there for the current state.
+
 Scope: understanding of the entire repo, plus a code review and a security review of the **staged change set** (in-app notifications + Web Push, 32 files, +1433/−22). Code that is already committed was checked only lightly. It went through a full security audit in `ff267bb`, and this pass looked for regressions and structural gaps.
 
 ## 1. What the project is
@@ -8,7 +10,7 @@ Vedev.Guru Blog is a multi-author blogging platform.
 
 - **Stack:** Next.js 16.3 (App Router, Turbopack, `proxy.ts` instead of `middleware.ts`), React 19.2, TypeScript 6, Tailwind 4 + shadcn/Radix, Plate.js 53 rich-text editor, Mongoose 9 on MongoDB, NextAuth v5 (Credentials, JWT sessions), Vitest 4.
 - **Roles:** reader → author → moderator → admin (`src/libs/roles.ts`). The JWT re-checks the role against the DB every 60 s (`src/auth.config.ts`).
-- **Request-level policy:** every Route Handler is wrapped in `withApiGuard` (`src/libs/api-guard.ts`), which handles auth (on by default), minimum role, and per-IP in-memory rate limiting. Whole-page gates live in `src/proxy.ts`, which covers `/posts/add`, `/posts/:slug/edit` and `/dashboard/*`, with per-prefix role minimums.
+- **Request-level policy:** every Route Handler except the Auth.js handler (which rate-limits sign-in itself) is wrapped in `withApiGuard` (`src/libs/api-guard.ts`), which handles auth (on by default), minimum role, and per-IP in-memory rate limiting. Whole-page gates live in `src/proxy.ts`, which covers `/posts/add`, `/posts/:slug/edit` and `/dashboard/*`, with per-prefix role minimums.
 - **DB connection:** opened once at server boot via `src/instrumentation-node.ts`. Only the seeder and the bootstrap-admin script connect on their own.
 - **Domain:**
   - posts with draft → pending → approved/rejected approval and publish requests

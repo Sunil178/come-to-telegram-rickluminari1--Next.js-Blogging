@@ -3,10 +3,12 @@ import User from "@/models/User";
 import { SITE_URL } from "@/libs/site-url";
 import { escapeMarkup as escapeXml } from "@/libs/escape";
 import { publicPostFilter } from "@/libs/post-visibility";
+import { withApiGuard } from "@/libs/api-guard";
 
 const FEED_SIZE = 30;
 
-export async function GET() {
+// Public, but each request queries the DB, so it gets the guard's rate limit and error handling.
+export const GET = withApiGuard(async () => {
     const posts = await Post.find(publicPostFilter())
         .populate({ path: "userId", model: User, select: "username" })
         .select("slug title summary publishedAt")
@@ -43,4 +45,4 @@ export async function GET() {
 </rss>`;
 
     return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8" } });
-}
+}, { auth: false, rateLimit: { points: 30, duration: 60 } });

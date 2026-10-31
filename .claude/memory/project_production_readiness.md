@@ -5,8 +5,8 @@ metadata:
   type: project
 ---
 
-Initiative M1–M8 plus final re-audit, tracked in `docs/production-readiness/checklist.md` (resume point after compaction). Owner explicitly authorized (2026-10-31) committing each milestone myself after vitest/tsc/lint/build, `/code-review high <base>`, and Playwright real-user verification — no per-milestone owner review; never push. GitHub token exposure in the `origin` remote URL is known; the owner will rotate it later — never print `git remote -v`.
+Initiative M1–M8 plus final re-audit (all committed 2026-10-31; the owner's end review is pending), tracked in `docs/production-readiness/checklist.md` (resume point after compaction). Owner explicitly authorized (2026-10-31) committing each milestone myself after vitest/tsc/lint/build, `/code-review high <base>`, and Playwright real-user verification — no per-milestone owner review; never push. GitHub token exposure in the `origin` remote URL is known; the owner will rotate it later — never print `git remote -v`.
 
 **Why:** owner wants to review only at the end and asked me to verify as a real user with Playwright.
 
-**How to apply:** this authorization covers staging + committing this initiative's milestone files only; still never push, never touch the owner's database or port 5000 (use port 5100 and a `blog_e2e` DB). Related: [[feedback_usage_pacing]], [[feedback_mandatory_todo]].
+**How to apply:** e2e needs Mailpit running (`docker compose --profile mail up -d mailpit`); the official mongo Docker image refuses to start on this host's kernel ≥ 6.19 (SERVER-121912), so containers were verified against the host MongoDB. This authorization covers staging + committing this initiative's milestone files only; still never push, never touch the owner's database or port 5000 (use port 5100 and a `blog_e2e` DB). Related: [[feedback_usage_pacing]], [[feedback_mandatory_todo]].
