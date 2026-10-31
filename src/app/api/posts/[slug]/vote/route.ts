@@ -5,6 +5,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { toggleVote } from "@/libs/toggle-vote";
 import { logger } from "@/libs/logger";
 import { notify } from "@/libs/notify";
+import { isPubliclyVisible } from "@/libs/post-visibility";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -24,8 +25,8 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         }
 
         const isOwner = post.userId?.toString() === session.user.id;
-        const isPubliclyVisible = post.approval === "Approved" && post.published && post.visibility;
-        if (!isPubliclyVisible && !isOwner) {
+        const isPublic = isPubliclyVisible(post);
+        if (!isPublic && !isOwner) {
             return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });
         }
 

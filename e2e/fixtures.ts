@@ -7,6 +7,7 @@ export const USERS = {
     reader: { email: "e2e-reader@example.com", username: "e2e.reader", role: "reader" },
 } as const;
 export const SEEDED_POST = { slug: "e2e-welcome", title: "Welcome to the end-to-end suite" };
+export const RELATED_POST = { slug: "e2e-related", title: "A related end-to-end post" };
 
 export async function login(page: Page, email: string, password = PASSWORD, callbackUrl = "/posts") {
     await page.goto(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);

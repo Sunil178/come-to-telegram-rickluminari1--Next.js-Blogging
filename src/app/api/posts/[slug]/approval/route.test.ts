@@ -64,13 +64,13 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { slug: "some-slug" },
-            expect.objectContaining({
+            [{ $set: expect.objectContaining({
                 approval: "Approved",
                 approvedAt: expect.any(Date),
                 published: true,
-                publishedAt: expect.any(Date),
-            }),
-            { returnDocument: "before" }
+                publishedAt: { $max: ["$$NOW", { $ifNull: ["$publishAt", "$$NOW"] }] },
+            }) }],
+            { returnDocument: "before", updatePipeline: true }
         );
     });
 
@@ -81,10 +81,10 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
             { slug: "some-slug" },
-            expect.objectContaining({ approval: "Rejected", approvedAt: null }),
-            { returnDocument: "before" }
+            [{ $set: expect.objectContaining({ approval: "Rejected", approvedAt: null }) }],
+            { returnDocument: "before", updatePipeline: true }
         );
-        const updatePayload = findOneAndUpdateMock.mock.calls[0][1];
+        const updatePayload = findOneAndUpdateMock.mock.calls[0][1][0].$set;
         expect(updatePayload).not.toHaveProperty("published");
         expect(updatePayload).not.toHaveProperty("publishedAt");
     });
@@ -142,7 +142,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
 
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ data: { slug: "some-slug", approval: "Approved" } });
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.objectContaining({ published: true }), { returnDocument: "before" });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, [{ $set: expect.objectContaining({ published: true }) }], { returnDocument: "before", updatePipeline: true });
         expect(notifyMock).not.toHaveBeenCalled();
     });
 });

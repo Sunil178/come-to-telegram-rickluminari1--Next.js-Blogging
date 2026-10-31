@@ -18,7 +18,7 @@ vi.mock("@/libs/post-editor-serialize", () => ({
     serializePostContent: async () => "<p>content</p>",
 }));
 
-const { POST } = await import("@/app/api/posts/route");
+const { GET, POST } = await import("@/app/api/posts/route");
 
 function postRequest(fields: Record<string, string>) {
     const body = new FormData();
@@ -59,5 +59,13 @@ describe("POST /api/posts", () => {
         await POST(postRequest({ title: "New post", slug: "foo;bar", post_data: "{}" }), {});
 
         expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ slug: "foobar" }));
+    });
+});
+
+describe("GET /api/posts", () => {
+    it("is for moderators only: it lists posts in every state with author emails", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "author" } });
+        const response = await GET(new NextRequest("http://localhost/api/posts"), {});
+        expect(response.status).toBe(403);
     });
 });

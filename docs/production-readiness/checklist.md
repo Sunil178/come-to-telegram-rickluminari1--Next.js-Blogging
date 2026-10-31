@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** M6 Notifications v2
+**Current focus:** M7 Content
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -61,12 +61,14 @@ Review round 1 (`/code-review high c0a64f7`): 10 findings, all fixed. Upvote ded
 - [~] NTF-04 `readAt` set when read (not reset by repeat clicks); a TTL index synced at boot from `NOTIFICATION_READ_TTL_DAYS` (default 90, `0` drops it), changed in place with `collMod`; rows read before `readAt` existed start their clock at the first boot
 - [~] NTF-05 192/512 PNG icons (plus maskable and Apple touch) generated from the "V." monogram by `src/scripts/generate-icons.mjs`; also the push notification icon (DOC-07 keeps the real-logo swap documented)
 
-## M7 Content
+## M7 Content — base `686a028`
 
-- [ ] CNT-01 scheduled publishing
-- [ ] CNT-02 revision history
-- [ ] CNT-03 autosaved drafts
-- [ ] CNT-04 related posts
+Review round 1 (`/code-review high 686a028`): 10 findings, all fixed. `GET /api/posts` (posts in every state with author emails, used by no UI) now requires moderator; an edit and its schedule change are one pipeline update (user text wrapped in `$literal`), so they can't disagree and unscheduled saves cost no extra write; restore snapshots the version it actually replaced (`findOneAndUpdate` before); `isScheduled` requires published and visible; related posts don't boost uncategorised posts; the editor no longer rewrites a draft after a successful save, fills the publish time after mount (browser timezone, no hydration mismatch), keeps autosaving while the restore banner is up, counts toolbar and click edits, and drops a stored draft identical to the saved post. E2E 15/15 twice (scheduling, revisions with restore, autosave restore and discard, related posts).
+
+- [~] CNT-01 scheduled publishing: optional `publishAt` in the editor; approval sets `publishedAt` to the later of now and `publishAt` (pipeline update); editing an approved post's schedule moves it (clearing it publishes a still-scheduled post now); one rule (`src/libs/post-visibility.ts`) hides future `publishedAt` everywhere readers look (list, post, profile, home, sitemap, RSS, votes, comments, views); the dashboard marks scheduled posts
+- [~] CNT-02 revision history: each edit snapshots the replaced version (`PostRevision`, last 20 per post, only when a revisioned field changed); `/posts/:slug/revisions` (gated, owner or admin) previews sanitized versions and restores one, keeping the replaced version too
+- [~] CNT-03 autosaved drafts: the editor saves to `localStorage` per post a second after real input (not the initial content load), offers restore or discard on return, and clears the draft on a successful save
+- [~] CNT-04 related posts: up to 3 public posts ranked by shared tags, then same category, then recency, below the post
 
 ## M8 Visitor interests
 

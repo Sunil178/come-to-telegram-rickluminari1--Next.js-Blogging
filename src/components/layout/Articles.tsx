@@ -4,11 +4,12 @@ import PostVote from "@/models/PostVote";
 import { getSession } from "@/libs/api-guard";
 import ArticleGrid from "@/components/posts/ArticleGrid";
 import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 const RECENT_ARTICLES_LIMIT = 6;
 
 export default async function Articles() {
-    const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
+    const posts = await Post.find(publicPostFilter())
         .sort({ publishedAt: -1 })
         .limit(RECENT_ARTICLES_LIMIT)
         .populate({ path: "categoryId", model: Category, select: "title" })

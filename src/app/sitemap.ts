@@ -2,11 +2,12 @@ import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import Post from "@/models/Post";
 import { SITE_URL } from "@/libs/site-url";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Render per request: the build skips instrumentation's register(), so there is no DB connection to prerender with.
     await connection();
-    const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
+    const posts = await Post.find(publicPostFilter())
         .select("slug updatedAt")
         .sort({ publishedAt: -1 })
         .lean();

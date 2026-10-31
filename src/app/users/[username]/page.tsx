@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArticleGrid from "@/components/posts/ArticleGrid";
 import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 import VoteButtons from "@/components/votes/VoteButtons";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 interface ProfilePageProps {
     params: Promise<{ username: string }>;
@@ -38,7 +39,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             ? await UserVote.findOne({ userId: session.user.id, targetUserId: profileUser._id }).lean()
             : null;
 
-    const posts = await Post.find({ userId: profileUser._id, approval: "Approved", published: true, visibility: true })
+    const posts = await Post.find({ userId: profileUser._id, ...publicPostFilter() })
         .sort({ publishedAt: -1 })
         .populate({ path: "categoryId", model: Category, select: "title" })
         .select("slug title titleDescription bannerImage publishedAt categoryId upvoteCount downvoteCount")

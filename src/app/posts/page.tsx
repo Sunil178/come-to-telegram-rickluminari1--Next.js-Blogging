@@ -11,6 +11,7 @@ import PostsPagination from "@/components/posts/PostsPagination";
 import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 import { escapeRegExp } from "@/libs/search-query";
 import { buildSearchParamsHref } from "@/libs/build-href";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 const PAGE_SIZE = 9;
 
@@ -29,7 +30,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
 
     const categories = await Category.find({ visibility: true }).select("title slug").sort({ title: 1 }).lean();
 
-    const filter: FilterQuery<IPost> = { approval: "Approved", published: true, visibility: true };
+    const filter: FilterQuery<IPost> = publicPostFilter();
 
     if (categorySlug) {
         const activeCategory = categories.find((c) => c.slug === categorySlug);

@@ -23,6 +23,9 @@ import TableOfContents from "@/components/posts/TableOfContents";
 import ViewTracker from "@/components/posts/ViewTracker";
 import VoteButtons from "@/components/votes/VoteButtons";
 import CommentSection from "@/components/comments/CommentSection";
+import { isPubliclyVisible } from "@/libs/post-visibility";
+import { findRelatedPosts } from "@/libs/related-posts";
+import type { Types } from "mongoose";
 
 interface PostPageProps {
     params: Promise<{ slug: string }>;
@@ -50,8 +53,8 @@ const getPost = cache(async (slug: string) => {
         .lean();
     if (!post) return null;
 
-    const isPubliclyVisible = post.approval === "Approved" && post.published && post.visibility;
-    if (isPubliclyVisible) return post;
+    const isPublic = isPubliclyVisible(post);
+    if (isPublic) return post;
 
     const session = await getSession();
     if (hasRole(session?.user?.role, ROLES.MODERATOR)) return post;
@@ -116,7 +119,11 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const session = await getSession();
     const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
-    const comments = await getComments(post._id.toString(), session?.user?.id);
+    const [comments, related] = await Promise.all([
+        getComments(post._id.toString(), session?.user?.id),
+        // categoryId is populated above; relate by its id.
+        findRelatedPosts({ _id: post._id, tags: post.tags, categoryId: (post.categoryId as unknown as { _id?: Types.ObjectId } | null)?._id ?? null }),
+    ]);
 
     const window = new JSDOM("").window;
     const purify = DOMPurify(window as unknown as Window & typeof globalThis);
@@ -210,6 +217,24 @@ export default async function PostPage({ params }: PostPageProps) {
                         </Badge>
                     ))}
                 </div>
+            )}
+
+            {related.length > 0 && (
+                <section aria-labelledby="related-heading" className="mx-auto mt-12 max-w-6xl px-6">
+                    <h2 id="related-heading" className="font-heading text-xl font-semibold text-foreground">Related posts</h2>
+                    <ul className="mt-4 grid gap-4 sm:grid-cols-3">
+                        {related.map((item) => (
+                            <li key={item.slug} className="rounded-lg border border-border bg-card p-4 hover:bg-accent">
+                                <Link href={`/posts/${item.slug}`} className="block">
+                                    <span className="font-heading text-base font-semibold text-foreground">{item.title}</span>
+                                    {item.titleDescription && (
+                                        <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">{item.titleDescription}</span>
+                                    )}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
 
             <CommentSection

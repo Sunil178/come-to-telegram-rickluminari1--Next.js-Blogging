@@ -6,6 +6,8 @@ import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
+import { parsePublishAt, rescheduledPublishedAt } from "@/libs/post-schedule";
+import { recordRevision } from "@/libs/post-revisions";
 
 // Post's exported type is loosened by `mongoose.models?.Post || mongoose.model<...>()`;
 // narrow it back here so the soft-delete plugin's `.delete()` is visible.
@@ -42,25 +44,43 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: 'Post content is required' }, { status: 400 });
         }
 
+        const publishAt = parsePublishAt(body.get('publishAt'));
+        if (!publishAt.ok) {
+            return NextResponse.json({ data: null, message: 'Publish time must be a valid date within a year' }, { status: 400 });
+        }
+
         const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
-        const post = await Post.findOneAndUpdate(
+        const changes = {
+            slug: nextSlug,
+            title,
+            titleDescription: body.get('titleDescription'),
+            tags: (body.get('tags') as string)?.split(',').filter(Boolean) ?? [],
+            bannerImage: body.get('postBannerPath'),
+            content: await serializePostContent(value),
+            publishAt: publishAt.value,
+        };
+        // One pipeline update, so the edit and the schedule change land together. $literal keeps
+        // user text such as a "$100 tips" title from being read as a field path. "before" returns
+        // the replaced version for the revision history.
+        const previous = await Post.findOneAndUpdate(
             isAdmin ? { slug: currentSlug } : { slug: currentSlug, userId: session.user.id },
-            {
-                slug: nextSlug,
-                title,
-                titleDescription: body.get('titleDescription'),
-                tags: (body.get('tags') as string)?.split(',').filter(Boolean) ?? [],
-                bannerImage: body.get('postBannerPath'),
-                content: await serializePostContent(value),
-            },
-            { returnDocument: "after" }
+            [{
+                $set: {
+                    ...Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, { $literal: value }])),
+                    // Already approved: editing the schedule moves its go-live time (see rescheduledPublishedAt).
+                    publishedAt: { $cond: [{ $eq: ["$approval", "Approved"] }, rescheduledPublishedAt(publishAt.value), "$publishedAt"] },
+                },
+            }],
+            { returnDocument: "before", updatePipeline: true }
         );
 
-        if (!post) {
+        if (!previous) {
             return NextResponse.json({ data: null, message: 'Post not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ data: { slug: post.slug }, message: 'Success' });
+        await recordRevision(previous, changes, session.user.id);
+
+        return NextResponse.json({ data: { slug: nextSlug }, message: 'Success' });
     } catch (error) {
         if ((error as { code?: number }).code === 11000) {
             return NextResponse.json({ data: null, message: 'A post with this slug already exists. Please choose a different slug.' }, { status: 409 });

@@ -28,6 +28,8 @@ export interface IPost extends IPostWithSoftDelete {
   visibility: boolean;
   published: boolean;
   publishedAt: Date;
+  // Author-requested publish time; approval publishes at the later of this and the approval itself.
+  publishAt: Date | null;
   visitorCount: number;
   approval: ApprovalStatus;
   approvedAt: Date;
@@ -51,6 +53,7 @@ const schema = new Schema<IPost>(
     visibility: { type: Boolean, default: true },
     published: { type: Boolean, default: false },
     publishedAt: { type: Date, default: null },
+    publishAt: { type: Date, default: null },
     visitorCount: { type: Number, default: 0 },
     approval: { type: String, enum: Object.values(ApprovalStatus), default: ApprovalStatus.Pending },
     approvedAt: { type: Date, default: null },

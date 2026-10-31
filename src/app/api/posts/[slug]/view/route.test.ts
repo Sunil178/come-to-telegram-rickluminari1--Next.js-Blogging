@@ -56,7 +56,7 @@ describe("POST /api/posts/[slug]/view", () => {
 
         expect(createViewMock).toHaveBeenCalledWith(expect.objectContaining({ slug: "some-slug" }));
         expect(updateOneMock).toHaveBeenCalledWith(
-            { slug: "some-slug", approval: "Approved", published: true, visibility: true },
+            { slug: "some-slug", approval: "Approved", published: true, visibility: true, publishedAt: { $not: { $gt: expect.any(Date) } } },
             { $inc: { visitorCount: 1 } }
         );
         expect(response.headers.get("set-cookie")).toContain("viewed:some-slug=1");

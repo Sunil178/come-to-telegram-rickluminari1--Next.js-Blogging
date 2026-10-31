@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isGatedPath } from "@/libs/route-gates";
 
 describe("isGatedPath", () => {
-    it.each(["/posts/add", "/posts/my-post/edit", "/dashboard", "/dashboard/admin/users"])("gates %s", (path) => {
+    it.each(["/posts/add", "/posts/my-post/edit", "/posts/my-post/revisions", "/dashboard", "/dashboard/admin/users"])("gates %s", (path) => {
         expect(isGatedPath(path)).toBe(true);
     });
 

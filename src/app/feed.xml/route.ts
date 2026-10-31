@@ -2,11 +2,12 @@ import Post from "@/models/Post";
 import User from "@/models/User";
 import { SITE_URL } from "@/libs/site-url";
 import { escapeMarkup as escapeXml } from "@/libs/escape";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 const FEED_SIZE = 30;
 
 export async function GET() {
-    const posts = await Post.find({ approval: "Approved", published: true, visibility: true })
+    const posts = await Post.find(publicPostFilter())
         .populate({ path: "userId", model: User, select: "username" })
         .select("slug title summary publishedAt")
         .sort({ publishedAt: -1 })

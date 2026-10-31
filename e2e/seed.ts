@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { hash } from "bcrypt";
-import { PASSWORD, SEEDED_POST, USERS } from "./fixtures";
+import { PASSWORD, RELATED_POST, SEEDED_POST, USERS } from "./fixtures";
 
 // Resets the isolated e2e database. Run by playwright.config's webServer command *before* `next start`:
 // Playwright starts the web server ahead of globalSetup, and dropping the database after the server
@@ -32,15 +32,9 @@ async function seed() {
     );
     const authorId = users.insertedIds[1];
 
-    await db.collection("posts").insertOne({
+    const basePost = {
         userId: authorId,
-        slug: SEEDED_POST.slug,
-        title: SEEDED_POST.title,
-        titleDescription: "Seeded for end-to-end tests",
-        tags: ["e2e"],
         bannerImage: "",
-        content: "<p>Hello from the seeded post.</p>",
-        summary: "Seeded for end-to-end tests",
         upvoteCount: 0,
         downvoteCount: 0,
         commentCount: 0,
@@ -52,7 +46,28 @@ async function seed() {
         approvedAt: now,
         createdAt: now,
         updatedAt: now,
-    });
+    };
+    await db.collection("posts").insertMany([
+        {
+            ...basePost,
+            slug: SEEDED_POST.slug,
+            title: SEEDED_POST.title,
+            titleDescription: "Seeded for end-to-end tests",
+            tags: ["e2e"],
+            content: "<p>Hello from the seeded post.</p>",
+            summary: "Seeded for end-to-end tests",
+        },
+        {
+            // Shares the "e2e" tag, so it shows up as the seeded post's related post.
+            ...basePost,
+            slug: RELATED_POST.slug,
+            title: RELATED_POST.title,
+            titleDescription: "A second post sharing a tag",
+            tags: ["e2e", "related"],
+            content: "<p>A related post.</p>",
+            summary: "A second post sharing a tag",
+        },
+    ]);
 
     await mongoose.disconnect();
 }

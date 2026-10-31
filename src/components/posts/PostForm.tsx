@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { Value } from "platejs";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,45 @@ interface InitialPost {
     tags: string[];
     bannerImage: string;
     contentHtml: string;
+    publishAt: string | null;
+}
+
+// <input type="datetime-local"> works in local time without a zone; the API takes an ISO timestamp.
+function toLocalInputValue(iso: string | null | undefined): string {
+    if (!iso) return "";
+    const date = new Date(iso);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+// Autosaved to this browser while editing, so a crash, closed tab or expired session doesn't lose work.
+interface Draft {
+    savedAt: number;
+    title: string;
+    titleDescription: string;
+    slug: string;
+    tags: string[];
+    bannerImage: string;
+    publishAt: string;
+    content: Value;
+}
+
+const AUTOSAVE_DELAY_MS = 1000;
+
+function readDraft(key: string): Draft | null {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? (JSON.parse(raw) as Draft) : null;
+    } catch {
+        return null;
+    }
+}
+
+function removeDraft(key: string) {
+    try {
+        localStorage.removeItem(key);
+    } catch {
+        // Storage unavailable (private mode, blocked): nothing to clean up.
+    }
 }
 
 interface PostFormProps {
@@ -36,8 +76,80 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
     const [slugEdited, setSlugEdited] = useState(mode === "edit");
     const [tags, setTags] = useState<string[]>(initialPost?.tags ?? []);
     const [bannerImage, setBannerImage] = useState(initialPost?.bannerImage ?? "");
+    // Filled after mount: the local-time value depends on the browser's timezone, not the server's.
+    const [publishAt, setPublishAt] = useState("");
+    useEffect(() => {
+        const initial = toLocalInputValue(initialPost?.publishAt);
+        if (initial) Promise.resolve().then(() => setPublishAt(initial));
+    }, [initialPost?.publishAt]);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
+
+    const draftKey = `post-draft:${mode === "edit" ? initialPost!.slug : "new"}`;
+    const [pendingDraft, setPendingDraft] = useState<Draft | null>(null);
+    const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+    const [contentVersion, setContentVersion] = useState(0);
+    // Only real input autosaves: loading the post into the editor also fires a value change, and must
+    // not overwrite a draft the author hasn't decided to restore yet.
+    const userEdited = useRef(false);
+    // Set once the post is saved, so a still-pending autosave can't write the draft back.
+    const saved = useRef(false);
+
+    useEffect(() => {
+        const draft = readDraft(draftKey);
+        if (!draft) return;
+        // A draft identical to the saved post (e.g. a click that changed nothing) isn't worth offering.
+        // usePostEditor's effect has already loaded the post's content by now.
+        const unchanged =
+            draft.title === (initialPost?.title ?? "") &&
+            draft.titleDescription === (initialPost?.titleDescription ?? "") &&
+            draft.slug === (initialPost?.slug ?? "") &&
+            JSON.stringify(draft.tags) === JSON.stringify(initialPost?.tags ?? []) &&
+            draft.bannerImage === (initialPost?.bannerImage ?? "") &&
+            draft.publishAt === toLocalInputValue(initialPost?.publishAt) &&
+            JSON.stringify(draft.content) === JSON.stringify(editor.children);
+        if (unchanged) removeDraft(draftKey);
+        else Promise.resolve().then(() => setPendingDraft(draft));
+        // Runs once per post; initialPost and editor are stable for its lifetime.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [draftKey]);
+
+    useEffect(() => {
+        // Keeps saving while the restore banner is up: the older draft stays restorable from memory.
+        if (!userEdited.current) return;
+        const timer = setTimeout(() => {
+            if (saved.current) return;
+            const draft: Draft = { savedAt: Date.now(), title, titleDescription, slug, tags, bannerImage, publishAt, content: editor.children };
+            try {
+                localStorage.setItem(draftKey, JSON.stringify(draft));
+                setDraftSavedAt(draft.savedAt);
+            } catch {
+                // Quota exceeded or storage blocked: autosave is best-effort.
+            }
+        }, AUTOSAVE_DELAY_MS);
+        return () => clearTimeout(timer);
+    }, [draftKey, title, titleDescription, slug, tags, bannerImage, publishAt, contentVersion, editor]);
+
+    const restoreDraft = () => {
+        if (!pendingDraft) return;
+        setTitle(pendingDraft.title);
+        setTitleDescription(pendingDraft.titleDescription);
+        setSlug(pendingDraft.slug);
+        setSlugEdited(true);
+        setTags(pendingDraft.tags);
+        setBannerImage(pendingDraft.bannerImage);
+        setPublishAt(pendingDraft.publishAt);
+        editor.tf.setValue(pendingDraft.content);
+        setPendingDraft(null);
+        userEdited.current = true;
+    };
+
+    const discardDraft = () => {
+        removeDraft(draftKey);
+        setPendingDraft(null);
+        // The click itself isn't an edit; don't autosave the untouched post as a new draft.
+        userEdited.current = false;
+    };
 
     const handleTitleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setTitle(event.target.value);
@@ -62,6 +174,7 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
             formData.set("tags", tags.join(","));
             formData.set("postBannerPath", bannerImage);
             formData.set("post_data", JSON.stringify(editor.children));
+            formData.set("publishAt", publishAt ? new Date(publishAt).toISOString() : "");
 
             const url = mode === "create" ? "/api/posts" : `/api/posts/${initialPost!.slug}`;
             const response = await fetch(url, {
@@ -80,6 +193,8 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
                 return;
             }
 
+            saved.current = true;
+            removeDraft(draftKey);
             router.push("/dashboard/posts");
             router.refresh();
         } catch {
@@ -90,10 +205,28 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} method="post" className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10">
+        <form
+            onSubmit={handleSubmit}
+            // Typing, and clicks such as toolbar formatting, tag removal or banner changes, count as edits.
+            onInput={() => (userEdited.current = true)}
+            onKeyDown={() => (userEdited.current = true)}
+            onPointerDown={() => (userEdited.current = true)}
+            method="post"
+            className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-10"
+        >
             <h1 className="font-heading text-2xl font-semibold text-foreground">
                 {mode === "create" ? "New post" : "Edit post"}
             </h1>
+
+            {pendingDraft && (
+                <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
+                    <span>You have an unsaved draft from {new Date(pendingDraft.savedAt).toLocaleString("en-US")}.</span>
+                    <span className="flex gap-2">
+                        <Button type="button" size="sm" onClick={restoreDraft}>Restore draft</Button>
+                        <Button type="button" size="sm" variant="outline" onClick={discardDraft}>Discard</Button>
+                    </span>
+                </div>
+            )}
 
             {error && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -132,13 +265,32 @@ export default function PostForm({ mode, initialPost }: PostFormProps) {
             </div>
 
             <div className="flex flex-col gap-2">
+                <Label htmlFor="post-publish-at">Publish at (optional)</Label>
+                <Input
+                    id="post-publish-at"
+                    type="datetime-local"
+                    value={publishAt}
+                    onChange={(e) => setPublishAt(e.target.value)}
+                    className="w-fit"
+                />
+                <p className="text-xs text-muted-foreground">
+                    Leave empty to publish as soon as a moderator approves it. A future time keeps the approved post hidden until then.
+                </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
                 <Label>Content</Label>
                 <div className="overflow-hidden rounded-lg border border-input">
-                    <PostEditor editor={editor} />
+                    <PostEditor editor={editor} onValueChange={() => setContentVersion((version) => version + 1)} />
                 </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-4">
+                {draftSavedAt && (
+                    <span className="text-xs text-muted-foreground" aria-live="polite">
+                        Draft saved at {new Date(draftSavedAt).toLocaleTimeString("en-US")}
+                    </span>
+                )}
                 <Button type="submit" size="lg" disabled={submitting}>
                     {submitting ? "Publishing…" : mode === "create" ? "Publish" : "Save changes"}
                 </Button>

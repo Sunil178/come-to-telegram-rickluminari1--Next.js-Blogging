@@ -33,12 +33,13 @@ export function usePostEditor(initialHtml?: string): PostEditorInstance {
 
 interface PostEditorProps {
     editor: PostEditorInstance;
+    onValueChange?: () => void;
 }
 
-export function PostEditor({ editor }: PostEditorProps) {
+export function PostEditor({ editor, onValueChange }: PostEditorProps) {
     return (
         <TooltipProvider>
-            <Plate editor={editor}>
+            <Plate editor={editor} onValueChange={onValueChange}>
                 <EditorContainer>
                     <Editor placeholder="Write your post…" />
                 </EditorContainer>

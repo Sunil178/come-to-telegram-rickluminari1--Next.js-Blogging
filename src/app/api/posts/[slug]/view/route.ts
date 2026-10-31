@@ -5,6 +5,7 @@ import PostView, { VIEW_DEDUPE_SECONDS } from "@/models/PostView";
 import { withApiGuard } from "@/libs/api-guard";
 import { getClientIp, hashIp } from "@/libs/client-ip";
 import { logger } from "@/libs/logger";
+import { publicPostFilter } from "@/libs/post-visibility";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -40,7 +41,7 @@ export const POST = withApiGuard<RouteContext>(
             // unapproved post doesn't inflate the count before it's ever actually public.
             if (isNewView) {
                 await Post.updateOne(
-                    { slug, approval: "Approved", published: true, visibility: true },
+                    { slug, ...publicPostFilter() },
                     { $inc: { visitorCount: 1 } }
                 );
             }

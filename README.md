@@ -4,7 +4,8 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 
 ## Features
 
-- Rich-text posts with banner images, tags, categories, table of contents and reading time
+- Rich-text posts with banner images, tags, categories, table of contents, reading time and related posts
+- Scheduled publishing (an approved post stays hidden until its publish time), revision history with restore, and editor drafts autosaved in the browser
 - Roles: reader → author → moderator → admin, with publish requests and post approval
 - Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions)
 - Threaded comments, votes on posts, comments and profiles

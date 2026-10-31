@@ -2,7 +2,7 @@
 export function isGatedPath(pathname: string): boolean {
     return (
         pathname === "/posts/add" ||
-        /^\/posts\/[^/]+\/edit$/.test(pathname) ||
+        /^\/posts\/[^/]+\/(edit|revisions)$/.test(pathname) ||
         pathname === "/dashboard" ||
         pathname.startsWith("/dashboard/")
     );

@@ -26,12 +26,13 @@ export const PATCH = withApiGuard<RouteContext>(
             };
             if (approval === ApprovalStatus.Approved) {
                 update.published = true;
-                update.publishedAt = new Date();
+                // A scheduled post goes live at its publishAt; approving after that time publishes now.
+                update.publishedAt = { $max: ["$$NOW", { $ifNull: ["$publishAt", "$$NOW"] }] };
             }
 
             // Returns the pre-update document, so a repeat click (or a second moderator) still applies
             // the update (re-approving publishes) but doesn't re-notify the author.
-            const post = await Post.findOneAndUpdate({ slug }, update, { returnDocument: "before" });
+            const post = await Post.findOneAndUpdate({ slug }, [{ $set: update }], { returnDocument: "before", updatePipeline: true });
 
             if (!post) {
                 return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });

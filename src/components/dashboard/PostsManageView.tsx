@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import PostsSearch from "@/components/posts/PostsSearch";
 import PostsPagination from "@/components/posts/PostsPagination";
 import DeletePostButton from "@/components/posts/DeletePostButton";
+import { isScheduled } from "@/libs/post-visibility";
 
 const PAGE_SIZE = 10;
 
@@ -171,6 +172,12 @@ export default async function PostsManageView({
                                     </TableCell>
                                     <TableCell className="font-mono text-xs">
                                         {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US") : "—"}
+                                        {isScheduled(post) && <Badge variant="outline" className="ml-2 font-sans">Scheduled</Badge>}
+                                        {!post.publishedAt && post.publishAt && (
+                                            <span className="ml-2 font-sans text-muted-foreground">
+                                                (scheduled for {new Date(post.publishAt).toLocaleDateString("en-US")})
+                                            </span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="font-mono text-xs">{post.visitorCount ?? 0}</TableCell>
                                     <TableCell>

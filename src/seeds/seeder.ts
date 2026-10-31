@@ -15,6 +15,7 @@ import { markdownToPostHtml } from "@/libs/markdown-to-post-html";
 import categoriesData from "./categories.json";
 import usersData from "./users.json";
 import commentTemplates from "./comment-templates.json";
+import { isPubliclyVisible } from "@/libs/post-visibility";
 
 // Old posts.json fixtures, retired now that src/seeds/posts/*.md replaces them.
 // Matched on slug+title, not slug alone: some slugs (e.g. "5g-and-beyond") are generic
@@ -152,10 +153,6 @@ async function seedCommentIfMissing(options: {
     await Post.updateOne({ _id: postId }, { $inc: { commentCount: 1 } });
     console.log(`💬 ${author.username} ${parentId ? "replied" : "commented"}`);
     return comment;
-}
-
-function isPubliclyVisible(post: PostDoc): boolean {
-    return post.approval === "Approved" && post.published && post.visibility;
 }
 
 // Votes and threaded comments from demo users (never the post's own owner — the
