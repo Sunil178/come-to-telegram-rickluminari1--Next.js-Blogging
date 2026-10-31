@@ -32,7 +32,7 @@ self.addEventListener("push", (event) => {
     }
     event.waitUntil(
         self.registration
-            .showNotification(data.title || "Vedev.Guru", { body: data.body, data: { url: data.url, notificationId: data.notificationId } })
+            .showNotification(data.title || "Vedev.Guru", { body: data.body, icon: "/icons/icon-192.png", data: { url: data.url, notificationId: data.notificationId } })
             .then(() =>
                 self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
                     clients.forEach((client) => client.postMessage({ type: "notification-received" }));

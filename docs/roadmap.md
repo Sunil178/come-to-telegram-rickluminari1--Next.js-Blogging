@@ -20,7 +20,7 @@ Uploads (`src/app/api/posts/upload/route.ts`) are written to the local `uploads/
 
 ### PWA icons
 
-Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifest. Icons generated from the wordmark stand in until the real logo is supplied; replace them in `public/` and `src/app/manifest.ts`.
+Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifest. Icons generated from the wordmark (`src/scripts/generate-icons.mjs`, output in `public/icons/`) stand in until the real logo is supplied; replace `public/icons/icon-192.png`, `icon-512.png` (also used as the maskable icon, so keep the mark inside the central 80%) and `apple-touch-icon.png`.
 
 ### CI/CD (GitHub Actions)
 

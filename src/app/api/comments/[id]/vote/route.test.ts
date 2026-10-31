@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+const notifyMock = vi.fn();
+vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
+
 const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
@@ -39,6 +46,7 @@ describe("POST /api/comments/[id]/vote", () => {
         commentCountsMock.mockReset().mockResolvedValue({ upvoteCount: 2, downvoteCount: 0 });
         postFindByIdMock.mockReset().mockResolvedValue(PUBLIC_POST);
         toggleVoteMock.mockReset().mockResolvedValue({ action: "removed", currentType: null });
+        notifyMock.mockReset();
     });
 
     it("returns 400 for a malformed comment id", async () => {
@@ -67,5 +75,15 @@ describe("POST /api/comments/[id]/vote", () => {
             expect.objectContaining({ voteFilter: { userId: "voter-1", commentId: COMMENT_ID }, counterId: COMMENT_ID, type: true })
         );
         expect(await response.json()).toMatchObject({ data: { action: "removed", myVote: null, upvoteCount: 2, downvoteCount: 0 } });
+    });
+
+    it("notifies the comment's author of an upvote, and not of a removal", async () => {
+        commentFindByIdMock.mockReturnValue({ _id: COMMENT_ID, postId: "post-1", userId: "commenter-1" });
+        await vote({ type: true });
+        expect(notifyMock).not.toHaveBeenCalled();
+
+        toggleVoteMock.mockResolvedValue({ action: "created", currentType: true });
+        await vote({ type: true });
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "commenter-1", type: "comment_upvoted", commentId: COMMENT_ID }));
     });
 });

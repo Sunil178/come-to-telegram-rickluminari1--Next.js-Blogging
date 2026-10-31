@@ -67,12 +67,12 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
                 notify({
                     recipientId: parentAuthorId,
                     actorId: session.user.id,
+                    actorUsername: session.user.username,
+                    postTitle: post.title,
+                    postSlug: post.slug,
                     type: "comment_reply",
                     postId: post._id.toString(),
                     commentId: comment._id.toString(),
-                    title: "New reply",
-                    body: `Someone replied to your comment on "${post.title}"`,
-                    url: `/posts/${post.slug}#comment-${comment._id}`,
                 })
             );
         }
@@ -84,12 +84,12 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
                 notify({
                     recipientId: postAuthorId,
                     actorId: session.user.id,
+                    actorUsername: session.user.username,
+                    postTitle: post.title,
+                    postSlug: post.slug,
                     type: "post_comment",
                     postId: post._id.toString(),
                     commentId: comment._id.toString(),
-                    title: "New comment",
-                    body: `Someone commented on your post "${post.title}"`,
-                    url: `/posts/${post.slug}#comment-${comment._id}`,
                 })
             );
         }

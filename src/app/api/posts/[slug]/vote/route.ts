@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import Post from "@/models/Post";
 import PostVote from "@/models/PostVote";
 import { withApiGuard } from "@/libs/api-guard";
 import { toggleVote } from "@/libs/toggle-vote";
 import { logger } from "@/libs/logger";
+import { notify } from "@/libs/notify";
 
 interface RouteContext {
     params: Promise<{ slug: string }>;
@@ -36,6 +37,21 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             type: body.type,
             voterId: session.user.id,
         });
+
+        const postAuthorId = post.userId?.toString();
+        if (postAuthorId && result.currentType === true) {
+            after(() =>
+                notify({
+                    recipientId: postAuthorId,
+                    actorId: session.user.id,
+                    actorUsername: session.user.username,
+                    postTitle: post.title,
+                    postSlug: post.slug,
+                    type: "post_upvoted",
+                    postId: post._id.toString(),
+                })
+            );
+        }
 
         const updated = await Post.findById(post._id).select("upvoteCount downvoteCount").lean();
 

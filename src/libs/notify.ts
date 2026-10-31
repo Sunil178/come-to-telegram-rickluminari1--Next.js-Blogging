@@ -1,6 +1,16 @@
 import webpush from "web-push";
 import Notification, { type NotificationType } from "@/models/Notification";
 import PushSubscription from "@/models/PushSubscription";
+import User from "@/models/User";
+import {
+    categoryOf,
+    DEDUPED_NOTIFICATION_TYPES,
+    describeNotification,
+    NOTIFICATION_TITLES,
+    notificationLink,
+    resolvePreferences,
+    type ChannelPreference,
+} from "@/libs/notification-types";
 import { isAllowedPushEndpoint } from "@/libs/push-endpoint";
 import { logger } from "@/libs/logger";
 import { vapidPublicKey } from "@/libs/runtime-config";
@@ -29,32 +39,61 @@ export function pushPublicKey(): string {
     return pushConfigured ? vapidPublicKey() : "";
 }
 
+// Push text and links come from the shared catalogue, so they always match the bell and the page.
 interface NotifyOptions {
     recipientId: string;
     actorId?: string | null;
+    actorUsername?: string | null;
     type: NotificationType;
-    postId: string;
+    postId?: string | null;
+    postTitle?: string | null;
+    postSlug?: string | null;
     commentId?: string | null;
-    title: string;
-    body: string;
-    url: string;
+}
+
+async function channelsFor(recipientId: string, type: NotificationType): Promise<ChannelPreference | null> {
+    try {
+        const recipient = await User.findById(recipientId).select("notificationPrefs").lean<{ notificationPrefs?: Record<string, ChannelPreference> }>();
+        if (!recipient) return null;
+        return resolvePreferences(recipient.notificationPrefs)[categoryOf(type)];
+    } catch (error) {
+        logger.error("Failed to load notification preferences", { error });
+        return { inApp: true, push: true };
+    }
 }
 
 // Called from after() by its callers, so it must never throw -- the triggering
 // request has already responded by the time this runs.
 export async function notify(options: NotifyOptions): Promise<void> {
-    const { recipientId, actorId = null, type, postId, commentId = null, title, body, url } = options;
+    const { recipientId, actorId = null, actorUsername = null, type, postId = null, postTitle = null, postSlug = null, commentId = null } = options;
+    // At most one notification per actor and target (upvotes), so toggling a vote can't re-notify.
+    const dedupe = DEDUPED_NOTIFICATION_TYPES.includes(type);
 
     if (actorId && actorId === recipientId) return;
 
-    let createdNotification;
+    const channels = await channelsFor(recipientId, type);
+    if (!channels || (!channels.inApp && !channels.push)) return;
+
+    let notificationId: string | undefined;
     try {
-        createdNotification = await Notification.create({ recipientId, actorId, type, postId, commentId });
+        const fields = { recipientId, actorId, type, postId, commentId };
+        if (dedupe) {
+            // In-app off: keep a hidden record (no readAt, so the read TTL never removes it) so repeats stay silent.
+            const visibility = channels.inApp ? {} : { muted: true, read: true };
+            const result = await Notification.updateOne(fields, { $setOnInsert: { ...fields, ...visibility, dedupe: true } }, { upsert: true });
+            if (!result.upsertedCount) return;
+            notificationId = result.upsertedId?.toString();
+        } else if (channels.inApp) {
+            notificationId = (await Notification.create(fields))._id.toString();
+        }
     } catch (error) {
+        // Two concurrent upserts for the same key: the unique dedupe index lets only one insert.
+        if ((error as { code?: number }).code === 11000) return;
         logger.error("Failed to write notification", { error });
+        if (dedupe) return;
     }
 
-    if (!pushConfigured) return;
+    if (!pushConfigured || !channels.push) return;
 
     let subscriptions;
     try {
@@ -64,7 +103,13 @@ export async function notify(options: NotifyOptions): Promise<void> {
         return;
     }
 
-    const payload = JSON.stringify({ title, body, url, notificationId: createdNotification?._id?.toString() });
+    const view = { type, actorUsername, postTitle, postSlug, commentId };
+    const payload = JSON.stringify({
+        title: NOTIFICATION_TITLES[type],
+        body: describeNotification({ ...view, id: "", read: false, createdAt: "" }),
+        url: notificationLink(view),
+        notificationId: channels.inApp ? notificationId : undefined,
+    });
 
     await Promise.all(
         subscriptions

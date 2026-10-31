@@ -43,11 +43,10 @@ export const PATCH = withApiGuard<RouteContext>(
                     notify({
                         recipientId,
                         actorId: session.user.id,
+                        postTitle: post.title,
+                        postSlug: post.slug,
                         type: approval === ApprovalStatus.Approved ? "post_approved" : "post_rejected",
                         postId: post._id.toString(),
-                        title: approval === ApprovalStatus.Approved ? "Post approved" : "Post rejected",
-                        body: `Your post "${post.title}" was ${approval === ApprovalStatus.Approved ? "approved" : "rejected"}`,
-                        url: `/posts/${post.slug}`,
                     })
                 );
             }

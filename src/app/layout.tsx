@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     alternates: {
         types: { "application/rss+xml": "/feed.xml" },
     },
+    icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export default async function RootLayout({

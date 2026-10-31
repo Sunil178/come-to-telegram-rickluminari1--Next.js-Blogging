@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+const notifyMock = vi.fn();
+vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
+
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
     auth: vi.fn().mockResolvedValue({ user: { id: "admin1", role: "admin" } }),
 }));
@@ -33,6 +40,7 @@ function requestWithBody(body: unknown) {
 describe("PATCH /api/publish-requests/[id]", () => {
     beforeEach(() => {
         findOneAndUpdateMock.mockReset();
+        notifyMock.mockReset();
         updateOneMock.mockClear();
         userFindByIdMock.mockClear();
         userSelectMock.mockReset();
@@ -61,6 +69,7 @@ describe("PATCH /api/publish-requests/[id]", () => {
             { returnDocument: "after" }
         );
         expect(updateOneMock).toHaveBeenCalledWith({ _id: "reader1" }, { role: "author" });
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "reader1", actorId: "admin1", type: "publish_request_approved" }));
     });
 
     it("rejecting doesn't change the requester's role", async () => {
@@ -69,6 +78,7 @@ describe("PATCH /api/publish-requests/[id]", () => {
 
         expect(response.status).toBe(200);
         expect(updateOneMock).not.toHaveBeenCalled();
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "reader1", type: "publish_request_rejected" }));
     });
 
     it("approving a requester already promoted (e.g. to moderator) since the request was made doesn't overwrite their role", async () => {

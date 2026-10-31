@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** M5 Accounts
+**Current focus:** M6 Notifications v2
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 
@@ -43,21 +43,23 @@ Review round 1 (`/code-review high 4e13423`): 10 findings, all fixed. `robots.tx
 - [x] OPS-05 Dockerfile (standalone output) + compose (app, mongo, Caddy `proxy` profile, Mailpit `mail` profile); runtime `SITE_URL` / `VAPID_PUBLIC_KEY` so one image fits every environment
 - [x] DOC-09 uploads served by `src/app/uploads/[...path]/route.ts` from `UPLOAD_DIR` (traversal-safe, typed, immutable caching); machine-specific `public/uploads` symlink removed
 
-## M5 Accounts — base `a305e7d`
+## M5 Accounts — base `a305e7d`, committed `c0a64f7`
 
 Review round 1 (`/code-review high a305e7d`): 10 findings, all fixed. Email-send limits are per account+IP (3/h) plus account-wide (10/h) with the login trusted-IP exemption, so a stranger can't block the owner's reset; email lookups (login, registration, resend, reset) are case-insensitive via collation; one live token per user and purpose in a single upsert (unique index), so concurrent sends can't leave an older link working; a login refused for an unverified email no longer refunds attempts or marks the IP trusted; verify and reset report a deleted account instead of claiming success, and reset is one pipeline update (bcrypt hash wrapped in `$literal`, since a pipeline reads a leading `$` as a field path); login banners go through `FormStatus` and never show success next to an error; one shared `escapeMarkup()` for the emails and RSS; e2e docs cover SMTP for `E2E_BASE_URL`. Also: Compose's Mailpit sets `MP_SMTP_DISABLE_RDNS`, because its reverse-DNS lookup of the Docker gateway delayed every SMTP greeting by 10 s.
 
-- [~] ACC-01 email verification: `emailVerifiedAt` (explicit `null` = pending; legacy accounts without the field count as verified), required only when `SMTP_HOST` is set; login refuses unverified accounts after the password matched (`email_unverified`) and offers a resend; links open a confirm button (POST) so mail scanners can't use them up
-- [~] ACC-02 password reset: forgot-password and reset pages; identical replies and timing for unknown emails (lookup and send in `after()`); 1 h one-time links; a reset completes pending verification and revokes older sessions through `passwordChangedAt` vs the JWT's `authAt` (within the 60 s recheck)
+- [x] ACC-01 email verification: `emailVerifiedAt` (explicit `null` = pending; legacy accounts without the field count as verified), required only when `SMTP_HOST` is set; login refuses unverified accounts after the password matched (`email_unverified`) and offers a resend; links open a confirm button (POST) so mail scanners can't use them up
+- [x] ACC-02 password reset: forgot-password and reset pages; identical replies and timing for unknown emails (lookup and send in `after()`); 1 h one-time links; a reset completes pending verification and revokes older sessions through `passwordChangedAt` vs the JWT's `authAt` (within the 60 s recheck)
 - Shared: `AuthToken` model (SHA-256 of a 256-bit token, TTL index, atomic find-and-delete), `src/libs/mailer.ts` (nodemailer 10.1.7 with file/URL access disabled; every release up to 10.1.3 carries high advisories, and Auth.js's optional peer range is overridden since its email provider isn't used), email sends limited to 10/h per IP and 3/h per account. E2E: 9/9 three times with Mailpit after the review fixes (verification with resend, reset with reuse refused, unknown email sends nothing).
 
-## M6 Notifications v2
+## M6 Notifications v2 — base `c0a64f7`
 
-- [ ] NTF-01 notifications page
-- [ ] NTF-02 preferences
-- [ ] NTF-03 vote + publish-request notifications
-- [ ] NTF-04 configurable read TTL
-- [ ] NTF-05 generated icons (DOC-07 documented)
+Review round 1 (`/code-review high c0a64f7`): 10 findings, all fixed. Upvote dedupe is enforced by a unique partial index (`dedupe: true`), and a concurrent duplicate-key error counts as already notified; muted dedupe records carry no `readAt`, so the read TTL never removes them (visible upvote notifications can recur only after expiring); `notify()` builds push title, text and link from the catalogue (`NOTIFICATION_TITLES`, `describeNotification`, `notificationLink`), so callers pass context only; the bell's endpoint no longer pays for a total count; an out-of-range page redirects to the last page; a TTL under one hour is rejected (it would round to 0 s) and only NamespaceNotFound is ignored; TTL sync no longer blocks boot and backfills `readAt` only once, after the index is created; the notifications page tells the bell to refresh its badge; `sharp` is a pinned devDependency and the icon script resolves paths from its own location. E2E 11/11 (upvote dedupe, preferences hiding new upvotes, mark all read, manifest icons).
+
+- [~] NTF-01 `/dashboard/notifications`: paginated history (20 per page), mark one or all read; the bell links to it; one catalogue (`src/libs/notification-types.ts`) describes and links every type for the bell, the page and push
+- [~] NTF-02 per-category in-app and push switches (`User.notificationPrefs`, missing = on; `GET/PUT /api/notifications/preferences` accepts only known categories and booleans); with in-app off a deduplicated type keeps a hidden `muted` record so repeats stay silent
+- [~] NTF-03 upvotes on posts and comments (deduplicated per voter and target, so toggling a vote can't re-notify), new publish requests to every admin, and the decision to the requester; `postId` is optional for notifications without a post
+- [~] NTF-04 `readAt` set when read (not reset by repeat clicks); a TTL index synced at boot from `NOTIFICATION_READ_TTL_DAYS` (default 90, `0` drops it), changed in place with `collMod`; rows read before `readAt` existed start their clock at the first boot
+- [~] NTF-05 192/512 PNG icons (plus maskable and Apple touch) generated from the "V." monogram by `src/scripts/generate-icons.mjs`; also the push notification icon (DOC-07 keeps the real-logo swap documented)
 
 ## M7 Content
 

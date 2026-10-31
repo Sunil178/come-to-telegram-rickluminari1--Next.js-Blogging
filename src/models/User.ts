@@ -24,6 +24,8 @@ export interface IUser extends IUserWithSoftDelete {
   // null = awaiting verification; absent on accounts created before verification existed (treated as verified).
   emailVerifiedAt: Date | null;
   passwordChangedAt: Date;
+  // Per-category channel switches (src/libs/notification-types.ts); missing entries mean "on".
+  notificationPrefs: Record<string, { inApp?: boolean; push?: boolean }>;
 }
 
 const schema = new Schema<IUser>(
@@ -45,6 +47,7 @@ const schema = new Schema<IUser>(
     lastLoginAt: Date,
     emailVerifiedAt: Date,
     passwordChangedAt: Date,
+    notificationPrefs: { type: Schema.Types.Mixed, default: undefined },
   },
   {
     timestamps: true,

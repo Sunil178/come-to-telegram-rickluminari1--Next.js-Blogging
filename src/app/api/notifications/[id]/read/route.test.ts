@@ -39,8 +39,8 @@ describe("PATCH /api/notifications/[id]/read", () => {
 
         expect(response.status).toBe(200);
         expect(updateOneMock).toHaveBeenCalledWith(
-            { _id: NOTIF_ID, recipientId: "user-1" },
-            { $set: { read: true } }
+            { _id: NOTIF_ID, recipientId: "user-1", read: false },
+            { $set: { read: true, readAt: expect.any(Date) } }
         );
     });
 

@@ -6,15 +6,16 @@ vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
 const leanMock = vi.fn();
 const countDocumentsMock = vi.fn();
+const findMock = vi.fn();
 vi.mock("@/models/Notification", () => ({
     default: {
-        find: () => ({
+        find: (...args: unknown[]) => (findMock(...args), {
             sort: () => ({
-                limit: () => ({
+                skip: () => ({ limit: () => ({
                     populate: () => ({
                         populate: () => ({ lean: () => leanMock() }),
                     }),
-                }),
+                }) }),
             }),
         }),
         countDocuments: (...args: unknown[]) => countDocumentsMock(...args),
@@ -62,6 +63,9 @@ describe("GET /api/notifications", () => {
 
         expect(response.status).toBe(200);
         expect(body.data.unreadCount).toBe(3);
+        // Muted deduplication records are never listed or counted.
+        expect(findMock).toHaveBeenCalledWith({ recipientId: "user-1", muted: { $ne: true } });
+        expect(countDocumentsMock).toHaveBeenCalledWith({ recipientId: "user-1", muted: { $ne: true }, read: false });
         expect(body.data.notifications[0]).toEqual(
             expect.objectContaining({
                 id: "notif-1",

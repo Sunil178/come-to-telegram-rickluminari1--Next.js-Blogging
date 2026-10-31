@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import Post from "@/models/Post";
 import Comment from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
 import { withApiGuard } from "@/libs/api-guard";
 import { toggleVote } from "@/libs/toggle-vote";
 import { logger } from "@/libs/logger";
+import { notify } from "@/libs/notify";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -42,6 +43,22 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
             type: body.type,
             voterId: session.user.id,
         });
+
+        const commentAuthorId = comment.userId?.toString();
+        if (commentAuthorId && result.currentType === true) {
+            after(() =>
+                notify({
+                    recipientId: commentAuthorId,
+                    actorId: session.user.id,
+                    actorUsername: session.user.username,
+                    postTitle: post.title,
+                    postSlug: post.slug,
+                    type: "comment_upvoted",
+                    postId: post._id.toString(),
+                    commentId: comment._id.toString(),
+                })
+            );
+        }
 
         const updated = await Comment.findById(comment._id).select("upvoteCount downvoteCount").lean();
 

@@ -20,31 +20,12 @@ import {
     syncExistingSubscription,
     unsubscribeFromPush,
 } from "@/libs/push-subscription";
-
-interface NotificationItem {
-    id: string;
-    type: "comment_reply" | "post_comment" | "post_approved" | "post_rejected";
-    read: boolean;
-    createdAt: string;
-    actorUsername: string | null;
-    postTitle: string | null;
-    postSlug: string | null;
-    commentId: string | null;
-}
-
-function describe(n: NotificationItem): string {
-    const title = n.postTitle ?? "a post";
-    switch (n.type) {
-        case "comment_reply":
-            return `${n.actorUsername ?? "Someone"} replied to your comment on "${title}"`;
-        case "post_comment":
-            return `${n.actorUsername ?? "Someone"} commented on your post "${title}"`;
-        case "post_approved":
-            return `Your post "${title}" was approved`;
-        case "post_rejected":
-            return `Your post "${title}" was rejected`;
-    }
-}
+import {
+    describeNotification as describe,
+    NOTIFICATIONS_CHANGED,
+    notificationLink as linkFor,
+    type NotificationView as NotificationItem,
+} from "@/libs/notification-types";
 
 // A hash-only change on the current page neither fires hashchange (Next's router uses
 // pushState) nor fetches the new comment, so a same-page target gets a full reload instead.
@@ -55,11 +36,6 @@ function openSamePageTarget(href: string): boolean {
     window.location.href = url.href;
     window.location.reload();
     return true;
-}
-
-function linkFor(n: NotificationItem): string {
-    if (!n.postSlug) return "#";
-    return n.commentId ? `/posts/${n.postSlug}#comment-${n.commentId}` : `/posts/${n.postSlug}`;
 }
 
 // A site can't reopen its own blocked permission prompt, so the best we can do is point
@@ -95,6 +71,8 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
     // flags a direct call in an effect body to any function that (even asynchronously) sets state.
     useEffect(() => {
         Promise.resolve().then(fetchNotifications);
+        window.addEventListener(NOTIFICATIONS_CHANGED, fetchNotifications);
+        return () => window.removeEventListener(NOTIFICATIONS_CHANGED, fetchNotifications);
     }, [fetchNotifications]);
 
     useEffect(() => {
@@ -210,6 +188,12 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
                         ))}
                     </div>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/dashboard/notifications" className="justify-center text-sm text-primary">
+                        View all and settings
+                    </Link>
+                </DropdownMenuItem>
                 {pushSupported && (
                     <>
                         <DropdownMenuSeparator />

@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import PublishRequest from "@/models/PublishRequest";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
+import { notify } from "@/libs/notify";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -37,6 +38,15 @@ export const PATCH = withApiGuard<RouteContext>(
                     await User.updateOne({ _id: publishRequest.userId }, { role: ROLES.AUTHOR });
                 }
             }
+
+            const requesterId = publishRequest.userId.toString();
+            after(() =>
+                notify({
+                    recipientId: requesterId,
+                    actorId: session.user.id,
+                    type: action === "approve" ? "publish_request_approved" : "publish_request_rejected",
+                })
+            );
 
             return NextResponse.json({ data: { id: publishRequest._id.toString(), status }, message: "Success" });
         } catch (error) {

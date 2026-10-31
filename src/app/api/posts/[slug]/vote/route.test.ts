@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+const notifyMock = vi.fn();
+vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
+
 const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
@@ -33,6 +40,7 @@ describe("POST /api/posts/[slug]/vote", () => {
         findOneMock.mockReset().mockResolvedValue(PUBLIC_POST);
         findByIdMock.mockReset().mockResolvedValue({ upvoteCount: 3, downvoteCount: 1 });
         toggleVoteMock.mockReset().mockResolvedValue({ action: "created", currentType: true });
+        notifyMock.mockReset();
     });
 
     it("returns 401 for an unauthenticated request", async () => {
@@ -69,5 +77,23 @@ describe("POST /api/posts/[slug]/vote", () => {
             expect.objectContaining({ voteFilter: { userId: "voter-1", postId: "post-1" }, counterId: "post-1", type: false, voterId: "voter-1" })
         );
         expect(await response.json()).toMatchObject({ data: { action: "created", myVote: true, upvoteCount: 3, downvoteCount: 1 } });
+    });
+
+    it("notifies the author of a new or switched-to upvote, deduplicated per voter", async () => {
+        await vote({ type: true });
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "author-1", actorId: "voter-1", type: "post_upvoted", postId: "post-1" }));
+
+        notifyMock.mockReset();
+        toggleVoteMock.mockResolvedValue({ action: "switched", currentType: true });
+        await vote({ type: true });
+        expect(notifyMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("doesn't notify for downvotes or removed votes", async () => {
+        toggleVoteMock.mockResolvedValue({ action: "created", currentType: false });
+        await vote({ type: false });
+        toggleVoteMock.mockResolvedValue({ action: "removed", currentType: null });
+        await vote({ type: true });
+        expect(notifyMock).not.toHaveBeenCalled();
     });
 });

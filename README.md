@@ -8,7 +8,7 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 - Roles: reader → author → moderator → admin, with publish requests and post approval
 - Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions)
 - Threaded comments, votes on posts, comments and profiles
-- In-app notifications with Web Push (service worker), live bell updates
+- Notifications for replies, comments, upvotes, moderation decisions and publish requests: a live bell, a paginated notifications page, per-category in-app and push switches, Web Push via a service worker, and read notifications expiring after a configurable time
 - Deduplicated, rate-limited page-view counting
 - SEO: sitemap, robots.txt, RSS feed (`/feed.xml`), Open Graph metadata
 - Security: nonce-based Content-Security-Policy, rate-limited login, registration and APIs, sanitized post HTML, SSRF-safe push endpoints
@@ -46,6 +46,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
 | `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
+| `NOTIFICATION_READ_TTL_DAYS` | no | Days read notifications are kept before MongoDB's TTL monitor deletes them (default 90; `0` keeps them forever). Applied at server start; unread notifications never expire |
 | `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 
 ## Scripts

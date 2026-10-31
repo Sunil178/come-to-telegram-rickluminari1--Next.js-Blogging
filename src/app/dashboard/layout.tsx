@@ -9,6 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     const links = [
         { href: "/dashboard/posts", label: "My Posts", show: true },
+        { href: "/dashboard/notifications", label: "Notifications", show: true },
         { href: "/dashboard/admin/all-posts", label: "All Posts", show: hasRole(role, ROLES.ADMIN) },
         { href: "/dashboard/admin/posts", label: "Review Queue", show: hasRole(role, ROLES.MODERATOR) },
         { href: "/dashboard/admin/comments", label: "Comments", show: hasRole(role, ROLES.MODERATOR) },

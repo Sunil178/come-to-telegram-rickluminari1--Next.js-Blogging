@@ -14,8 +14,17 @@ vi.mock("web-push", () => ({
 }));
 
 const createNotificationMock = vi.fn();
+const upsertNotificationMock = vi.fn();
 vi.mock("@/models/Notification", () => ({
-    default: { create: (...args: unknown[]) => createNotificationMock(...args) },
+    default: {
+        create: (...args: unknown[]) => createNotificationMock(...args),
+        updateOne: (...args: unknown[]) => upsertNotificationMock(...args),
+    },
+}));
+
+let recipient: { notificationPrefs?: Record<string, { inApp?: boolean; push?: boolean }> } | null = {};
+vi.mock("@/models/User", () => ({
+    default: { findById: () => ({ select: () => ({ lean: async () => recipient }) }) },
 }));
 
 const findSubscriptionsMock = vi.fn();
@@ -35,14 +44,16 @@ const baseOptions = {
     type: "comment_reply" as const,
     postId: "post-1",
     commentId: "comment-1",
-    title: "New reply",
-    body: "Someone replied to your comment",
-    url: "/posts/some-post",
+    actorUsername: "ana",
+    postTitle: "Some post",
+    postSlug: "some-post",
 };
 
 describe("notify", () => {
     beforeEach(() => {
         createNotificationMock.mockReset().mockResolvedValue({ _id: { toString: () => "notif-1" } });
+        upsertNotificationMock.mockReset().mockResolvedValue({ upsertedCount: 1, upsertedId: { toString: () => "notif-9" } });
+        recipient = {};
         findSubscriptionsMock.mockReset().mockResolvedValue([]);
         sendNotificationMock.mockReset().mockResolvedValue({});
         deleteSubscriptionMock.mockReset().mockResolvedValue({});
@@ -146,5 +157,90 @@ describe("notify endpoint filtering", () => {
 
         expect(sendNotificationMock).toHaveBeenCalledTimes(1);
         expect(sendNotificationMock.mock.calls[0][0].endpoint).toBe("https://fcm.googleapis.com/fcm/send/2");
+    });
+});
+
+describe("notify preferences and deduplication", () => {
+    let freshNotify: typeof notify;
+    beforeEach(async () => {
+        vi.resetModules();
+        ({ notify: freshNotify } = await import("@/libs/notify"));
+        createNotificationMock.mockReset().mockResolvedValue({ _id: { toString: () => "notif-1" } });
+        upsertNotificationMock.mockReset().mockResolvedValue({ upsertedCount: 1, upsertedId: { toString: () => "notif-9" } });
+        findSubscriptionsMock.mockReset().mockResolvedValue([]);
+        sendNotificationMock.mockReset().mockResolvedValue({});
+        recipient = {};
+    });
+
+    const subscription = { _id: "sub-1", endpoint: "https://fcm.googleapis.com/fcm/send/1", keys: { p256dh: "a", auth: "b" } };
+
+    it("skips everything when the recipient turned both channels off for the category", async () => {
+        recipient = { notificationPrefs: { replies: { inApp: false, push: false } } };
+        await freshNotify(baseOptions);
+        expect(createNotificationMock).not.toHaveBeenCalled();
+        expect(findSubscriptionsMock).not.toHaveBeenCalled();
+    });
+
+    it("sends push without an in-app record when in-app is off", async () => {
+        recipient = { notificationPrefs: { replies: { inApp: false } } };
+        findSubscriptionsMock.mockResolvedValue([subscription]);
+        await freshNotify(baseOptions);
+        expect(createNotificationMock).not.toHaveBeenCalled();
+        expect(JSON.parse(sendNotificationMock.mock.calls[0][1]).notificationId).toBeUndefined();
+    });
+
+    it("writes in-app but doesn't push when push is off", async () => {
+        recipient = { notificationPrefs: { replies: { push: false } } };
+        findSubscriptionsMock.mockResolvedValue([subscription]);
+        await freshNotify(baseOptions);
+        expect(createNotificationMock).toHaveBeenCalled();
+        expect(sendNotificationMock).not.toHaveBeenCalled();
+    });
+
+    it("skips a recipient that no longer exists", async () => {
+        recipient = null;
+        await freshNotify(baseOptions);
+        expect(createNotificationMock).not.toHaveBeenCalled();
+    });
+
+    it("notifies once per actor and target for deduplicated types", async () => {
+        findSubscriptionsMock.mockResolvedValue([subscription]);
+        await freshNotify({ ...baseOptions, type: "post_upvoted", commentId: null });
+        upsertNotificationMock.mockResolvedValueOnce({ upsertedCount: 0 });
+        await freshNotify({ ...baseOptions, type: "post_upvoted", commentId: null });
+
+        expect(upsertNotificationMock).toHaveBeenCalledTimes(2);
+        const [filter, update, options] = upsertNotificationMock.mock.calls[0];
+        expect(filter).toEqual({ recipientId: "user-1", actorId: "user-2", type: "post_upvoted", postId: "post-1", commentId: null });
+        expect(update.$setOnInsert).toMatchObject(filter);
+        expect(options).toEqual({ upsert: true });
+        expect(sendNotificationMock).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(sendNotificationMock.mock.calls[0][1]).notificationId).toBe("notif-9");
+    });
+
+    it("keeps a muted record for deduplicated types when in-app is off, so repeats stay silent", async () => {
+        recipient = { notificationPrefs: { votes: { inApp: false } } };
+        await freshNotify({ ...baseOptions, type: "post_upvoted", commentId: null });
+        const record = upsertNotificationMock.mock.calls[0][1].$setOnInsert;
+        expect(record).toMatchObject({ muted: true, read: true, dedupe: true });
+        // No readAt: the read TTL must not delete the record that keeps repeats silent.
+        expect(record.readAt).toBeUndefined();
+    });
+
+    it("treats a duplicate-key race on the dedupe index as already notified", async () => {
+        findSubscriptionsMock.mockResolvedValue([subscription]);
+        upsertNotificationMock.mockRejectedValueOnce(Object.assign(new Error("E11000"), { code: 11000 }));
+        await freshNotify({ ...baseOptions, type: "post_upvoted", commentId: null });
+        expect(sendNotificationMock).not.toHaveBeenCalled();
+    });
+
+    it("builds the push text and link from the shared catalogue", async () => {
+        findSubscriptionsMock.mockResolvedValue([subscription]);
+        await freshNotify(baseOptions);
+        expect(JSON.parse(sendNotificationMock.mock.calls[0][1])).toMatchObject({
+            title: "New reply",
+            body: 'ana replied to your comment on "Some post"',
+            url: "/posts/some-post#comment-comment-1",
+        });
     });
 });

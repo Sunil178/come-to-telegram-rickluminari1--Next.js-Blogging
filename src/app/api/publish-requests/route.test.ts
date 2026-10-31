@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("next/server", async () => {
+    const actual = await vi.importActual<typeof import("next/server")>("next/server");
+    return { ...actual, after: (fn: () => unknown) => fn() };
+});
+const notifyMock = vi.fn();
+vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
+
 const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
@@ -15,8 +22,12 @@ vi.mock("@/models/PublishRequest", () => ({
 
 const userSelectMock = vi.fn();
 const userFindByIdMock = vi.fn().mockReturnValue({ select: userSelectMock });
+const userFindMock = vi.fn();
 vi.mock("@/models/User", () => ({
-    default: { findById: (...args: unknown[]) => userFindByIdMock(...args) },
+    default: {
+        findById: (...args: unknown[]) => userFindByIdMock(...args),
+        find: (...args: unknown[]) => ({ select: () => ({ lean: () => userFindMock(...args) }) }),
+    },
 }));
 
 const { POST } = await import("@/app/api/publish-requests/route");
@@ -76,5 +87,22 @@ describe("POST /api/publish-requests", () => {
 
         expect(response.status).toBe(200);
         expect(createMock).toHaveBeenCalledWith({ userId: "u1" });
+    });
+});
+
+describe("POST /api/publish-requests notifications", () => {
+    it("notifies every admin of the new request", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader", username: "reader.one" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockResolvedValue({ _id: "new1" });
+        userFindMock.mockResolvedValue([{ _id: "admin-a" }, { _id: "admin-b" }]);
+        notifyMock.mockReset();
+
+        await POST(request(), {});
+
+        expect(userFindMock).toHaveBeenCalledWith({ role: "admin" });
+        expect(notifyMock).toHaveBeenCalledTimes(2);
+        expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "admin-b", actorId: "u1", type: "publish_request" }));
     });
 });
