@@ -64,7 +64,8 @@ describe("GET /api/notifications", () => {
         expect(response.status).toBe(200);
         expect(body.data.unreadCount).toBe(3);
         // Muted deduplication records are never listed or counted.
-        expect(findMock).toHaveBeenCalledWith({ recipientId: "user-1", muted: { $ne: true } });
+        // The bell lists unread notifications only; the dashboard page keeps the history.
+        expect(findMock).toHaveBeenCalledWith({ recipientId: "user-1", muted: { $ne: true }, read: false });
         expect(countDocumentsMock).toHaveBeenCalledWith({ recipientId: "user-1", muted: { $ne: true }, read: false });
         expect(body.data.notifications[0]).toEqual(
             expect.objectContaining({

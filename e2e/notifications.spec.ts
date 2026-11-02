@@ -40,8 +40,13 @@ test("an author sees upvotes on the notifications page and can switch them off",
 
     await authorPage.getByRole("button", { name: "Mark all read" }).click();
     await expect(authorPage.getByRole("button", { name: "Mark all read" })).toHaveCount(0);
+    // The bell lists only what's unread; the history stays on the notifications page.
     await authorPage.getByRole("button", { name: "Notifications" }).click();
+    await expect(authorPage.getByRole("menu").getByText("You're all caught up.")).toBeVisible();
+    await expect(authorPage.getByRole("menuitem", { name: /upvoted your post/ })).toHaveCount(0);
     await expect(authorPage.getByRole("menuitem", { name: "View all and settings" })).toBeVisible();
+    await authorPage.keyboard.press("Escape");
+    await expect(readerUpvote).toHaveCount(1);
 });
 
 test("the web app manifest offers installable PNG icons", async ({ request }) => {
@@ -83,6 +88,13 @@ test("a reader's request to publish reaches the admins, and the approval reaches
         const user = await db.collection("users").findOne({ email: newbie.email });
         return db.collection("notifications").countDocuments({ type: "publish_request", actorId: user!._id, read: false });
     })).toBe(0);
+    // ...and leave the bell, while the notifications page keeps the history.
+    await adminPage.getByRole("button", { name: "Notifications" }).click();
+    await expect(adminPage.getByRole("menuitem", { name: "View all and settings" })).toBeVisible();
+    await expect(adminPage.getByRole("menuitem", { name: new RegExp(`${newbie.username} asked to become an author`) })).toHaveCount(0);
+    await adminPage.keyboard.press("Escape");
+    await adminPage.goto("/dashboard/notifications");
+    await expect(adminPage.locator("main").getByText(`${newbie.username} asked to become an author`)).toBeVisible();
     await adminPage.context().close();
 
     await expectNotification(newbiePage, "Your request to publish was approved. You can write posts now");

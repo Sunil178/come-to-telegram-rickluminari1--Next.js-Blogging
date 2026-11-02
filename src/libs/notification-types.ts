@@ -63,6 +63,9 @@ export const DEDUPED_NOTIFICATION_TYPES: readonly NotificationType[] = ["post_up
 
 // Window event the notifications page fires after marking items read, so the bell refreshes its badge.
 export const NOTIFICATIONS_CHANGED = "notifications-changed";
+// The reverse: the bell fires this after marking one (detail: { id }) or all (detail: { all: true }) read.
+export const NOTIFICATIONS_READ = "notifications-read";
+export type NotificationsReadDetail = { id: string } | { all: true };
 
 export interface NotificationView {
     id: string;

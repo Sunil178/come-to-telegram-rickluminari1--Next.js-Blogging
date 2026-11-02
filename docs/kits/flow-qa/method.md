@@ -12,7 +12,7 @@ Test against a production build on its own port and its own database, never a de
 
 Pick the next group from the project's flow inventory. Write a one-line charter, for example: "Explore commenting as a reader and as the post's author, to find wrong counts, stale UI and permission gaps." Keep the session on its charter; note other bugs you trip over and move on.
 
-Work reconnaissance-first: open the page, wait until it settles, take an accessibility snapshot (cheaper and more exact than a screenshot) to learn the real controls, then act. Read the browser console and the server log after every step; an error there is a finding even if the page looks fine. Use screenshots for layout questions only: dark mode, phone width, overflow.
+Work reconnaissance-first: open the page, wait until it settles, take an accessibility snapshot (cheaper and more exact than a screenshot) to learn the real controls, then act. Read the browser console and the server log after every step; an error there is a finding even if the page looks fine. Snapshots tell you what is in the page, not what a person sees: also take a screenshot after every client-side navigation (search, filter, paging, back) and after every change to a page's look, and check dark mode, phone width and sideways scrolling (the page's `scrollWidth` equals its `clientWidth`).
 
 ## 3. What to vary (SFDIPOT)
 
@@ -57,6 +57,20 @@ Behaviour is suspicious when it's inconsistent with: the product's own behaviour
 - For a missing feature or a product question: record it as a decision for the owner; don't build it unasked.
 - Update the group's flow document with anything the session taught about how the feature really behaves.
 
-## 7. Pacing
+## 7. Fixing a reported bug: the verification loop
 
-Agent sessions cost tokens, and the person paying often shares that budget across projects. Run one flow group per session, prefer accessibility snapshots over screenshots, run one browser while exploring and the full browser matrix only at the end of a pass, and avoid agent loops that spawn one sub-agent per test case (such as Playwright's planner, generator and healer agents); this kit reuses their Markdown plan format instead.
+When a person reports a bug, the report is evidence that the earlier testing missed something. Work through every step; skipping one is how the next miss happens.
+
+1. **Reproduce it as they did.** Same page, same steps, in a real browser on the isolated build, and look at a screenshot. If it doesn't reproduce, find out why before changing anything.
+2. **Find the root cause and every instance.** Ask why the symptom happens until the answer is a line of code, then search the codebase for the same component or idiom and fix each one.
+3. **Explain the miss.** Work out why the earlier tests passed (a weak assertion, an untested path, a step only done by hand). The new test must close that gap, and a lesson that applies beyond this bug goes into this method.
+4. **Prove the test catches it.** Write the test so it asserts what the person saw. Run it against the unfixed code and watch it fail; if the fix is already written, swap the old code back in for one run and restore it after. A test that never failed proves nothing.
+5. **Fix, then run the fast checks:** unit tests, type check, lint.
+6. **Look at it.** Screenshots of every page the change touches, in light and dark mode and at phone width; check for sideways scrolling. Fix what looks wrong even if every test passes.
+7. **Review the change independently.** Have a reviewer (a person or a fresh agent) review the uncommitted diff itself, not an older commit. Fix what holds up, then repeat steps 5 and 6 for the changes the review caused.
+8. **Run every supported browser.** For each failure, read the trace before changing anything: an app bug gets a fix, while a race in the test gets a test fix that you report as one. Confirm a flaky fix by repeating that test several times.
+9. **Close it out.** Update the flow document and the QA log, stop every server you started and check the ports are free, then report plainly: what was wrong, why it was missed, what changed, and the test results.
+
+## 8. Pacing
+
+Agent sessions cost tokens, and the person paying often shares that budget across projects. Run one flow group per session, prefer accessibility snapshots for finding controls (screenshots stay mandatory where section 2 and section 7 ask for them), run one browser while exploring and the full browser matrix only at the end of a pass, and avoid agent loops that spawn one sub-agent per test case (such as Playwright's planner, generator and healer agents); this kit reuses their Markdown plan format instead.

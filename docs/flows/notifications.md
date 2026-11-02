@@ -4,7 +4,7 @@
 
 ## How it works
 
-Events call `notify()` (`src/libs/notify.ts`), which writes an in-app notification and sends Web Push (`web-push`, VAPID keys) according to the recipient's per-category preferences. Nobody is notified of their own action, and upvote notifications are deduplicated per voter and target. Types and categories live in `src/libs/notification-types.ts`; staff review notifications are handled in `src/libs/review-notifications.ts`. The bell loads the latest 20 and the unread count on each page, and refreshes when a push message arrives in an open tab (`public/sw.js` posts a message to the page) or when notifications are marked read elsewhere in the tab. Read notifications expire through a MongoDB TTL index.
+Events call `notify()` (`src/libs/notify.ts`), which writes an in-app notification and sends Web Push (`web-push`, VAPID keys) according to the recipient's per-category preferences. Nobody is notified of their own action, and upvote notifications are deduplicated per voter and target. Types and categories live in `src/libs/notification-types.ts`; staff review notifications are handled in `src/libs/review-notifications.ts`. The bell lists only unread notifications (the latest 20) with the unread count on each page, so anything read or already handled leaves it while the notifications page keeps the full history. It refreshes when a push message arrives in an open tab (`public/sw.js` posts a message to the page) or when notifications are marked read elsewhere in the tab, and an open notifications page shows items read from the bell as read. Read notifications expire through a MongoDB TTL index.
 
 | Category | Types | Who gets them |
 |---|---|---|
@@ -21,10 +21,10 @@ Events call `notify()` (`src/libs/notify.ts`), which writes an in-app notificati
 ### 1. See and open a notification
 
 1. Something happens (a reply, an upvote, a decision). → The bell shows an unread badge on the next page load, or at once if push is on and a tab is open.
-2. Opens the bell, chooses a notification. → It's marked read and the target opens (the comment on the post, the edit page of a rejected post, the request).
-3. Chooses "Mark all read". → The badge clears.
+2. Opens the bell, chooses a notification. → It's marked read, leaves the bell, and the target opens (the comment on the post, the edit page of a rejected post, the request).
+3. Chooses "Mark all read". → The badge clears and the bell says "You're all caught up."; the notifications page still lists them.
 
-**Tested by:** `e2e/notifications.spec.ts` › "an upvote on a reader's comment notifies the reader"; `e2e/publishing.spec.ts` › "a reader's comment notifies the post's author".
+**Tested by:** `e2e/notifications.spec.ts` › "an upvote on a reader's comment notifies the reader"; `e2e/publishing.spec.ts` › "a reader's comment notifies the post's author"; `e2e/notifications.spec.ts` › "an author sees upvotes on the notifications page and can switch them off" (mark all read, caught up).
 
 ### 2. Notifications page and preferences
 
@@ -49,7 +49,7 @@ Events call `notify()` (`src/libs/notify.ts`), which writes an in-app notificati
 ### 4. Staff notifications follow the work
 
 1. A post is submitted or a reader applies. → Every moderator (posts) or admin (requests) is notified.
-2. One of them decides, or the author deletes the post. → Everyone's notification about it is marked read, so no stale item stays in their bells.
+2. One of them decides, or the author deletes the post. → Everyone's notification about it is marked read and leaves their bells; it stays on their notifications pages.
 
 **Tested by:** `e2e/notifications.spec.ts` › "a reader's request to publish reaches the admins, and the approval reaches the reader".
 

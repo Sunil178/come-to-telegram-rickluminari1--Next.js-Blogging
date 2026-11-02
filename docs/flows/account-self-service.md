@@ -1,6 +1,6 @@
 # Account self-service
 
-**Who:** every signed-in user. **Entry points:** "Account" in the avatar menu and the dashboard's "You" group (`/dashboard/account`), "Privacy" in the footer (`/privacy`).
+**Who:** every signed-in user. **Entry points:** "Account" in the avatar menu and the dashboard menu (`/dashboard/account`), "Privacy" in the footer (`/privacy`).
 
 ## How it works
 

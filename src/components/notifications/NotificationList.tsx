@@ -1,14 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { describeNotification, NOTIFICATIONS_CHANGED, notificationLink, type NotificationView } from "@/libs/notification-types";
+import {
+    describeNotification,
+    NOTIFICATIONS_CHANGED,
+    NOTIFICATIONS_READ,
+    notificationLink,
+    type NotificationsReadDetail,
+    type NotificationView,
+} from "@/libs/notification-types";
 
 export default function NotificationList({ initial, initialUnread }: { initial: NotificationView[]; initialUnread: number }) {
     const [items, setItems] = useState(initial);
     const [unread, setUnread] = useState(initialUnread);
+
+    // Items read from the bell show as read here too.
+    useEffect(() => {
+        const onRead = (event: Event) => {
+            const detail = (event as CustomEvent<NotificationsReadDetail>).detail;
+            if ("all" in detail) {
+                setItems((prev) => prev.map((n) => ({ ...n, read: true })));
+                setUnread(0);
+                return;
+            }
+            if (!items.some((n) => n.id === detail.id && !n.read)) return;
+            setItems((prev) => prev.map((n) => (n.id === detail.id ? { ...n, read: true } : n)));
+            setUnread((count) => Math.max(0, count - 1));
+        };
+        window.addEventListener(NOTIFICATIONS_READ, onRead);
+        return () => window.removeEventListener(NOTIFICATIONS_READ, onRead);
+    }, [items]);
 
     function markOneRead(item: NotificationView) {
         if (item.read) return;

@@ -9,3 +9,4 @@
 - [Mandatory todo list](feedback_mandatory_todo.md) — every multi-step task in every chat gets a live todo list (load deferred TodoWrite first).
 - [Production readiness initiative](project_production_readiness.md) — docs/production-readiness/ and docs/qa/; agent commits each milestone (D-13, re-authorized 2026-11-02); never push; never print git remote.
 - [Verify everything yourself](feedback_verify_everything_yourself.md) — readiness means I tested every flow in real browsers, staging and under load; "not verified" is my to-do, not the owner's.
+- [Code review target](feedback_code_review_target.md) — `/code-review high <sha>` reviews that commit; use no target for uncommitted work.

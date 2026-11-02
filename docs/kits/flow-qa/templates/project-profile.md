@@ -25,6 +25,15 @@ Helpers for creating extra users and records inside tests: <file and function na
 | <end-to-end tests, one browser> | |
 | <end-to-end tests, every browser> | |
 
+## Fixing a reported bug
+
+The project's specifics for the verification loop in `docs/kits/flow-qa/method.md` § 7:
+
+- Helpers that assert what a person sees: <e.g. a fully-opaque-and-scrolled-into-view check, a navbar helper that handles the phone menu>
+- How to run a test against the unfixed code: <e.g. copy the fixed file aside, restore the committed version, rebuild, run the test, copy the fix back; never a command that changes the version-control index>
+- How to review the uncommitted diff: <the reviewer or command, and how to point it at the diff rather than a commit>
+- Where test traces land and how to read them: <path, format>
+
 ## Browsers and devices
 
 Which browsers and viewports the project supports, and which ones a QA session uses by default.

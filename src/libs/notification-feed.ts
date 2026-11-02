@@ -10,16 +10,17 @@ export function countNotifications(userId: string): Promise<number> {
     return Notification.countDocuments(visibleTo(userId));
 }
 
-export async function listNotifications(userId: string, { page = 1, limit = 20 } = {}) {
+export async function listNotifications(userId: string, { page = 1, limit = 20, unreadOnly = false } = {}) {
+    const unread = { ...visibleTo(userId), read: false };
     const [docs, unreadCount] = await Promise.all([
-        Notification.find(visibleTo(userId))
+        Notification.find(unreadOnly ? unread : visibleTo(userId))
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .populate({ path: "actorId", model: User, select: "username" })
             .populate({ path: "postId", model: Post, select: "title slug" })
             .lean(),
-        Notification.countDocuments({ ...visibleTo(userId), read: false }),
+        Notification.countDocuments(unread),
     ]);
 
     const notifications: NotificationView[] = docs.map((n) => {

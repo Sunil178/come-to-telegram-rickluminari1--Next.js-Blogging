@@ -49,7 +49,10 @@ test("a new account confirms its email before it can sign in", async ({ page, re
 test("a forgotten password is reset through a one-time emailed link", async ({ page, request }) => {
     const email = await register(page, `${Date.now()}r`);
 
+    // The navigation's own response can re-render the form shown from the prefetch, clearing what was typed.
+    const opened = page.waitForResponse((r) => r.url().includes("/auth/forgot-password?_rsc") && !r.request().headers()["next-router-prefetch"]);
     await page.getByRole("link", { name: "Forgot password?" }).click();
+    await (await opened).finished();
     await page.getByLabel("Email").fill(email);
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(page.getByText("If an account uses that email, a password reset link is on its way")).toBeVisible();

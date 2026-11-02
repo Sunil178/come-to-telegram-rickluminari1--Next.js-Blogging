@@ -37,30 +37,25 @@ test("a user fills in their profile; the public part shows on their author page 
     await form.getByRole("button", { name: "Save profile" }).click();
     await expect(page.getByText("Profile saved.")).toBeVisible();
 
-    // The page refreshes itself after the upload; a reload that cancels that refresh makes Next fall back to a
-    // browser navigation, which Firefox reports as an aborted reload. Wait for the refresh to land first.
-    let uploaded = false;
-    const refreshed = page.waitForResponse((r) => {
-        if (r.url().endsWith("/api/account/avatar")) uploaded = true;
-        const headers = r.request().headers();
-        return uploaded && r.url().includes("/dashboard/account?_rsc") && headers["rsc"] === "1" && !headers["next-router-prefetch"];
-    });
     await page.getByLabel("Profile photo").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
     await expect(page.getByText("Photo updated.")).toBeVisible();
-    await (await refreshed).finished();
-    await page.reload();
-    await expect(form.getByLabel("City")).toHaveValue("Pune");
-    await expect(form.getByLabel("Phone")).toHaveValue("+91 98765 43210");
-    await expect(form.getByLabel("Date of birth")).toHaveValue("1990-05-17");
 
-    await page.goto(`/users/${user.username}`);
-    await expect(page.getByText("Writes about databases")).toBeVisible();
-    await expect(page.getByText("Pune, India")).toBeVisible();
-    await expect(page.getByRole("link", { name: "db.example" })).toHaveAttribute("rel", /nofollow/);
-    await expect(page.getByRole("list", { name: "Expertise and topics" }).getByText("indexing")).toBeVisible();
-    await expect(page.getByText("98765")).toHaveCount(0);
-    await expect(page.getByText("1990")).toHaveCount(0);
-    expect(await page.locator("main img").first().getAttribute("src")).toMatch(/^\/uploads\//);
+    // A fresh tab, not a reload or a navigation: either would race the page's own refresh after the upload.
+    const fresh = await page.context().newPage();
+    await fresh.goto("/dashboard/account");
+    const saved = fresh.getByRole("form", { name: "Profile" });
+    await expect(saved.getByLabel("City")).toHaveValue("Pune");
+    await expect(saved.getByLabel("Phone")).toHaveValue("+91 98765 43210");
+    await expect(saved.getByLabel("Date of birth")).toHaveValue("1990-05-17");
+
+    await fresh.goto(`/users/${user.username}`);
+    await expect(fresh.getByText("Writes about databases")).toBeVisible();
+    await expect(fresh.getByText("Pune, India")).toBeVisible();
+    await expect(fresh.getByRole("link", { name: "db.example" })).toHaveAttribute("rel", /nofollow/);
+    await expect(fresh.getByRole("list", { name: "Expertise and topics" }).getByText("indexing")).toBeVisible();
+    await expect(fresh.getByText("98765")).toHaveCount(0);
+    await expect(fresh.getByText("1990")).toHaveCount(0);
+    expect(await fresh.locator("main img").first().getAttribute("src")).toMatch(/^\/uploads\//);
 });
 
 test("a user changes their password, is signed out, and only the new password works", async ({ browser }) => {

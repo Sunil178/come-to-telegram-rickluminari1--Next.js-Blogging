@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
@@ -23,9 +23,16 @@ import {
 import {
     describeNotification as describe,
     NOTIFICATIONS_CHANGED,
+    NOTIFICATIONS_READ,
     notificationLink as linkFor,
+    type NotificationsReadDetail,
     type NotificationView as NotificationItem,
 } from "@/libs/notification-types";
+
+// Lets the notifications page, if open, show the same items read.
+function announceRead(detail: NotificationsReadDetail) {
+    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_READ, { detail }));
+}
 
 // A hash-only change on the current page neither fires hashchange (Next's router uses
 // pushState) nor fetches the new comment, so a same-page target gets a full reload instead.
@@ -55,11 +62,16 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
     const [pushSupported] = useState(() => Boolean(vapidPublicKey) && isPushSupported());
     const [pushEnabled, setPushEnabled] = useState(false);
 
+    // Bumped when the user reads something here, so a list fetched before that can't bring the item back.
+    const generation = useRef(0);
+
     const fetchNotifications = useCallback(async () => {
+        const started = generation.current;
         try {
             const response = await fetch("/api/notifications");
             if (!response.ok) return;
             const body = await response.json();
+            if (started !== generation.current) return;
             setNotifications(body.data?.notifications ?? []);
             setUnreadCount(body.data?.unreadCount ?? 0);
         } catch {
@@ -95,11 +107,21 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
         return () => navigator.serviceWorker.removeEventListener("message", onMessage);
     }, [pushSupported, fetchNotifications]);
 
-    function markOneRead(id: string, wasUnread: boolean) {
-        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-        if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
+    // The bell lists unread notifications only, so reading one removes it here; a failed write brings it back.
+    function markOneRead(id: string) {
+        generation.current++;
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
         // keepalive: a same-page target reloads right after this click.
-        fetch(`/api/notifications/${id}/read`, { method: "PATCH", keepalive: true }).catch(() => {});
+        fetch(`/api/notifications/${id}/read`, { method: "PATCH", keepalive: true })
+            .then((response) => {
+                if (!response.ok) throw new Error(String(response.status));
+                announceRead({ id });
+            })
+            .catch(() => {
+                toast.error("Failed to mark the notification read.");
+                fetchNotifications();
+            });
     }
 
     async function markAllRead() {
@@ -110,8 +132,10 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
                 toast.error("Failed to mark notifications read.");
                 return;
             }
-            setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+            generation.current++;
+            setNotifications([]);
             setUnreadCount(0);
+            announceRead({ all: true });
         } catch {
             toast.error("Failed to mark notifications read.");
         }
@@ -166,15 +190,15 @@ export default function NotificationBell({ vapidPublicKey }: { vapidPublicKey: s
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {notifications.length === 0 ? (
-                    <p className="px-2 py-4 text-center text-sm text-muted-foreground">No notifications yet.</p>
+                    <p className="px-2 py-4 text-center text-sm text-muted-foreground">You&apos;re all caught up.</p>
                 ) : (
                     <div className="max-h-80 overflow-y-auto">
                         {notifications.map((n) => (
-                            <DropdownMenuItem key={n.id} asChild className={n.read ? undefined : "bg-muted/50"}>
+                            <DropdownMenuItem key={n.id} asChild>
                                 <Link
                                     href={linkFor(n)}
                                     onClick={(event) => {
-                                        markOneRead(n.id, !n.read);
+                                        markOneRead(n.id);
                                         if (openSamePageTarget(linkFor(n))) event.preventDefault();
                                     }}
                                     className="flex flex-col items-start gap-0.5 whitespace-normal"

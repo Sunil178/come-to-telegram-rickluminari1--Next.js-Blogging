@@ -35,10 +35,10 @@ const schema = new Schema<INotification>(
     { timestamps: true }
 );
 
-// Bell list: "mine, newest first".
+// Notifications page: "mine, newest first".
 schema.index({ recipientId: 1, createdAt: -1 });
-// Unread count and mark-all-read: "mine, unread".
-schema.index({ recipientId: 1, read: 1 });
+// Bell list, unread count and mark-all-read: "mine, unread, newest first".
+schema.index({ recipientId: 1, read: 1, createdAt: -1 });
 // Deduplication: also makes concurrent upserts of the same upvote fail instead of inserting twice.
 schema.index(
     { recipientId: 1, actorId: 1, type: 1, postId: 1, commentId: 1 },

@@ -30,6 +30,18 @@ All seeded accounts use the password in `e2e/fixtures.ts` (`PASSWORD`). `e2e/db.
 | `npm run test:e2e:browsers` | Build, then Chromium, Chrome, Edge, Firefox and a Pixel 7 viewport in turn |
 | `npx playwright test --project=chromium e2e/<file>.spec.ts` | One spec against an existing build |
 
+## Fixing a reported bug
+
+Follow the verification loop in [method.md § 7](../kits/flow-qa/method.md#7-fixing-a-reported-bug-the-verification-loop). In this project:
+
+- Reproduce on a manual session (above) with the Playwright browser; save screenshots in the agent's scratch directory, not the repository.
+- Assert what a person sees: `expectSeen()` in `e2e/fixtures.ts` (scrolled into view, fully opaque); `clickNavLink()` for navbar links on desktop and phone.
+- To prove a test catches the bug after the fix is written: copy the fixed file aside, `git show HEAD:<path> > <path>`, `npx next build`, run the test with `-g`, then copy the fixed file back. Never use `git stash` (it changes the index).
+- Sideways scrolling: `document.documentElement.scrollWidth === clientWidth` at 390 px.
+- Review: in Claude Code, `/code-review high` with no target reviews the uncommitted diff; a commit hash as target reviews that commit instead.
+- A failing e2e test: unzip its `trace.zip` from `test-results/` and read `*-trace.network` and the console entries in `*-trace.trace`; confirm a fix with `--repeat-each=5` on that test (mind the rate limits below).
+- Then `npm run test:e2e:browsers`, the QA log in `docs/qa/checklist.md`, and a commit under decision D-13.
+
 ## Browsers and devices
 
 Sessions explore in Chromium; layout checks add dark mode and a 390 px phone width. The full browser matrix runs once at the end of a pass. The push spec needs a browser with a push service and is skipped in projects without one.
@@ -39,4 +51,4 @@ Sessions explore in Chromium; layout checks add dark mode and a 390 px phone wid
 - Rate limits are per process and per address, so `--repeat-each` trips them (10 comments a minute, 30 uploads an hour, 5 password changes per 15 minutes); a 429 in a repeated run is expected, not a bug.
 - Streamed pages keep a hidden copy of some segments: assert on `.filter({ visible: true })` when text can appear twice.
 - Comments render optimistically with a `temp-` id until the server answers; wait for the real id before using it.
-- The owner's Claude budget is shared across projects: one flow group per session, accessibility snapshots over screenshots, Chromium while exploring.
+- The owner's Claude budget is shared across projects: one flow group per session, accessibility snapshots for finding controls, Chromium while exploring; screenshots are still required after client-side navigations and look changes (method § 2 and § 7).

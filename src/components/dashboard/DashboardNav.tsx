@@ -19,14 +19,18 @@ export default function DashboardNav({ groups }: { groups: DashboardNavGroup[] }
 
     return (
         <nav aria-label="Dashboard" className="border-b border-border bg-card">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-1 gap-y-2 px-6 py-3">
-                {groups.map((group) => (
-                    <div key={group.label} role="group" aria-label={group.label} className="mr-3 flex min-w-0 flex-wrap items-center gap-1">
-                        {groups.length > 1 && (
-                            <span className="mr-1 font-mono text-[10px] tracking-widest whitespace-nowrap text-muted-foreground/70 uppercase">
-                                {group.label}
-                            </span>
+            {/* Each group is its own row on a phone and set off by a divider on wider screens; names are for screen readers. */}
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-y-2 px-6 py-3">
+                {groups.map((group, index) => (
+                    <div
+                        key={group.label}
+                        role="group"
+                        aria-label={group.label}
+                        className={cn(
+                            "flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto",
+                            index > 0 && "border-t border-border pt-2 sm:ml-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3"
                         )}
+                    >
                         {group.links.map((link) => (
                             <Link
                                 key={link.href}

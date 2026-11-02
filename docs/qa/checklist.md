@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** pass 1 complete, with the owner's follow-up round (QA-15..18); summary in `docs/qa/report.md`. Next pass: none scheduled.
+**Current focus:** pass 1 complete, with the owner's follow-up rounds (QA-15..22); summary in `docs/qa/report.md`. Next pass: none scheduled.
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -66,6 +66,12 @@ The owner found two blank-list bugs the pass had missed. The suite asserted that
 - [x] QA-17 The account page's sections didn't read as sections: each one (photo, public profile, private details, change password, data export, delete) is now a card with a heading and a description (`src/components/account/AccountCard.tsx`); the delete button no longer stretches across the card.
 - [x] QA-18 Menu order: the dashboard menu is grouped into You (My Posts, Notifications, Account), Moderation (Review Queue, Comments) and Admin (Publish Requests, All Posts, Users, Categories, Uploads), highlights the current page and wraps instead of running off the screen. The avatar menu, which held only Logout, now has Write a post (authors and above), My Posts, Notifications and Account, from one shared list (`src/libs/dashboard-links.ts`).
 - [x] QA-19 (found by the code review of the last commit) Test hygiene: the categories test checked the stale toast (`.last()` is the oldest with Sonner), and the phone-menu steps branched on whatever rendered and matched the footer link; a `clickNavLink()` helper now follows the device and scopes to the menu dialog.
+- [x] QA-20 The bell kept listing notifications already read or handled (an approved request stayed there): it now lists only unread notifications, a read one leaves it at once, and an empty bell says "You're all caught up."; the notifications page keeps the full history.
+- [x] QA-21 The dashboard menu's small group labels (You, Moderation, Admin) looked like odd, unclickable menu entries: they are gone; each group sits on its own row on a phone and behind a thin divider on wider screens, and the names remain for screen readers. The bell also ignores a list fetched before the user read an item, brings an item back with a message if marking it read fails, tells an open notifications page what was read, and the bell query has a `{ recipientId, read, createdAt }` index.
+- [x] QA-22 The reported-bug workflow is written down so it can be repeated: the verification loop in `docs/kits/flow-qa/method.md` § 7 (reproduce, root cause and every instance, explain the miss, prove the test fails on the old code, fast checks, look at it, independent review of the uncommitted diff, every browser with traces, close out), this project's specifics under "Fixing a reported bug" in `docs/procedures/qa-testing.md`, and the skill pointing at both; § 2 no longer limits screenshots to layout questions.
+- [ ] QA-23 (found by the suite, minor) Right after a client-side navigation to a form page (seen on `/auth/forgot-password` in Chrome), the navigation's own response can re-render the form shown from the prefetch and clear text typed in the first fraction of a second. The test now waits for that response; the app behaviour is not changed yet and needs a look at why the tree remounts.
+- [ ] QA-24 (found by the suite, intermittent, Firefox) Once in about eight runs of "an admin finds a user, changes their role…", the users search box went back to the previous query right after a role change: the second search was typed while the page refreshed after the change, and the box then showed the first query again. Not reproduced in Chromium (the input stays the same element and keeps the text) or in six more Firefox runs. The test is unchanged so it keeps catching it; same family as QA-23 (client state lost around a navigation or refresh).
+- Not a finding: the Edge push test timed out once waiting for the message from Microsoft's push service and passed twice on re-run; it depends on that external service.
 
 ## Flow groups
 
