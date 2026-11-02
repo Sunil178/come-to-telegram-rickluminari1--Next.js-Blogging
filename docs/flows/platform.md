@@ -4,7 +4,7 @@
 
 ## How it works
 
-`src/proxy.ts` runs on every page: it sets a per-request nonce Content-Security-Policy (`src/libs/csp.ts`) and, for gated paths (`src/libs/route-gates.ts`), checks the session and role before the page renders. Nonces need per-request rendering, so every page renders dynamically. Segments stream behind their own `loading.tsx` skeletons. The theme (light, dark, system) comes from next-themes with the nonce. `/api/health` reports the app and database state for uptime checks and the container health check.
+`src/proxy.ts` runs on every page: it sets a per-request nonce Content-Security-Policy (`src/libs/csp.ts`) and, for gated paths (`src/libs/route-gates.ts`), checks the session and role before the page renders. Nonces need per-request rendering, so every page renders dynamically. Segments stream behind their own `loading.tsx` skeletons. The theme (light, dark, system) comes from next-themes with the nonce. The dashboard menu (`src/components/dashboard/DashboardNav.tsx`, built in `src/app/dashboard/layout.tsx`) groups its pages by role and frequency of use: "You" (My Posts, Notifications, Account), "Moderation" for moderators (Review Queue, Comments) and "Admin" for admins (Publish Requests, All Posts, Users, Categories, Uploads), highlights the current page and wraps on narrow screens. The avatar menu offers Write a post (authors and above), the same personal pages (`src/libs/dashboard-links.ts`) and Logout. `/api/health` reports the app and database state for uptime checks and the container health check.
 
 ## Flows
 

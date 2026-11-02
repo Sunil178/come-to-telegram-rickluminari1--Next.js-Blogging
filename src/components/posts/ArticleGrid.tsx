@@ -3,28 +3,21 @@
 import { Children, type ReactNode } from "react";
 import { motion } from "motion/react";
 
-const container = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.08 } },
-} as const;
-
-const item = {
-    hidden: { opacity: 0, y: 16 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
-} as const;
-
 export default function ArticleGrid({ children }: { children: ReactNode }) {
+    // Each card animates on its own: Children.map keys the wrappers by the cards' keys, so cards that arrive by a client
+    // navigation (search, paging) mount fresh and fade in, while cards already shown keep their state.
     return (
-        <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={container}
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        >
-            {Children.map(children, (child) => (
-                <motion.div variants={item}>{child}</motion.div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {Children.map(children, (child, index) => (
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-80px" }}
+                    transition={{ duration: 0.4, ease: "easeOut", delay: Math.min(index, 8) * 0.08 }}
+                >
+                    {child}
+                </motion.div>
             ))}
-        </motion.div>
+        </div>
     );
 }

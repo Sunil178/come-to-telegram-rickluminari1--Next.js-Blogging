@@ -8,9 +8,10 @@ import MobileNav from "@/components/nav/MobileNav";
 import ThemeToggle from "@/components/nav/ThemeToggle";
 import Wordmark from "@/components/marginalia/Wordmark";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import type { RoleName } from "@/libs/roles";
 
 interface NavbarBarProps {
-    user: { name?: string | null; email?: string | null; image?: string | null } | null;
+    user: { name?: string | null; email?: string | null; image?: string | null; role?: RoleName } | null;
     vapidPublicKey: string;
 }
 
@@ -33,7 +34,7 @@ export default function NavbarBar({ user, vapidPublicKey }: NavbarBarProps) {
                     {user ? (
                         <>
                             <NotificationBell vapidPublicKey={vapidPublicKey} />
-                            <UserMenu name={user.name} email={user.email} image={user.image} />
+                            <UserMenu name={user.name} email={user.email} image={user.image} role={user.role} />
                         </>
                     ) : (
                         <Button asChild size="sm" className="hidden md:inline-flex">

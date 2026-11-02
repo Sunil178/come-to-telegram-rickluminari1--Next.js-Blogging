@@ -1,4 +1,4 @@
-import { test as base, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { test as base, expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 export { expect };
 
@@ -21,6 +21,32 @@ export async function newPage(browser: Browser): Promise<Page> {
     const context = await browser.newContext();
     await presetConsent(context, test.info().project.use.baseURL);
     return context.newPage();
+}
+
+// toBeVisible() passes for an element at opacity 0, which is how entrance animations hide content; this
+// checks what a person sees after scrolling to it: the element and every ancestor fully opaque.
+export async function expectSeen(locator: Locator) {
+    await expect(locator).toBeVisible();
+    await locator.scrollIntoViewIfNeeded();
+    await expect
+        .poll(() =>
+            locator.evaluate((element) => {
+                let opacity = 1;
+                for (let node: Element | null = element; node; node = node.parentElement) opacity *= Number(getComputedStyle(node).opacity);
+                return opacity;
+            })
+        )
+        .toBe(1);
+}
+
+// Phones put the navbar links behind the menu button; the path follows the device, not what happens to render.
+export async function clickNavLink(page: Page, name: string, phone = Boolean(test.info().project.use.isMobile)) {
+    if (phone) {
+        await page.getByRole("button", { name: "Open menu" }).click();
+        await page.getByRole("dialog").getByRole("link", { name, exact: true }).click();
+    } else {
+        await page.getByRole("banner").getByRole("link", { name, exact: true }).click();
+    }
 }
 
 export const PASSWORD = "Passw0rd!";

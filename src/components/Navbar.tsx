@@ -5,7 +5,7 @@ import { pushPublicKey } from "@/libs/notify";
 export default async function Navbar() {
     const session = await auth();
     const user = session?.user
-        ? { name: session.user.name, email: session.user.email, image: session.user.image }
+        ? { name: session.user.name, email: session.user.email, image: session.user.image, role: session.user.role }
         : null;
 
     return <NavbarBar user={user} vapidPublicKey={pushPublicKey()} />;

@@ -1,10 +1,10 @@
 # Account self-service
 
-**Who:** every signed-in user. **Entry points:** "Account" in the avatar menu and the dashboard (`/dashboard/account`), "Privacy" in the footer (`/privacy`).
+**Who:** every signed-in user. **Entry points:** "Account" in the avatar menu and the dashboard's "You" group (`/dashboard/account`), "Privacy" in the footer (`/privacy`).
 
 ## How it works
 
-The account page (`src/app/dashboard/account/page.tsx`) holds the profile form, change password, data export and account deletion. Profile input is validated in one place (`src/libs/profile.ts`) and saved by `PATCH /api/account/profile`; the photo goes through `POST`/`DELETE /api/account/avatar`, which strips its metadata like every upload (see [writing.md](writing.md)). Public profile fields show on `/users/[username]`; private details are visible only to the user and admins. Export and deletion live in `src/libs/account-data.ts`.
+The account page (`src/app/dashboard/account/page.tsx`) shows one card per section (`src/components/account/AccountCard.tsx`): photo, public profile, private details (one form, saved together), change password, data export and account deletion. Profile input is validated in one place (`src/libs/profile.ts`) and saved by `PATCH /api/account/profile`; the photo goes through `POST`/`DELETE /api/account/avatar`, which strips its metadata like every upload (see [writing.md](writing.md)). Public profile fields show on `/users/[username]`; private details are visible only to the user and admins. Export and deletion live in `src/libs/account-data.ts`.
 
 ## Flows
 

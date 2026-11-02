@@ -24,6 +24,8 @@ const schema = new Schema<IPostVote>(
 schema.plugin(mongooseDelete, { deletedAt: true, deletedBy: true, overrideMethods: true });
 
 schema.index({ userId: 1, postId: 1 }, { unique: true, partialFilterExpression: { deleted: false } });
+// Serves the per-target recount; mongoose-delete adds deleted to every count.
+schema.index({ postId: 1, deleted: 1, type: 1 });
 
 schema.set("toJSON", {
   virtuals: true,

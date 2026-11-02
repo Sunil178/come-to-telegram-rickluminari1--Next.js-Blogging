@@ -37,9 +37,17 @@ test("a user fills in their profile; the public part shows on their author page 
     await form.getByRole("button", { name: "Save profile" }).click();
     await expect(page.getByText("Profile saved.")).toBeVisible();
 
+    // The page refreshes itself after the upload; a reload that cancels that refresh makes Next fall back to a
+    // browser navigation, which Firefox reports as an aborted reload. Wait for the refresh to land first.
+    let uploaded = false;
+    const refreshed = page.waitForResponse((r) => {
+        if (r.url().endsWith("/api/account/avatar")) uploaded = true;
+        const headers = r.request().headers();
+        return uploaded && r.url().includes("/dashboard/account?_rsc") && headers["rsc"] === "1" && !headers["next-router-prefetch"];
+    });
     await page.getByLabel("Profile photo").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
     await expect(page.getByText("Photo updated.")).toBeVisible();
-
+    await (await refreshed).finished();
     await page.reload();
     await expect(form.getByLabel("City")).toHaveValue("Pune");
     await expect(form.getByLabel("Phone")).toHaveValue("+91 98765 43210");

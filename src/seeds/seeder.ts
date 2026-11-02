@@ -171,6 +171,7 @@ async function seedEngagement(owner: UserDoc, demoUsers: UserDoc[], posts: PostD
             const result = await seedVoteIfMissing({
                 voteModel: PostVote,
                 voteFilter: { userId: voter._id, postId: post._id },
+                targetFilter: { postId: post._id },
                 counterModel: Post,
                 counterId: post._id,
                 type,
@@ -202,6 +203,7 @@ async function seedEngagement(owner: UserDoc, demoUsers: UserDoc[], posts: PostD
                 const result = await seedVoteIfMissing({
                     voteModel: CommentVote,
                     voteFilter: { userId: voter._id, commentId: comment._id },
+                    targetFilter: { commentId: comment._id },
                     counterModel: Comment,
                     counterId: comment._id,
                     type: i === 0,
@@ -220,6 +222,7 @@ async function seedProfileVotes(owner: UserDoc, demoUsers: UserDoc[]): Promise<v
         const result = await seedVoteIfMissing({
             voteModel: UserVote,
             voteFilter: { userId: voter._id, targetUserId: owner._id },
+            targetFilter: { targetUserId: owner._id },
             counterModel: User,
             counterId: owner._id,
             type: true,
@@ -234,6 +237,7 @@ async function seedProfileVotes(owner: UserDoc, demoUsers: UserDoc[]): Promise<v
         const result = await seedVoteIfMissing({
             voteModel: UserVote,
             voteFilter: { userId: voter._id, targetUserId: target._id },
+            targetFilter: { targetUserId: target._id },
             counterModel: User,
             counterId: target._id,
             type: true,

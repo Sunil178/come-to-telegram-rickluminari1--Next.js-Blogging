@@ -1,40 +1,45 @@
-import Link from "next/link";
+import DashboardNav, { type DashboardNavGroup } from "@/components/dashboard/DashboardNav";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
+import { PERSONAL_DASHBOARD_LINKS } from "@/libs/dashboard-links";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
     // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const role = session.user.role;
 
-    const links = [
-        { href: "/dashboard/posts", label: "My Posts", show: true },
-        { href: "/dashboard/notifications", label: "Notifications", show: true },
-        { href: "/dashboard/account", label: "Account", show: true },
-        { href: "/dashboard/admin/all-posts", label: "All Posts", show: hasRole(role, ROLES.ADMIN) },
-        { href: "/dashboard/admin/posts", label: "Review Queue", show: hasRole(role, ROLES.MODERATOR) },
-        { href: "/dashboard/admin/comments", label: "Comments", show: hasRole(role, ROLES.MODERATOR) },
-        { href: "/dashboard/admin/requests", label: "Publish Requests", show: hasRole(role, ROLES.ADMIN) },
-        { href: "/dashboard/admin/users", label: "Users", show: hasRole(role, ROLES.ADMIN) },
-        { href: "/dashboard/admin/categories", label: "Categories", show: hasRole(role, ROLES.ADMIN) },
-        { href: "/dashboard/admin/uploads", label: "Uploads", show: hasRole(role, ROLES.ADMIN) },
-    ].filter((link) => link.show);
+    // Ordered by how often each role reaches for it: own work first, then queues that need action, then site settings.
+    const groups: DashboardNavGroup[] = [
+        {
+            label: "You",
+            links: [...PERSONAL_DASHBOARD_LINKS],
+        },
+        {
+            label: "Moderation",
+            links: hasRole(role, ROLES.MODERATOR)
+                ? [
+                      { href: "/dashboard/admin/posts", label: "Review Queue" },
+                      { href: "/dashboard/admin/comments", label: "Comments" },
+                  ]
+                : [],
+        },
+        {
+            label: "Admin",
+            links: hasRole(role, ROLES.ADMIN)
+                ? [
+                      { href: "/dashboard/admin/requests", label: "Publish Requests" },
+                      { href: "/dashboard/admin/all-posts", label: "All Posts" },
+                      { href: "/dashboard/admin/users", label: "Users" },
+                      { href: "/dashboard/admin/categories", label: "Categories" },
+                      { href: "/dashboard/admin/uploads", label: "Uploads" },
+                  ]
+                : [],
+        },
+    ].filter((group) => group.links.length > 0);
 
     return (
         <div>
-            <nav className="border-b border-border bg-card">
-                <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-6 py-3">
-                    {links.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground whitespace-nowrap hover:bg-accent hover:text-foreground"
-                        >
-                            {link.label}
-                        </Link>
-                    ))}
-                </div>
-            </nav>
+            <DashboardNav groups={groups} />
             {children}
         </div>
     );

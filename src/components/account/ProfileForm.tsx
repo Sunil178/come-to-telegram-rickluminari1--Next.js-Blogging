@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import AccountCard from "@/components/account/AccountCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,40 +113,40 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
     }
 
     return (
-        <form onSubmit={save} className="flex flex-col gap-8" aria-label="Profile">
-            <div className="flex items-center gap-4">
-                <Avatar size="lg" className="size-16">
-                    <AvatarImage src={avatar || undefined} alt="Your photo" />
-                    <AvatarFallback className="text-xl">{initial.username[0]?.toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="flex gap-2">
-                    <input
-                        ref={fileInput}
-                        id="profile-photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        aria-label="Profile photo"
-                        className="sr-only"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) uploadPhoto(file);
-                            e.target.value = "";
-                        }}
-                    />
-                    <Button type="button" variant="outline" size="sm" disabled={photoPending} onClick={() => fileInput.current?.click()}>
-                        {avatar ? "Change photo" : "Upload photo"}
-                    </Button>
-                    {avatar && (
-                        <Button type="button" variant="ghost" size="sm" disabled={photoPending} onClick={removePhoto}>
-                            Remove photo
+        <form onSubmit={save} className="flex flex-col gap-6" aria-label="Profile">
+            <AccountCard title="Photo" description="Shown next to your name on posts, comments and your author page.">
+                <div className="flex items-center gap-4">
+                    <Avatar size="lg" className="size-16">
+                        <AvatarImage src={avatar || undefined} alt="Your photo" />
+                        <AvatarFallback className="text-xl">{initial.username[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex gap-2">
+                        <input
+                            ref={fileInput}
+                            id="profile-photo"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            aria-label="Profile photo"
+                            className="sr-only"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) uploadPhoto(file);
+                                e.target.value = "";
+                            }}
+                        />
+                        <Button type="button" variant="outline" size="sm" disabled={photoPending} onClick={() => fileInput.current?.click()}>
+                            {avatar ? "Change photo" : "Upload photo"}
                         </Button>
-                    )}
+                        {avatar && (
+                            <Button type="button" variant="ghost" size="sm" disabled={photoPending} onClick={removePhoto}>
+                                Remove photo
+                            </Button>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </AccountCard>
 
-            <fieldset className="flex flex-col gap-4">
-                <legend className="mb-2 font-heading text-lg font-semibold text-foreground">Public profile</legend>
-                <p className="-mt-2 text-sm text-muted-foreground">Shown on your author page. Everything is optional.</p>
+            <AccountCard as="fieldset" title="Public profile" description="Shown on your author page. Everything is optional.">
                 <Field id="profile-headline" label="Headline" hint="One line, for example “Backend engineer writing about Rust”.">
                     <Input id="profile-headline" name="headline" defaultValue={initial.headline} maxLength={120} />
                 </Field>
@@ -175,11 +176,9 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
                 <Field id="profile-education" label="Education">
                     <Input id="profile-education" name="education" defaultValue={initial.education} maxLength={300} />
                 </Field>
-            </fieldset>
+            </AccountCard>
 
-            <fieldset className="flex flex-col gap-4">
-                <legend className="mb-2 font-heading text-lg font-semibold text-foreground">Private details</legend>
-                <p className="-mt-2 text-sm text-muted-foreground">Only you and the site&apos;s admins see these. Everything is optional.</p>
+            <AccountCard as="fieldset" title="Private details" description="Only you and the site's admins see these. Everything is optional.">
                 <div className="grid gap-4 sm:grid-cols-2">
                     <Field id="private-dob" label="Date of birth">
                         <Input id="private-dob" name="dateOfBirth" type="date" defaultValue={initial.dateOfBirth} autoComplete="bday" />
@@ -199,7 +198,7 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
                 <Field id="private-address" label="Address">
                     <Textarea id="private-address" name="address" defaultValue={initial.address} maxLength={300} rows={2} autoComplete="street-address" />
                 </Field>
-            </fieldset>
+            </AccountCard>
 
             {error && (
                 <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

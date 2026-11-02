@@ -47,7 +47,7 @@ export default function DeleteAccountForm() {
     }
 
     if (!confirming) {
-        return <Button variant="destructive" onClick={() => setConfirming(true)}>Delete my account…</Button>;
+        return <Button variant="destructive" className="w-fit" onClick={() => setConfirming(true)}>Delete my account…</Button>;
     }
 
     return (

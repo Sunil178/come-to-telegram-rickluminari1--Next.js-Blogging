@@ -1,6 +1,6 @@
 # QA pass 1 report
 
-A real-user QA pass over the whole blog, done between 2026-11-02 and its last commit, following `docs/procedures/qa-testing.md` and the kit in `docs/kits/flow-qa/`. The detailed log, with every finding, decision and review result, is `docs/qa/checklist.md`; this page is the summary.
+A real-user QA pass over the whole blog, done on 2026-11-02 (commits 846b70d to 503b23a, plus the follow-up below), following `docs/procedures/qa-testing.md` and the kit in `docs/kits/flow-qa/`. The detailed log, with every finding, decision and review result, is `docs/qa/checklist.md`; this page is the summary.
 
 ## What was tested, and how
 
@@ -33,6 +33,10 @@ Type-check clean; lint has 2 old warnings and no errors.
 | M5: flow docs and QA kit | b655fc7 | Reusable kit in `docs/kits/flow-qa/`, 12 flow documents, a unit test that keeps their test citations true, a not-found test |
 
 Bugs found by the pass itself (beyond the owner's reports) include: posts couldn't be given a category, rejected posts could never be resubmitted, moderators were never told about waiting posts, PNG uploads would have been quantised to 256 colours, the uploads cleanup could have deleted images still used by a revision or a post being written, a geolocation file installed after start-up stayed off until a restart, impossible birth dates were accepted, and plain text search would have matched any word of a query. Each has a test.
+
+## Owner follow-up round
+
+After this report, the owner found that clearing the search or paging left the posts list blank, that vote counts jumped by two, that the account page's sections didn't look separate, and that the menus weren't ordered by use. The blank list had passed the suite because Playwright counts an element at opacity 0 as visible and the manual sessions didn't look at screenshots after client navigations. All four are fixed (QA-15..18 in the checklist). The specs now check what a person sees (`expectSeen()`), the kit's method requires a screenshot after each client navigation, and every browser project was re-run: unit 411 passed; Chromium, Firefox and Pixel 7 59 passed with the push test skipped; Chrome and Edge 60 passed. The re-run also exposed a Firefox-only race in the profile test (its reload cancelled the page's own refresh after a photo upload), fixed in the test.
 
 ## Research behind the method
 

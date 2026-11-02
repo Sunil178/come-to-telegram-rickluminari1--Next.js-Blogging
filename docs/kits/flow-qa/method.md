@@ -43,6 +43,12 @@ Work reconnaissance-first: open the page, wait until it settles, take an accessi
 
 Behaviour is suspicious when it's inconsistent with: the product's own behaviour elsewhere (History, Image, Comparable products), what a user would reasonably expect (Claims made in the UI text, User expectations), the purpose of the feature (Product, Purpose), or Standards and Statutes (accessibility, privacy law). A pattern familiar from mainstream products is a fair expectation.
 
+**Present is not seen.** An element can be in the page, pass every text and role assertion, and still be invisible to a person: at opacity 0 behind an entrance animation that didn't re-run, clipped, covered, or off-screen. Playwright's `toBeVisible()` counts an element at opacity 0 as visible. So:
+
+- In every manual session, take a screenshot after each client-side navigation (search, filter, paging, back) and look at it, rather than reading the DOM alone.
+- In end-to-end tests of anything that animates in, assert what a person sees: scroll to the element, then check that it and its ancestors are fully opaque (a helper that multiplies the computed `opacity` up the tree).
+- Check numbers a person reads (counters, totals, scores) against what a person expects each click to do, not only against the database. A number that is correct but jumps by two reads as a bug.
+
 ## 6. Recording and closing findings
 
 - Log each finding in the current QA pass (see [templates/qa-pass.md](templates/qa-pass.md)) with steps to reproduce, expected versus actual, the role and browser, and severity: blocker, major, minor, polish.

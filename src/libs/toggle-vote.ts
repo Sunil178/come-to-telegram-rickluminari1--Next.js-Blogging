@@ -11,6 +11,8 @@ export type VoteAction = "created" | "removed" | "switched";
 export interface VoteResult {
     action: VoteAction;
     currentType: boolean | null;
+    upvoteCount: number;
+    downvoteCount: number;
 }
 
 interface ToggleVoteOptions {
@@ -18,53 +20,72 @@ interface ToggleVoteOptions {
     // parameters that a precise type here fights variance for no benefit —
     // the actual safety comes from the VoteDocument cast on the result.
     voteModel: any;
+    // The voter's vote on the target, and every vote on the target (for the recount).
     voteFilter: Record<string, unknown>;
+    targetFilter: Record<string, unknown>;
     counterModel: any;
     counterId: Types.ObjectId | string;
     type: boolean;
     voterId: string;
 }
 
+const RECOUNT_ATTEMPTS = 3;
+
 /**
  * Shared toggle/switch semantics for post, comment, and user votes:
  * no existing vote creates one; voting the same type again removes it
- * (toggle off); voting the opposite type switches it. Each branch keeps
- * the target document's denormalized upvoteCount/downvoteCount in sync
- * via $inc in the same request — not a separate reconciliation job.
+ * (toggle off); voting the opposite type switches it. The target's
+ * denormalized upvoteCount/downvoteCount are then recounted from the live
+ * vote records, so concurrent clicks or earlier drift can't leave them wrong.
  */
-export async function toggleVote({
-    voteModel,
-    voteFilter,
-    counterModel,
-    counterId,
-    type,
-    voterId,
-}: ToggleVoteOptions): Promise<VoteResult> {
-    const existing = (await voteModel.findOne(voteFilter)) as VoteDocument | null;
+export async function toggleVote(options: ToggleVoteOptions): Promise<VoteResult> {
+    const { voteModel, voteFilter, type, voterId } = options;
+    let existing = (await voteModel.findOne(voteFilter)) as VoteDocument | null;
 
+    let action: VoteAction = "created";
     if (!existing) {
-        await voteModel.create({ ...voteFilter, type });
-        await counterModel.updateOne(
-            { _id: counterId },
-            { $inc: { [type ? "upvoteCount" : "downvoteCount"]: 1 } }
-        );
-        return { action: "created", currentType: type };
-    }
-
-    if (existing.type === type) {
+        try {
+            await voteModel.create({ ...voteFilter, type });
+        } catch (error) {
+            if ((error as { code?: number }).code !== 11000) throw error;
+            // A concurrent request by the same voter created a vote first (unique index). This click
+            // asked for `type`, so it keeps that vote or switches it, but never withdraws it.
+            existing = (await voteModel.findOne(voteFilter)) as VoteDocument | null;
+            if (existing && existing.type !== type) {
+                existing.type = type;
+                await existing.save();
+                action = "switched";
+            }
+        }
+    } else if (existing.type === type) {
         await existing.delete(voterId);
-        await counterModel.updateOne(
-            { _id: counterId },
-            { $inc: { [type ? "upvoteCount" : "downvoteCount"]: -1 } }
-        );
-        return { action: "removed", currentType: null };
+        action = "removed";
+    } else {
+        existing.type = type;
+        await existing.save();
+        action = "switched";
     }
 
-    existing.type = type;
-    await existing.save();
-    await counterModel.updateOne(
-        { _id: counterId },
-        { $inc: { upvoteCount: type ? 1 : -1, downvoteCount: type ? -1 : 1 } }
-    );
-    return { action: "switched", currentType: type };
+    const counts = await recountVotes(options);
+    return { action, currentType: action === "removed" ? null : type, ...counts };
+}
+
+// A concurrent vote can store its count after this one; re-counting after each write until it holds means the
+// request that finishes last always leaves the counter matching the records.
+async function recountVotes({ voteModel, targetFilter, counterModel, counterId }: ToggleVoteOptions) {
+    const count = async () => {
+        const [upvoteCount, downvoteCount] = await Promise.all([
+            voteModel.countDocuments({ ...targetFilter, type: true }),
+            voteModel.countDocuments({ ...targetFilter, type: false }),
+        ]);
+        return { upvoteCount, downvoteCount };
+    };
+    let counts = await count();
+    for (let attempt = 0; attempt < RECOUNT_ATTEMPTS; attempt++) {
+        await counterModel.updateOne({ _id: counterId }, { $set: counts });
+        const after = await count();
+        if (after.upvoteCount === counts.upvoteCount && after.downvoteCount === counts.downvoteCount) break;
+        counts = after;
+    }
+    return counts;
 }

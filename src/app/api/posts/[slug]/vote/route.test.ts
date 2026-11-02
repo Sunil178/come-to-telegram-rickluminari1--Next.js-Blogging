@@ -39,7 +39,7 @@ describe("POST /api/posts/[slug]/vote", () => {
         authMock.mockResolvedValue({ user: { id: "voter-1", role: "reader" } });
         findOneMock.mockReset().mockResolvedValue(PUBLIC_POST);
         findByIdMock.mockReset().mockResolvedValue({ upvoteCount: 3, downvoteCount: 1 });
-        toggleVoteMock.mockReset().mockResolvedValue({ action: "created", currentType: true });
+        toggleVoteMock.mockReset().mockResolvedValue({ action: "created", currentType: true, upvoteCount: 3, downvoteCount: 1 });
         notifyMock.mockReset();
     });
 
@@ -84,15 +84,15 @@ describe("POST /api/posts/[slug]/vote", () => {
         expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "author-1", actorId: "voter-1", type: "post_upvoted", postId: "post-1" }));
 
         notifyMock.mockReset();
-        toggleVoteMock.mockResolvedValue({ action: "switched", currentType: true });
+        toggleVoteMock.mockResolvedValue({ action: "switched", currentType: true, upvoteCount: 3, downvoteCount: 1 });
         await vote({ type: true });
         expect(notifyMock).toHaveBeenCalledTimes(1);
     });
 
     it("doesn't notify for downvotes or removed votes", async () => {
-        toggleVoteMock.mockResolvedValue({ action: "created", currentType: false });
+        toggleVoteMock.mockResolvedValue({ action: "created", currentType: false, upvoteCount: 3, downvoteCount: 1 });
         await vote({ type: false });
-        toggleVoteMock.mockResolvedValue({ action: "removed", currentType: null });
+        toggleVoteMock.mockResolvedValue({ action: "removed", currentType: null, upvoteCount: 3, downvoteCount: 1 });
         await vote({ type: true });
         expect(notifyMock).not.toHaveBeenCalled();
     });

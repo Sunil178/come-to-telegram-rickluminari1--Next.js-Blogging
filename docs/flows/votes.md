@@ -1,6 +1,6 @@
 # Votes
 
-**Who:** signed-in users vote; everyone sees the counts. **Entry points:** the up and down arrows on post cards, post pages, comments and author profiles.
+**Who:** signed-in users vote; everyone sees the counts. **Entry points:** the up and down arrows on post cards, post pages, comments and author profiles. Each arrow shows its own count (upvotes beside the up arrow, downvotes beside the down arrow), so every click moves each number by at most one.
 
 ## How it works
 
@@ -14,16 +14,21 @@ One toggle covers posts, comments and author profiles (`src/libs/toggle-vote.ts`
 
 1. Chooses the up arrow. → It shows as pressed and the up count rises by one.
 2. Chooses it again. → The vote is removed; the count drops back.
-3. Chooses the down arrow, then the up arrow. → The vote switches; both counts change by one.
+3. Chooses the down arrow, then the up arrow. → The vote switches: the down count drops by one and the up count rises by one.
 4. Reloads. → The pressed state and counts are what the clicks left.
+
+**Extensions:**
+
+- 3a. Other readers voted too: switching moves only this reader's vote, so with one other upvote the bar goes from 2 up / 0 down to 1 up / 1 down.
+- 3b. The stored counter had drifted from the records: the next vote corrects it.
 
 **Side effects:** the post's author is notified of an upvote once (not for their own vote, and not again after toggling).
 
-**Tested by:** `e2e/votes.spec.ts` › "a post vote toggles, switches sides and survives a reload with the right counts"; `e2e/notifications.spec.ts` › "an author sees upvotes on the notifications page and can switch them off".
+**Tested by:** `e2e/votes.spec.ts` › "a post vote toggles, switches sides and survives a reload with the right counts"; `e2e/votes.spec.ts` › "switching an upvote to a downvote on a post others voted on changes each count by one"; `e2e/notifications.spec.ts` › "an author sees upvotes on the notifications page and can switch them off".
 
 ### 2. Vote on a comment
 
-1. Two readers upvote the same comment. → The count is 2; each sees their own arrow pressed.
+1. Two readers downvote the same comment. → The down count is 2; each sees their own arrow pressed.
 2. One changes their vote. → Only their vote changes.
 
 **Side effects:** the comment's author is notified of an upvote once.

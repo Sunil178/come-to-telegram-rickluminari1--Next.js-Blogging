@@ -1,4 +1,4 @@
-import { expect, login, newPage, test, USERS } from "./fixtures";
+import { clickNavLink, expect, expectSeen, login, newPage, test, USERS } from "./fixtures";
 import { createPost, createUser, withDb } from "./db";
 
 test("the posts list pages through more than one page of posts", async ({ page }) => {
@@ -8,13 +8,14 @@ test("the posts list pages through more than one page of posts", async ({ page }
     for (let i = 0; i < 10; i++) await createPost(author.id, { title: `Paged post ${base} #${i}`, publishedAt: new Date(base + i * 1000) });
 
     await page.goto("/posts");
-    await expect(page.getByRole("link", { name: `Paged post ${base} #9` }).first()).toBeVisible();
+    await expectSeen(page.getByRole("link", { name: `Paged post ${base} #9` }).first());
     await expect(page.getByRole("link", { name: `Paged post ${base} #0` })).toHaveCount(0);
+    // Each page's cards arrive by client navigation and must fade in, not stay hidden.
     await page.getByRole("link", { name: "Next" }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(page.getByRole("link", { name: `Paged post ${base} #0` }).first()).toBeVisible();
+    await expectSeen(page.getByRole("link", { name: `Paged post ${base} #0` }).first());
     await page.getByRole("link", { name: "Previous" }).click();
-    await expect(page.getByRole("link", { name: `Paged post ${base} #9` }).first()).toBeVisible();
+    await expectSeen(page.getByRole("link", { name: `Paged post ${base} #9` }).first());
 });
 
 test("an author's profile lists their published posts only", async ({ page }) => {
@@ -68,8 +69,7 @@ test("on a phone, the menu opens, navigates and closes", async ({ browser }) => 
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const page = await context.newPage();
     await page.goto("/");
-    await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("link", { name: "Posts" }).last().click();
+    await clickNavLink(page, "Posts", true);
     await expect(page).toHaveURL(/\/posts$/);
     await expect(page.getByRole("button", { name: "Open menu" })).toBeVisible();
     // No horizontal scrolling at phone width.

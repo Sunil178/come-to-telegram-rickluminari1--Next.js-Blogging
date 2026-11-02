@@ -29,20 +29,19 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
         const result = await toggleVote({
             voteModel: UserVote,
             voteFilter: { userId: session.user.id, targetUserId: targetUser._id },
+            targetFilter: { targetUserId: targetUser._id },
             counterModel: User,
             counterId: targetUser._id,
             type: body.type,
             voterId: session.user.id,
         });
 
-        const updated = await User.findById(targetUser._id).select("upvoteCount downvoteCount").lean();
-
         return NextResponse.json({
             data: {
                 action: result.action,
                 myVote: result.currentType,
-                upvoteCount: updated?.upvoteCount ?? 0,
-                downvoteCount: updated?.downvoteCount ?? 0,
+                upvoteCount: result.upvoteCount,
+                downvoteCount: result.downvoteCount,
             },
             message: "Success",
         });

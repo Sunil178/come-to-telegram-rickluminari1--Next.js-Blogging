@@ -45,7 +45,7 @@ describe("POST /api/comments/[id]/vote", () => {
         commentFindByIdMock.mockReset().mockReturnValue({ _id: COMMENT_ID, postId: "post-1" });
         commentCountsMock.mockReset().mockResolvedValue({ upvoteCount: 2, downvoteCount: 0 });
         postFindByIdMock.mockReset().mockResolvedValue(PUBLIC_POST);
-        toggleVoteMock.mockReset().mockResolvedValue({ action: "removed", currentType: null });
+        toggleVoteMock.mockReset().mockResolvedValue({ action: "removed", currentType: null, upvoteCount: 2, downvoteCount: 0 });
         notifyMock.mockReset();
     });
 
@@ -82,7 +82,7 @@ describe("POST /api/comments/[id]/vote", () => {
         await vote({ type: true });
         expect(notifyMock).not.toHaveBeenCalled();
 
-        toggleVoteMock.mockResolvedValue({ action: "created", currentType: true });
+        toggleVoteMock.mockResolvedValue({ action: "created", currentType: true, upvoteCount: 2, downvoteCount: 0 });
         await vote({ type: true });
         expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "commenter-1", type: "comment_upvoted", commentId: COMMENT_ID }));
     });

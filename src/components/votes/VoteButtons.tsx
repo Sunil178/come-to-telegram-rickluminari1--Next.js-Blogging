@@ -93,35 +93,39 @@ export default function VoteButtons({ voteUrl, initialState, isLoggedIn, size = 
         });
     };
 
-    const score = optimisticState.upvoteCount - optimisticState.downvoteCount;
-    const buttonSize = size === "sm" ? "icon-xs" : "icon-sm";
+    const { upvoteCount, downvoteCount, myVote } = optimisticState;
+    const buttonSize = size === "sm" ? "xs" : "sm";
+    const iconSize = size === "sm" ? "size-3.5" : "size-4";
 
+    // A count beside each arrow, not one net score: a net score jumps by 2 when a vote switches sides.
     return (
-        <div className={cn("inline-flex items-center gap-1 rounded-full border border-border px-1 py-0.5", className)}>
+        <div className={cn("inline-flex items-center gap-0.5 rounded-full border border-border px-1 py-0.5", className)}>
             <Button
                 type="button"
                 variant="ghost"
                 size={buttonSize}
                 disabled={pending}
-                aria-pressed={optimisticState.myVote === true}
+                aria-pressed={myVote === true}
+                aria-label={`Upvote (${upvoteCount})`}
                 onClick={(event) => handleVote(event, true)}
-                className={cn(optimisticState.myVote === true && "text-teal")}
+                className={cn("gap-1 rounded-full px-2 font-mono tabular-nums", myVote === true && "text-teal")}
             >
-                <ArrowBigUp className={cn(optimisticState.myVote === true && "fill-current")} />
-                <span className="sr-only">Upvote</span>
+                <ArrowBigUp className={cn(iconSize, myVote === true && "fill-current")} />
+                <span>{upvoteCount}</span>
             </Button>
-            <span className="min-w-4 text-center font-mono text-xs tabular-nums text-muted-foreground">{score}</span>
+            <span aria-hidden className="h-4 w-px bg-border" />
             <Button
                 type="button"
                 variant="ghost"
                 size={buttonSize}
                 disabled={pending}
-                aria-pressed={optimisticState.myVote === false}
+                aria-pressed={myVote === false}
+                aria-label={`Downvote (${downvoteCount})`}
                 onClick={(event) => handleVote(event, false)}
-                className={cn(optimisticState.myVote === false && "text-destructive")}
+                className={cn("gap-1 rounded-full px-2 font-mono tabular-nums", myVote === false && "text-destructive")}
             >
-                <ArrowBigDown className={cn(optimisticState.myVote === false && "fill-current")} />
-                <span className="sr-only">Downvote</span>
+                <ArrowBigDown className={cn(iconSize, myVote === false && "fill-current")} />
+                <span>{downvoteCount}</span>
             </Button>
         </div>
     );

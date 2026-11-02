@@ -55,8 +55,8 @@ test("an admin creates, renames and deletes categories, with clear refusals alon
     await adminPage.getByRole("button", { name: "Add category" }).click();
     await adminPage.getByLabel("Title").fill(renamed);
     await adminPage.getByRole("button", { name: "Save" }).click();
-    // The first "Category created." toast can still be on screen (phones keep toasts longer).
-    await expect(adminPage.getByText("Category created.").last()).toBeVisible();
+    // Sonner keeps the first create's toast mounted and puts the newest one first.
+    await expect(adminPage.getByText("Category created.").first()).toBeVisible();
     await expect(row(renamed)).toHaveCount(1);
     await adminPage.context().close();
     await reader.context().close();

@@ -32,7 +32,7 @@ describe("POST /api/users/[username]/vote", () => {
         authMock.mockResolvedValue({ user: { id: "voter-1", role: "reader" } });
         findOneMock.mockReset().mockResolvedValue(TARGET);
         findByIdMock.mockReset().mockResolvedValue({ upvoteCount: 5, downvoteCount: 2 });
-        toggleVoteMock.mockReset().mockResolvedValue({ action: "switched", currentType: false });
+        toggleVoteMock.mockReset().mockResolvedValue({ action: "switched", currentType: false, upvoteCount: 5, downvoteCount: 2 });
     });
 
     it("returns 401 for an unauthenticated request", async () => {

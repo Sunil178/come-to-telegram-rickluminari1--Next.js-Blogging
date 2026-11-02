@@ -4,7 +4,7 @@
 
 ## How it works
 
-Readers only ever see public posts: approved, published, visible and past their publish time (`publicPostFilter()` in `src/libs/post-visibility.ts`). The posts list (`src/app/posts/page.tsx`) filters by category and searches through `src/libs/post-search.ts`: a weighted MongoDB text index over title, tags, description and summary, stemmed and ranked by relevance, with a title fallback for half-typed words. The post page (`src/app/posts/[slug]/page.tsx`) adds the table of contents, reading time, votes, comments and up to three related posts (`src/libs/related-posts.ts`). Views are counted once per visitor address per 30 minutes (`src/app/api/posts/[slug]/view/route.ts`).
+Readers only ever see public posts: approved, published, visible and past their publish time (`publicPostFilter()` in `src/libs/post-visibility.ts`). The posts list (`src/app/posts/page.tsx`) filters by category and searches through `src/libs/post-search.ts`: a weighted MongoDB text index over title, tags, description and summary, stemmed and ranked by relevance, with a title fallback for half-typed words. The post page (`src/app/posts/[slug]/page.tsx`) adds the table of contents, reading time, votes, comments and up to three related posts (`src/libs/related-posts.ts`). Views are counted once per visitor address per 30 minutes (`src/app/api/posts/[slug]/view/route.ts`). Post cards fade in one by one through `src/components/posts/ArticleGrid.tsx`; each card animates on its own, so cards that arrive by a client navigation (search, paging, a category chip) fade in too instead of staying hidden.
 
 ## Flows
 
@@ -12,7 +12,7 @@ Readers only ever see public posts: approved, published, visible and past their 
 
 1. Opens `/posts`. → The newest public posts, 9 per page, with the total count.
 2. Chooses a category chip. → Only that category's posts; the chip stays selected.
-3. Chooses "Next" and "Previous". → The next and previous pages, keeping the category and search.
+3. Chooses "Next" and "Previous". → The next and previous pages, keeping the category and search; each page's cards appear without a reload.
 
 **Extensions:**
 

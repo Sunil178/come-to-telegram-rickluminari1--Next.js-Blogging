@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { Bell, FileText, LogOut, PenLine, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -11,14 +12,23 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LogoutButton from "@/components/auth/LogoutButton";
+import { hasRole, ROLES, type RoleName } from "@/libs/roles";
+import { PERSONAL_DASHBOARD_LINKS } from "@/libs/dashboard-links";
+
+const ICONS: Record<(typeof PERSONAL_DASHBOARD_LINKS)[number]["href"], typeof FileText> = {
+    "/dashboard/posts": FileText,
+    "/dashboard/notifications": Bell,
+    "/dashboard/account": UserRound,
+};
 
 interface UserMenuProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: RoleName;
 }
 
-export default function UserMenu({ name, email, image }: UserMenuProps) {
+export default function UserMenu({ name, email, image, role }: UserMenuProps) {
     const initial = (name ?? email ?? "?").charAt(0).toUpperCase();
 
     return (
@@ -34,6 +44,20 @@ export default function UserMenu({ name, email, image }: UserMenuProps) {
                     <span className="text-sm font-medium text-foreground">{name || "User"}</span>
                     {email && <span className="truncate text-xs text-muted-foreground">{email}</span>}
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {hasRole(role, ROLES.AUTHOR) && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/posts/add"><PenLine />Write a post</Link>
+                    </DropdownMenuItem>
+                )}
+                {PERSONAL_DASHBOARD_LINKS.map(({ href, label }) => {
+                    const Icon = ICONS[href];
+                    return (
+                        <DropdownMenuItem asChild key={href}>
+                            <Link href={href}><Icon />{label}</Link>
+                        </DropdownMenuItem>
+                    );
+                })}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild variant="destructive">
                     <LogoutButton className="flex w-full items-center gap-1.5">

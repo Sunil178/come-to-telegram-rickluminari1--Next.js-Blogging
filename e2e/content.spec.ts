@@ -1,5 +1,5 @@
 import { type Page } from "@playwright/test";
-import { expect, login, newPage, RELATED_POST, SEEDED_POST, test, USERS } from "./fixtures";
+import { clickNavLink, expect, expectSeen, login, newPage, RELATED_POST, SEEDED_POST, test, USERS } from "./fixtures";
 
 // datetime-local wants local wall-clock time without a zone.
 function localInputValue(date: Date) {
@@ -118,20 +118,13 @@ test("clearing the posts search brings every post back, even when cleared in pau
     }
     await expect(search).toBeFocused();
     await expect(page).not.toHaveURL(/q=/);
-    await expect(page.getByRole("link", { name: RELATED_POST.title }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: SEEDED_POST.title }).first()).toBeVisible();
+    await expectSeen(page.getByRole("link", { name: RELATED_POST.title }).first());
+    await expectSeen(page.getByRole("link", { name: SEEDED_POST.title }).first());
 
     // A navigation the box didn't make (the navbar's Posts link) empties it.
     await search.fill("Welcome");
     await expect.poll(urlQuery).toBe("Welcome");
-    // On a phone the navbar links sit behind the menu button.
-    const openMenu = page.getByRole("button", { name: "Open menu" });
-    if (await openMenu.isVisible()) {
-        await openMenu.click();
-        await page.getByRole("link", { name: "Posts", exact: true }).last().click();
-    } else {
-        await page.getByRole("banner").getByRole("link", { name: "Posts", exact: true }).click();
-    }
+    await clickNavLink(page, "Posts");
     await expect.poll(urlQuery).toBe("");
     await expect(search).toHaveValue("");
 });
