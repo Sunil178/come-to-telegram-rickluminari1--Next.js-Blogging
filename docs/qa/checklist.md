@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** QA-M1
+**Current focus:** QA-M2
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -29,8 +29,17 @@ Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
 ## Milestones (one per session, in this order)
 
-- [ ] QA-M1 Automated coverage for every untested feature (comment edit/delete and threads, downvotes and toggling, author votes, categories admin, users and roles, post rejection, and the rest of the inventory), fixing what it finds
-- [ ] QA-M2 Profiles, application form, admin review page, IP and location
+- [x] QA-M1 Automated coverage for every untested feature, fixing what it finds. New specs: `comments`, `votes`, `admin`, `moderation`, `reading`. Findings fixed:
+  - QA-07 Authors couldn't file a post under a category (the editor had no field), so category filters were always empty: the editor has a category select, validated against visible categories; post pages link to their category.
+  - QA-08 A rejected post stayed rejected forever: the author's save now sends it back to Pending.
+  - QA-09 Moderators were never told a post was waiting: new and resubmitted posts notify every moderator and admin (`post_submitted`, own preference switch "Posts waiting for review"); reviewing marks those notifications read.
+  - QA-10 Rejections had no explanation: moderators can give a reason (up to 1000 characters), shown on the edit page; the notification links there.
+  - QA-11 Deleting a category and removing a comment in admin happened on one click: both ask first (`ConfirmIconButton`).
+  - QA-12 Admin comments showed only the latest 20 and users had no search or paging: both have search and pagination.
+  - QA-13 No page had a `<main>` landmark, and the footer (with the privacy link and cookie preferences) only appeared on the home page: the root layout wraps pages in `<main>` and renders the footer on every page.
+  - QA-14 Signed-in users can't change their password without the emailed reset link (unavailable without SMTP): scheduled for QA-M2 with the account section.
+  - Review (`/code-review high 846b70d`): 9 findings, all fixed: a deleted or hidden category no longer blocks saving a post; post-review notifications written after a fast review or a deletion are marked read; the resubmit banner shows only to the post's author; deleting a post clears its review notifications; admin paging sorts with an `_id` tiebreaker; repeated query parameters (`?q=a&q=b`) no longer crash list pages (`src/libs/search-params.ts`, shared page parsing); the post page links its category only when the posts page can filter by it; marking reviews read runs after the response.
+- [ ] QA-M2 Profiles, application form, admin review page, IP and location, change password (QA-14)
 - [ ] QA-M3 Uploads: private metadata, GPS stripped, limits, unused-uploads admin page
 - [ ] QA-M4 Search text index and related-posts lookup
 - [ ] QA-M5 Reusable flow-doc and QA kit, and flow documents per group

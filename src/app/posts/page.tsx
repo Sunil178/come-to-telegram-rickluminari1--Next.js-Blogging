@@ -12,11 +12,12 @@ import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 import { escapeRegExp } from "@/libs/search-query";
 import { buildSearchParamsHref } from "@/libs/build-href";
 import { publicPostFilter } from "@/libs/post-visibility";
+import { firstParam, parsePageParam, type SearchParamValue } from "@/libs/search-params";
 
 const PAGE_SIZE = 9;
 
 interface PostsPageProps {
-    searchParams: Promise<{ page?: string; category?: string; q?: string }>;
+    searchParams: Promise<{ page?: SearchParamValue; category?: SearchParamValue; q?: SearchParamValue }>;
 }
 
 export const metadata = {
@@ -25,8 +26,10 @@ export const metadata = {
 };
 
 export default async function PostsPage({ searchParams }: PostsPageProps) {
-    const { page: pageParam, category: categorySlug, q } = await searchParams;
-    const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
+    const params = await searchParams;
+    const page = parsePageParam(params.page);
+    const categorySlug = firstParam(params.category);
+    const q = firstParam(params.q);
 
     const categories = await Category.find({ visibility: true }).select("title slug").sort({ title: 1 }).lean();
 

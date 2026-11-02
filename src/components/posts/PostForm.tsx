@@ -21,6 +21,12 @@ interface InitialPost {
     bannerImage: string;
     contentHtml: string;
     publishAt: string | null;
+    categoryId: string | null;
+}
+
+export interface CategoryOption {
+    id: string;
+    title: string;
 }
 
 // <input type="datetime-local"> works in local time without a zone; the API takes an ISO timestamp.
@@ -39,9 +45,10 @@ interface PostFormProps {
     initialPost?: InitialPost;
     // Already public: its publish time can no longer be changed (that would take a live post down unmoderated).
     isLive?: boolean;
+    categories: CategoryOption[];
 }
 
-export default function PostForm({ mode, userId, initialPost, isLive = false }: PostFormProps) {
+export default function PostForm({ mode, userId, initialPost, isLive = false, categories }: PostFormProps) {
     const router = useRouter();
     const editor = usePostEditor(initialPost?.contentHtml);
 
@@ -50,6 +57,10 @@ export default function PostForm({ mode, userId, initialPost, isLive = false }: 
     const [slug, setSlug] = useState(initialPost?.slug ?? "");
     const [slugEdited, setSlugEdited] = useState(mode === "edit");
     const [tags, setTags] = useState<string[]>(initialPost?.tags ?? []);
+    // A category that's no longer offered (deleted or hidden) reads as none, so saving can't resend it.
+    const [categoryId, setCategoryId] = useState(() =>
+        categories.some((category) => category.id === initialPost?.categoryId) ? initialPost!.categoryId! : ""
+    );
     const [bannerImage, setBannerImage] = useState(initialPost?.bannerImage ?? "");
     // Filled after mount: the local-time value depends on the browser's timezone, not the server's.
     // The field stays disabled until then, so an edit made earlier can't be overwritten by it.
@@ -156,6 +167,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false }: 
             formData.set("slug", slug);
             formData.set("titleDescription", titleDescription);
             formData.set("tags", tags.join(","));
+            formData.set("categoryId", categoryId);
             formData.set("postBannerPath", bannerImage);
             formData.set("post_data", JSON.stringify(editor.children));
             formData.set("publishAt", publishAt ? new Date(publishAt).toISOString() : "");
@@ -242,6 +254,23 @@ export default function PostForm({ mode, userId, initialPost, isLive = false }: 
             <div className="flex flex-col gap-2">
                 <Label htmlFor="post-slug">URL slug</Label>
                 <Input id="post-slug" value={slug} onChange={handleSlugChange} placeholder="post-url-slug" required />
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <Label htmlFor="post-category">Category</Label>
+                <select
+                    id="post-category"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                >
+                    <option value="">No category</option>
+                    {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                            {category.title}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div className="flex flex-col gap-2">

@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
     "comment_upvoted",
     "post_approved",
     "post_rejected",
+    "post_submitted",
     "publish_request",
     "publish_request_approved",
     "publish_request_rejected",
@@ -21,6 +22,7 @@ export const NOTIFICATION_CATEGORIES = {
     moderation: { label: "Moderation decisions on your posts", types: ["post_approved", "post_rejected"] },
     publishing: { label: "Answers to your request to publish", types: ["publish_request_approved", "publish_request_rejected"] },
     requests: { label: "New requests to publish (admins)", types: ["publish_request"] },
+    reviews: { label: "Posts waiting for review (moderators)", types: ["post_submitted"] },
 } as const satisfies Record<string, { label: string; types: readonly NotificationType[] }>;
 export type NotificationCategory = keyof typeof NOTIFICATION_CATEGORIES;
 export const NOTIFICATION_CATEGORY_KEYS = Object.keys(NOTIFICATION_CATEGORIES) as NotificationCategory[];
@@ -50,6 +52,7 @@ export const NOTIFICATION_TITLES: Record<NotificationType, string> = {
     comment_upvoted: "New upvote",
     post_approved: "Post approved",
     post_rejected: "Post rejected",
+    post_submitted: "Post waiting for review",
     publish_request: "New request to publish",
     publish_request_approved: "You can publish now",
     publish_request_rejected: "Request to publish declined",
@@ -87,7 +90,9 @@ export function describeNotification(n: NotificationView): string {
         case "post_approved":
             return `Your post "${title}" was approved`;
         case "post_rejected":
-            return `Your post "${title}" was rejected`;
+            return `Your post "${title}" was rejected. Open it to see why and resubmit`;
+        case "post_submitted":
+            return `${actor} submitted "${title}" for review`;
         case "publish_request":
             return `${actor} asked to become an author`;
         case "publish_request_approved":
@@ -101,6 +106,10 @@ export function notificationLink(n: Pick<NotificationView, "type" | "postSlug" |
     switch (n.type) {
         case "publish_request":
             return "/dashboard/admin/requests";
+        case "post_submitted":
+            return "/dashboard/admin/posts";
+        case "post_rejected":
+            return n.postSlug ? `/posts/${n.postSlug}/edit` : "/dashboard/posts";
         case "publish_request_approved":
             return "/posts/add";
         case "publish_request_rejected":

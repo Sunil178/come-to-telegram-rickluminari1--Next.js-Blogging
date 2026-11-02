@@ -47,7 +47,7 @@ function MetaItem({ label, value, href }: { label: string; value: string; href?:
 const getPost = cache(async (slug: string) => {
     const post = await Post.findOne({ slug })
         .populate({ path: "userId", model: User, select: "username" })
-        .populate({ path: "categoryId", model: Category, select: "title slug" })
+        .populate({ path: "categoryId", model: Category, select: "title slug visibility" })
         .lean();
     if (!post) return null;
 
@@ -126,7 +126,7 @@ export default async function PostPage({ params }: PostPageProps) {
     const { html, toc, readingTime } = renderPostContent(post.content || "");
 
     const author = post.userId as unknown as { username?: string } | null;
-    const category = post.categoryId as unknown as { title?: string } | null;
+    const category = post.categoryId as unknown as { title?: string; slug?: string; visibility?: boolean } | null;
     const authorLabel = author?.username;
     const dateLabel = post.publishedAt
         ? new Date(post.publishedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
@@ -138,9 +138,15 @@ export default async function PostPage({ params }: PostPageProps) {
             <ViewTracker slug={post.slug} />
 
             <div className="mx-auto max-w-3xl px-6 pt-16 text-center">
-                {category?.title && (
-                    <p className="font-mono text-xs tracking-[0.3em] text-teal uppercase">{category.title}</p>
-                )}
+                {category?.title &&
+                    // Only a listed category filters the posts page; any other shows as a plain label.
+                    (category.slug && category.visibility ? (
+                        <Link href={`/posts?category=${encodeURIComponent(category.slug)}`} className="font-mono text-xs tracking-[0.3em] text-teal uppercase hover:underline">
+                            {category.title}
+                        </Link>
+                    ) : (
+                        <p className="font-mono text-xs tracking-[0.3em] text-teal uppercase">{category.title}</p>
+                    ))}
                 <h1 className="mt-4 font-heading text-5xl font-semibold tracking-tight text-foreground">
                     {post.title}
                 </h1>

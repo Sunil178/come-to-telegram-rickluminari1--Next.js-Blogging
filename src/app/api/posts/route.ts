@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import User from "@/models/User";           // Register User model
 import Category from "@/models/Category";   // Register Category model
 import Post, { ApprovalStatus } from "@/models/Post";
@@ -9,6 +9,8 @@ import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-s
 import { ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { parsePublishAt } from "@/libs/post-schedule";
+import { parseCategoryId } from "@/libs/post-category";
+import { notifyPostSubmitted } from "@/libs/review-notifications";
 
 // The moderation listing: every post in any state, with author emails, so moderators only.
 export const GET = withApiGuard(async (request: NextRequest) => {
@@ -75,6 +77,10 @@ export const POST = withApiGuard(async (request, { session }) => {
             return NextResponse.json({ data: null, message: 'Publish time must be a valid date within a year' }, { status: 400 });
         }
 
+        const category = await parseCategoryId(body.get('categoryId'));
+        if (!category.ok) {
+            return NextResponse.json({ data: null, message: 'Choose one of the listed categories' }, { status: 400 });
+        }
         const post = await Post.create({
             'userId': session.user.id,
             'slug': slug,
@@ -84,7 +90,10 @@ export const POST = withApiGuard(async (request, { session }) => {
             'bannerImage': body.get('postBannerPath'),
             'content': await serializePostContent(value),
             'publishAt': publishAt.value,
+            'categoryId': category.value,
         })
+        const submitted = { id: post._id.toString(), title: post.title, slug: post.slug };
+        after(() => notifyPostSubmitted(submitted, { id: session.user.id, username: session.user.username }));
         return NextResponse.json({ data: { slug: post.slug }, message: 'Success' });
     } catch (error) {
         if ((error as { code?: number }).code === 11000) {

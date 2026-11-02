@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import ConfirmIconButton from "@/components/ConfirmIconButton";
 
 export default function RemoveCommentButton({ id }: { id: string }) {
     const router = useRouter();
@@ -28,9 +28,14 @@ export default function RemoveCommentButton({ id }: { id: string }) {
     };
 
     return (
-        <Button variant="ghost" size="icon-sm" onClick={handleRemove} disabled={pending}>
-            <Trash2 />
-            <span className="sr-only">Remove comment</span>
-        </Button>
+        <ConfirmIconButton
+            icon={<Trash2 />}
+            label="Remove comment"
+            title="Remove this comment?"
+            description="Its text is removed for everyone. Replies stay under a [deleted] placeholder."
+            confirmLabel="Remove"
+            disabled={pending}
+            onConfirm={handleRemove}
+        />
     );
 }

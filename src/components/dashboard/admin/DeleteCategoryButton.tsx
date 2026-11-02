@@ -4,9 +4,9 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import ConfirmIconButton from "@/components/ConfirmIconButton";
 
-export default function DeleteCategoryButton({ id }: { id: string }) {
+export default function DeleteCategoryButton({ id, title }: { id: string; title: string }) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
 
@@ -28,9 +28,14 @@ export default function DeleteCategoryButton({ id }: { id: string }) {
     };
 
     return (
-        <Button variant="ghost" size="icon-sm" onClick={handleDelete} disabled={pending}>
-            <Trash2 />
-            <span className="sr-only">Delete category</span>
-        </Button>
+        <ConfirmIconButton
+            icon={<Trash2 />}
+            label="Delete category"
+            title={`Delete the "${title}" category?`}
+            description="Only a category without posts can be deleted."
+            confirmLabel="Delete"
+            disabled={pending}
+            onConfirm={handleDelete}
+        />
     );
 }

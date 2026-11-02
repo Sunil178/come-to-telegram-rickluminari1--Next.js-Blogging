@@ -24,6 +24,9 @@ vi.mock("@/models/Post", async () => {
 const notifyMock = vi.fn();
 vi.mock("@/libs/notify", () => ({ notify: (...args: unknown[]) => notifyMock(...args) }));
 
+const markReadMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/libs/review-notifications", () => ({ markPostReviewNotificationsRead: (...args: unknown[]) => markReadMock(...args) }));
+
 const { PATCH } = await import("@/app/api/posts/[slug]/approval/route");
 
 function requestWithBody(body: unknown) {
@@ -41,6 +44,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
     beforeEach(() => {
         findOneAndUpdateMock.mockReset();
         notifyMock.mockReset();
+        markReadMock.mockClear();
     });
 
     it("rejects a body with an invalid approval value", async () => {
@@ -144,5 +148,26 @@ describe("PATCH /api/posts/[slug]/approval", () => {
         expect(await response.json()).toMatchObject({ data: { slug: "some-slug", approval: "Approved" } });
         expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, [{ $set: expect.objectContaining({ published: true }) }], { returnDocument: "before", updatePipeline: true });
         expect(notifyMock).not.toHaveBeenCalled();
+    });
+
+    it("stores a trimmed rejection reason and clears it again on approval", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "s", title: "T", userId: "author1", approval: "Pending" });
+        await PATCH(requestWithBody({ approval: "Rejected", reason: "  Needs sources.  " }), context("s"));
+        expect(findOneAndUpdateMock.mock.calls[0][1][0].$set).toEqual(expect.objectContaining({ approval: "Rejected", rejectionReason: { $literal: "Needs sources." } }));
+
+        await PATCH(requestWithBody({ approval: "Approved" }), context("s"));
+        expect(findOneAndUpdateMock.mock.calls[1][1][0].$set).toEqual(expect.objectContaining({ approval: "Approved", rejectionReason: null }));
+    });
+
+    it("refuses a rejection reason over 1000 characters", async () => {
+        const response = await PATCH(requestWithBody({ approval: "Rejected", reason: "x".repeat(1001) }), context("s"));
+        expect(response.status).toBe(400);
+        expect(findOneAndUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it("marks the moderators' notifications of the post read once it's reviewed", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "s", title: "T", userId: "author1", approval: "Pending" });
+        await PATCH(requestWithBody({ approval: "Approved" }), context("s"));
+        expect(markReadMock).toHaveBeenCalledWith("p1");
     });
 });

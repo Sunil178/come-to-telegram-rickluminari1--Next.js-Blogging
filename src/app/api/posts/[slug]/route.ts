@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import type { SoftDeleteModel } from "mongoose-delete";
-import Post, { IPost } from "@/models/Post";
+import Post, { ApprovalStatus, IPost } from "@/models/Post";
 import { withApiGuard } from "@/libs/api-guard";
 import { slugify } from "@/libs/slug";
 import { parsePostEditorValue, serializePostContent } from "@/libs/post-editor-serialize";
@@ -8,6 +9,8 @@ import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { parsePublishAt, rescheduledPublishedAt } from "@/libs/post-schedule";
 import { recordRevision } from "@/libs/post-revisions";
+import { parseCategoryId } from "@/libs/post-category";
+import { markPostReviewNotificationsRead, notifyPostSubmitted } from "@/libs/review-notifications";
 
 // Post's exported type is loosened by `mongoose.models?.Post || mongoose.model<...>()`;
 // narrow it back here so the soft-delete plugin's `.delete()` is visible.
@@ -49,6 +52,11 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: 'Publish time must be a valid date within a year' }, { status: 400 });
         }
 
+        const category = await parseCategoryId(body.get('categoryId'));
+        if (!category.ok) {
+            return NextResponse.json({ data: null, message: 'Choose one of the listed categories' }, { status: 400 });
+        }
+
         const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
         const changes = {
             slug: nextSlug,
@@ -58,7 +66,10 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             bannerImage: body.get('postBannerPath'),
             content: await serializePostContent(value),
             publishAt: publishAt.value,
+            categoryId: category.value,
         };
+        // The author's edit of a rejected post resubmits it; an admin editing someone else's post doesn't.
+        const resubmits = { $and: [{ $eq: ["$approval", ApprovalStatus.Rejected] }, { $eq: ["$userId", new Types.ObjectId(session.user.id)] }] };
         // One pipeline update, so the edit and the schedule change land together. $literal keeps
         // user text such as a "$100 tips" title from being read as a field path. "before" returns
         // the replaced version for the revision history.
@@ -69,6 +80,8 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
                     ...Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, { $literal: value }])),
                     // Already approved: editing the schedule moves its go-live time (see rescheduledPublishedAt).
                     publishedAt: { $cond: [{ $eq: ["$approval", "Approved"] }, rescheduledPublishedAt(publishAt.value), "$publishedAt"] },
+                    approval: { $cond: [resubmits, ApprovalStatus.Pending, "$approval"] },
+                    rejectionReason: { $cond: [resubmits, null, "$rejectionReason"] },
                 },
             }],
             { returnDocument: "before", updatePipeline: true }
@@ -80,6 +93,10 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
 
         // Off the save path; recordRevision never throws.
         after(() => recordRevision(previous, changes, session.user.id));
+        if (previous.approval === ApprovalStatus.Rejected && previous.userId?.toString() === session.user.id) {
+            const submitted = { id: previous._id.toString(), title, slug: nextSlug };
+            after(() => notifyPostSubmitted(submitted, { id: session.user.id, username: session.user.username }));
+        }
 
         return NextResponse.json({ data: { slug: nextSlug }, message: 'Success' });
     } catch (error) {
@@ -102,13 +119,14 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
 
         // mongoose-delete's types claim a DeleteResult, but `.delete()` actually runs an
         // `updateMany` under the hood (it flips `deleted: true` rather than removing the doc).
-        const result = (await SoftDeletePost.delete(
-            isAdmin ? { slug } : { slug, userId: session.user.id },
-            session.user.id
-        )) as unknown as { matchedCount: number };
-        if (result.matchedCount === 0) {
+        const filter = isAdmin ? { slug } : { slug, userId: session.user.id };
+        const target = await Post.findOne(filter).select("_id").lean<{ _id: Types.ObjectId }>();
+        const result = (await SoftDeletePost.delete(filter, session.user.id)) as unknown as { matchedCount: number };
+        if (!target || result.matchedCount === 0) {
             return NextResponse.json({ data: null, message: 'Post not found' }, { status: 404 });
         }
+        // A deleted post no longer waits for review.
+        after(() => markPostReviewNotificationsRead(target._id));
 
         return NextResponse.json({ data: null, message: 'Success' });
     } catch (error) {

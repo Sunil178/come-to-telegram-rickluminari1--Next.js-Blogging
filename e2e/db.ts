@@ -29,3 +29,17 @@ export async function createUser(username: string, role = "reader"): Promise<{ i
     }));
     return { id, email, username };
 }
+
+// A published, approved post owned by userId, inserted directly so a spec can start from it.
+export async function createPost(userId: Types.ObjectId, overrides: Record<string, unknown> = {}): Promise<{ id: Types.ObjectId; slug: string; title: string }> {
+    const id = new Types.ObjectId();
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const now = new Date();
+    const post = {
+        _id: id, userId, slug: `e2e-post-${stamp}`, title: `E2E post ${stamp}`, titleDescription: "", tags: [], content: "<p>Body.</p>",
+        bannerImage: "", upvoteCount: 0, downvoteCount: 0, commentCount: 0, visitorCount: 0, visibility: true, published: true,
+        publishedAt: now, approval: "Approved", approvedAt: now, deleted: false, createdAt: now, updatedAt: now, ...overrides,
+    };
+    await withDb((db) => db.collection("posts").insertOne(post));
+    return { id, slug: post.slug as string, title: post.title as string };
+}

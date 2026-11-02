@@ -33,6 +33,7 @@ export interface IPost extends IPostWithSoftDelete {
   visitorCount: number;
   approval: ApprovalStatus;
   approvedAt: Date;
+  rejectionReason: string | null;
 }
 
 const schema = new Schema<IPost>(
@@ -57,6 +58,7 @@ const schema = new Schema<IPost>(
     visitorCount: { type: Number, default: 0 },
     approval: { type: String, enum: Object.values(ApprovalStatus), default: ApprovalStatus.Pending },
     approvedAt: { type: Date, default: null },
+    rejectionReason: { type: String, default: null },
   },
   {
     timestamps: true,

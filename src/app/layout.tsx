@@ -9,6 +9,7 @@ import "./globals.css";
 import "@/styles/custom.css";
 
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/layout/Footer";
 import EmberField from "@/components/layout/EmberField";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -47,14 +48,17 @@ export default async function RootLayout({
                 className={cn("font-sans", fontDisplay.variable, fontBody.variable, fontMono.variable)}
                 suppressHydrationWarning
             >
-                <body>
+                <body className="flex min-h-svh flex-col">
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange nonce={nonce}>
                         <EmberField />
                         <Suspense fallback={null}>
                             <GlobalLoader />
                         </Suspense>
                         <Navbar />
-                        {children}
+                        <main id="main-content" className="flex-1">
+                            {children}
+                        </main>
+                        <Footer />
                         <Toaster />
                         <ConsentBanner initialChoice={consent} />
                     </ThemeProvider>

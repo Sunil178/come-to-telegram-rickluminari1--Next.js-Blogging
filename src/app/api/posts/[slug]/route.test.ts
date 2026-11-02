@@ -22,6 +22,7 @@ vi.mock("@/models/Post", async () => {
             findOneAndUpdate: (...args: unknown[]) => findOneAndUpdateMock(...args),
             updateOne: (...args: unknown[]) => updateOneMock(...args),
             delete: (...args: unknown[]) => softDeleteMock(...args),
+            findOne: () => ({ select: () => ({ lean: () => Promise.resolve({ _id: "p1" }) }) }),
         },
     };
 });
@@ -29,6 +30,15 @@ vi.mock("@/models/Post", async () => {
 vi.mock("@/libs/post-editor-serialize", () => ({
     parsePostEditorValue: () => ({ some: "value" }),
     serializePostContent: async () => "<p>content</p>",
+}));
+
+const parseCategoryMock = vi.fn();
+vi.mock("@/libs/post-category", () => ({ parseCategoryId: (...args: unknown[]) => parseCategoryMock(...args) }));
+const notifySubmittedMock = vi.fn();
+const markReviewedMock = vi.fn();
+vi.mock("@/libs/review-notifications", () => ({
+    notifyPostSubmitted: (...args: unknown[]) => notifySubmittedMock(...args),
+    markPostReviewNotificationsRead: (...args: unknown[]) => markReviewedMock(...args),
 }));
 
 const { PATCH, DELETE } = await import("@/app/api/posts/[slug]/route");
@@ -48,7 +58,40 @@ describe("PATCH /api/posts/[slug]", () => {
         findOneAndUpdateMock.mockReset();
         updateOneMock.mockReset().mockResolvedValue({});
         recordRevisionMock.mockReset().mockResolvedValue(undefined);
-        authMock.mockResolvedValue({ user: { id: "author1", role: "author" } });
+        authMock.mockResolvedValue({ user: { id: "6500000000000000000000a1", role: "author", username: "writer" } });
+        parseCategoryMock.mockResolvedValue({ ok: true, value: null });
+        notifySubmittedMock.mockReset();
+    });
+
+    it("files the post under the chosen category, and refuses an unknown one", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ slug: "some-slug" });
+        parseCategoryMock.mockResolvedValueOnce({ ok: true, value: "cat1" });
+        await PATCH(patchRequest({ title: "T", post_data: "[]", categoryId: "cat1" }), context("some-slug"));
+        expect(findOneAndUpdateMock.mock.calls[0][1][0].$set.categoryId).toEqual({ $literal: "cat1" });
+
+        parseCategoryMock.mockResolvedValueOnce({ ok: false });
+        const response = await PATCH(patchRequest({ title: "T", post_data: "[]", categoryId: "nope" }), context("some-slug"));
+        expect(response.status).toBe(400);
+    });
+
+    it("sends the owner's edit of a rejected post back for review and tells the moderators", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1" });
+        await PATCH(patchRequest({ title: "Fixed", post_data: "[]" }), context("some-slug"));
+
+        const $set = findOneAndUpdateMock.mock.calls[0][1][0].$set;
+        expect($set.approval.$cond[1]).toBe("Pending");
+        expect($set.rejectionReason.$cond[1]).toBeNull();
+        expect(notifySubmittedMock).toHaveBeenCalledWith({ id: "p1", title: "Fixed", slug: "fixed" }, { id: "6500000000000000000000a1", username: "writer" });
+    });
+
+    it("doesn't resubmit an approved post or another author's rejected post edited by an admin", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Approved", userId: "6500000000000000000000a1" });
+        await PATCH(patchRequest({ title: "T", post_data: "[]" }), context("some-slug"));
+        authMock.mockResolvedValue({ user: { id: "6500000000000000000000b2", role: "admin", username: "boss" } });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1" });
+        await PATCH(patchRequest({ title: "T", post_data: "[]" }), context("some-slug"));
+
+        expect(notifySubmittedMock).not.toHaveBeenCalled();
     });
 
     it("scopes the update to the owner for a non-admin", async () => {
@@ -56,14 +99,14 @@ describe("PATCH /api/posts/[slug]", () => {
         await PATCH(patchRequest({ title: "New title", post_data: "{}" }), context("some-slug"));
 
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-            { slug: "some-slug", userId: "author1" },
+            { slug: "some-slug", userId: "6500000000000000000000a1" },
             expect.anything(),
             { returnDocument: "before", updatePipeline: true }
         );
     });
 
     it("lets an admin update any post regardless of owner", async () => {
-        authMock.mockResolvedValue({ user: { id: "admin1", role: "admin" } });
+        authMock.mockResolvedValue({ user: { id: "6500000000000000000000c3", role: "admin" } });
         findOneAndUpdateMock.mockResolvedValue({ slug: "some-slug" });
         await PATCH(patchRequest({ title: "New title", post_data: "{}" }), context("some-slug"));
 
@@ -75,7 +118,7 @@ describe("PATCH /api/posts/[slug]", () => {
         await PATCH(patchRequest({ title: "New title", slug: "foo;bar", post_data: "{}" }), context("some-slug"));
 
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-            { slug: "some-slug", userId: "author1" },
+            { slug: "some-slug", userId: "6500000000000000000000a1" },
             [{ $set: expect.objectContaining({ slug: { $literal: "foobar" } }) }],
             { returnDocument: "before", updatePipeline: true }
         );
@@ -84,7 +127,7 @@ describe("PATCH /api/posts/[slug]", () => {
 
 describe("PATCH /api/posts/[slug] revisions and scheduling", () => {
     beforeEach(() => {
-        authMock.mockResolvedValue({ user: { id: "author1", role: "author" } });
+        authMock.mockResolvedValue({ user: { id: "6500000000000000000000a1", role: "author" } });
         updateOneMock.mockReset().mockResolvedValue({});
         recordRevisionMock.mockReset().mockResolvedValue(undefined);
         findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "post-1", slug: "some-slug", title: "Old", content: "<p>old</p>" });
@@ -97,7 +140,7 @@ describe("PATCH /api/posts/[slug] revisions and scheduling", () => {
         expect(recordRevisionMock).toHaveBeenCalledWith(
             expect.objectContaining({ _id: "post-1", title: "Old" }),
             expect.objectContaining({ title: "New title", content: "<p>content</p>" }),
-            "author1"
+            "6500000000000000000000a1"
         );
     });
 
@@ -145,5 +188,7 @@ describe("DELETE /api/posts/[slug]", () => {
         await DELETE(new NextRequest("http://localhost/api/posts/some-slug", { method: "DELETE" }), context("some-slug"));
 
         expect(softDeleteMock).toHaveBeenCalledWith({ slug: "some-slug" }, "admin1");
+        // A deleted post stops waiting for review in the moderators' bells.
+        expect(markReviewedMock).toHaveBeenCalledWith("p1");
     });
 });

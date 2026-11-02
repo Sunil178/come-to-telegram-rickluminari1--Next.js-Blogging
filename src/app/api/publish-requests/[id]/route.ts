@@ -5,7 +5,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { notify } from "@/libs/notify";
-import { markRequestNotificationsRead } from "@/libs/publish-request-notifications";
+import { markRequestNotificationsRead } from "@/libs/review-notifications";
 
 interface RouteContext {
     params: Promise<{ id: string }>;

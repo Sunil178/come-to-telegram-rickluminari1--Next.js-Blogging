@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-export default function PostsSearch() {
+export default function PostsSearch({ label = "Search articles", placeholder = "Search articles..." }: { label?: string; placeholder?: string }) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -55,10 +55,10 @@ export default function PostsSearch() {
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
                 type="search"
-                aria-label="Search articles"
+                aria-label={label}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="Search articles..."
+                placeholder={placeholder}
                 className="pl-9"
             />
         </div>

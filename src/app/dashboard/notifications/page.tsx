@@ -26,8 +26,10 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         listNotifications(session.user.id, { page, limit: PAGE_SIZE }),
         User.findById(session.user.id).select("notificationPrefs").lean<{ notificationPrefs?: Record<string, object> }>(),
     ]);
-    // Publish requests reach admins only, so the switch is pointless for anyone else.
-    const categories = NOTIFICATION_CATEGORY_KEYS.filter((key) => key !== "requests" || hasRole(session.user.role, ROLES.ADMIN));
+    // Publish requests reach admins and review requests moderators only; the switches are pointless for anyone else.
+    const categories = NOTIFICATION_CATEGORY_KEYS.filter((key) =>
+        key === "requests" ? hasRole(session.user.role, ROLES.ADMIN) : key === "reviews" ? hasRole(session.user.role, ROLES.MODERATOR) : true
+    );
 
     return (
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_22rem]">

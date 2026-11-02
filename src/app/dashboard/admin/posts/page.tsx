@@ -80,7 +80,7 @@ export default async function AdminPostsPage({ searchParams }: AdminPostsPagePro
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <PostApprovalActions slug={post.slug} />
+                                        <PostApprovalActions slug={post.slug} title={post.title} />
                                     </TableCell>
                                 </TableRow>
                             );

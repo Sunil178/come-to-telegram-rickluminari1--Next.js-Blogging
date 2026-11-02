@@ -129,3 +129,26 @@ test("MongoDB's TTL monitor deletes old read notifications and keeps unread ones
     await expect.poll(() => withDb((db) => db.collection("notifications").countDocuments({ _id: readId })), { timeout: 130_000, intervals: [5_000] }).toBe(0);
     expect(await withDb((db) => db.collection("notifications").countDocuments({ _id: unreadId }))).toBe(1);
 });
+
+test("a declined reader is told, sees why the button changed, and can ask again", async ({ browser }) => {
+    const reader = await createUser(`e2e.declined${Date.now()}`);
+    const readerPage = await newPage(browser);
+    await login(readerPage, reader.email, undefined, "/dashboard/posts");
+    await readerPage.getByRole("button", { name: "Request to publish" }).click();
+    await expect(readerPage.getByText("Request sent — an admin will review it.")).toBeVisible();
+
+    const adminPage = await newPage(browser);
+    await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/requests");
+    await adminPage.getByRole("row").filter({ hasText: reader.email }).getByRole("button", { name: "Reject request" }).click();
+    await expect(adminPage.getByText("Request rejected.")).toBeVisible();
+    await adminPage.context().close();
+
+    await expectNotification(readerPage, "Your request to publish was declined");
+    await readerPage.goto("/dashboard/posts");
+    await expect(readerPage.getByText("Your last request was declined.")).toBeVisible();
+    await readerPage.getByRole("button", { name: "Request again" }).click();
+    await expect(readerPage.getByText("Request sent — an admin will review it.")).toBeVisible();
+    await readerPage.reload();
+    await expect(readerPage.getByText("Your request to publish is pending review.")).toBeVisible();
+    await readerPage.context().close();
+});

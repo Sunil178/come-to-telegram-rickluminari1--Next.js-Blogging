@@ -40,15 +40,15 @@ Validation rules, rate limits, permissions per role, TTLs.
 
 | Group | Covers | Flow doc | E2E coverage today |
 |---|---|---|---|
-| Accounts | Register, verify email, sign in, sign out, forgot and reset password, lockout, session revocation | to write | register+verify, reset, unknown-email reset, reset signs out other browsers, wrong password |
+| Accounts | Register, verify email, sign in, sign out, forgot and reset password, lockout, session revocation | to write | register+verify, reset, unknown-email reset, reset signs out other browsers, wrong password, gated redirects |
 | Account self-service | Account page, change password, data export, account deletion, privacy page | to write | export, deletion, privacy page, 8-character rule |
-| Reading | Home, posts list (search, categories, pagination), post page, related posts, author profile, RSS, sitemap | to write | related posts, search clear |
+| Reading | Home, posts list (search, categories, pagination), post page, related posts, author profile, RSS, sitemap | to write | related posts, search clear, pagination, category filter, author profile, RSS, sitemap, robots, theme, phone menu, visitor count |
 | Writing | Add post, editor, uploads, autosaved drafts, edit, revisions and restore, scheduling, delete | to write | scheduling, revisions, drafts, uploads |
-| Moderation | Post approval and rejection, all-posts view, comment moderation | to write | approval |
-| Comments | Comment, reply threads, edit, delete, placeholders | to write | comment notification only |
-| Votes | Post, comment and author up/down votes, toggling, counters | to write | post upvote, comment upvote notification |
+| Moderation | Post approval and rejection, all-posts view, comment moderation | to write | approval, rejection with reason, resubmission, moderator notifications, author deletes own post |
+| Comments | Comment, reply threads, edit, delete, placeholders | to write | edit, delete, placeholders, reply notifications, permissions, limits, logged-out |
+| Votes | Post, comment and author up/down votes, toggling, counters | to write | post, comment and profile votes: toggle, switch, counts, self-vote refused, logged-out |
 | Publish requests | Reader requests author role, admin reviews, re-request after rejection | to write | request, pending after reload, approval, role upgrade |
 | Notifications | Bell, notifications page, preferences, mark read, push, TTL | to write | most |
-| Administration | Users and roles, categories, publish requests page | to write | none |
+| Administration | Users and roles, categories, comment moderation, publish requests page | to write | categories CRUD, role change and access, comment search/paging/removal, admin-only access |
 | Privacy and consent | Consent banner, visitor tracking, identity stitching | to write | accept, decline |
 | Platform | CSP, gated routes, loading and not-found pages, theme, mobile layout, PWA manifest, health | to write | CSP, gates, manifest |

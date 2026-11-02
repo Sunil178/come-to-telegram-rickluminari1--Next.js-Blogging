@@ -6,6 +6,7 @@ import User from "@/models/User";
 import Category from "@/models/Category";
 import { escapeRegExp } from "@/libs/search-query";
 import { buildSearchParamsHref } from "@/libs/build-href";
+import { firstParam, parsePageParam, type SearchParamValue } from "@/libs/search-params";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,12 +58,12 @@ function SortableHead({
 }
 
 export interface PostsManageSearchParams {
-    page?: string;
-    q?: string;
-    sort?: string;
-    order?: string;
-    approval?: string;
-    published?: string;
+    page?: SearchParamValue;
+    q?: SearchParamValue;
+    sort?: SearchParamValue;
+    order?: SearchParamValue;
+    approval?: SearchParamValue;
+    published?: SearchParamValue;
 }
 
 interface PostsManageViewProps {
@@ -84,8 +85,8 @@ export default async function PostsManageView({
     composeControl,
     searchParams,
 }: PostsManageViewProps) {
-    const { page: pageParam, q, sort, order, approval, published } = searchParams;
-    const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
+    const page = parsePageParam(searchParams.page);
+    const [q, sort, order, approval, published] = [searchParams.q, searchParams.sort, searchParams.order, searchParams.approval, searchParams.published].map(firstParam);
     const sortField: SortField = SORTABLE_FIELDS.includes(sort as SortField) ? (sort as SortField) : "createdAt";
     const sortOrder = order === "asc" ? 1 : -1;
 

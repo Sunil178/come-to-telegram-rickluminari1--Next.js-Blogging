@@ -33,7 +33,7 @@ export default async function AdminCategoriesPage() {
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-1">
                                         <CategoryFormDialog category={{ id: String(category._id), title: category.title }} />
-                                        <DeleteCategoryButton id={String(category._id)} />
+                                        <DeleteCategoryButton id={String(category._id)} title={category.title} />
                                     </div>
                                 </TableCell>
                             </TableRow>

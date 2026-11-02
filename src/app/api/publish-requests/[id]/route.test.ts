@@ -28,7 +28,7 @@ vi.mock("@/models/User", () => ({
 }));
 
 const markReadMock = vi.fn().mockResolvedValue(undefined);
-vi.mock("@/libs/publish-request-notifications", () => ({ markRequestNotificationsRead: (...args: unknown[]) => markReadMock(...args) }));
+vi.mock("@/libs/review-notifications", () => ({ markRequestNotificationsRead: (...args: unknown[]) => markReadMock(...args) }));
 
 const { PATCH } = await import("@/app/api/publish-requests/[id]/route");
 
