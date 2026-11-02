@@ -15,8 +15,7 @@ test("an author's post goes live only after a moderator approves it", async ({ b
 
     const slug = title.toLowerCase().replace(/\s+/g, "-");
     const anonymous = await newPage(browser);
-    // Streaming (loading.tsx) sends a 200 before notFound() runs, so check what renders, not the status.
-    await anonymous.goto(`/posts/${slug}`);
+    expect((await anonymous.goto(`/posts/${slug}`))?.status()).toBe(404);
     await expect(anonymous.getByRole("heading", { name: "Page not found" })).toBeVisible();
     await expect(anonymous.getByText(title)).toHaveCount(0);
 

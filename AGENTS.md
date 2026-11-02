@@ -35,7 +35,7 @@ A multi-author blogging platform: Next.js 16 App Router (Turbopack, `src/proxy.t
 
 QA pass 1 (complete; summary in `docs/qa/report.md`, log in `docs/qa/checklist.md`): following the project profile `docs/procedures/qa-testing.md`, the reusable QA kit in `docs/kits/flow-qa/` (method and flow-doc standard; project-agnostic, copied as-is to other repositories) and the flow documents in `docs/flows/`. A change to a flow's behaviour updates its flow document and the test it cites in the same commit.
 
-Production readiness (complete except owner decisions): `docs/production-readiness/` (findings, plan, checklist). Resume from `checklist.md`; follow `plan.md`, including decision D-13 (the agent commits each milestone after tests, a code review and real-browser verification; never push).
+Production readiness (complete except owner decisions): `docs/production-readiness/` (findings, plan, checklist). Resume from `checklist.md`; follow `plan.md`, including decision D-13 (the agent commits each milestone after tests, a code review of the uncommitted changes (`/code-review high` with no target) and real-browser verification; never push).
 
 ## Git
 
@@ -63,6 +63,8 @@ Do not call `dbConnect()` (`src/libs/db-connect.ts`) from routes, pages, or comp
 Whole-page auth gates live in `src/proxy.ts`, matched by `isGatedPath()` in `src/libs/route-gates.ts` (`/posts/add`, `/posts/:slug/edit`, `/posts/:slug/revisions`, `/dashboard/**`). Unauthenticated requests are redirected to `/auth/login?callbackUrl=...` before any page renders, and per-prefix role minimums redirect to `/dashboard/posts`. Gated pages don't re-check the session: they cast `getSession() as AuthenticatedSession` (from `src/libs/api-guard.ts`). A new fully-gated page means adding its path to `isGatedPath()`, not a per-page redirect.
 
 `proxy.ts` runs on every page (its matcher skips only API routes and static assets) to set a per-request nonce CSP (`buildContentSecurityPolicy()` in `src/libs/csp.ts`); only gated paths go through the Auth.js `auth()` wrapper. A page path with a malformed percent-escape gets a 400 there (`hasMalformedEscape()`), since Next.js would answer it with a 500. The root layout passes the nonce to next-themes; any new inline `<script>` must take it from `headers().get("x-nonce")` or the CSP blocks it. Nonces require per-request rendering, so every page renders dynamically, which is the deliberate cost of the nonce CSP.
+
+A streamed response's status is fixed when its first `loading.tsx` fallback renders, so a public page that can be missing calls `notFound()` from a `layout.tsx` above its own `loading.tsx` (as `src/app/posts/[slug]/(read)/layout.tsx` does, skipping link prefetches), and no broader `loading.tsx` may wrap it: the home page's and the posts list's skeletons live in route groups. Gated pages (editor, revisions, dashboard) are excluded from search (`robots.ts`, `noindex`), so they keep a 200 with the not-found page.
 
 Client components where only an action is gated (voting, commenting, deleting) discover logged-out state from a 401 on their own fetch and build the redirect with `loginRedirectUrl()` from `src/libs/auth-redirect.ts`.
 

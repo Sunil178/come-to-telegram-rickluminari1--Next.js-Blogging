@@ -4,7 +4,7 @@
 
 ## How it works
 
-Readers only ever see public posts: approved, published, visible and past their publish time (`publicPostFilter()` in `src/libs/post-visibility.ts`). The posts list (`src/app/posts/page.tsx`) filters by category and searches through `src/libs/post-search.ts`: a weighted MongoDB text index over title, tags, description and summary, stemmed and ranked by relevance, with a title fallback for half-typed words. The post page (`src/app/posts/[slug]/page.tsx`) adds the table of contents, reading time, votes, comments and up to three related posts (`src/libs/related-posts.ts`). Views are counted once per visitor address per 30 minutes (`src/app/api/posts/[slug]/view/route.ts`). Post cards fade in one by one through `src/components/posts/ArticleGrid.tsx`; each card animates on its own, so cards that arrive by a client navigation (search, paging, a category chip) fade in too instead of staying hidden.
+Readers only ever see public posts: approved, published, visible and past their publish time (`publicPostFilter()` in `src/libs/post-visibility.ts`). The posts list (`src/app/posts/(list)/page.tsx`) filters by category and searches through `src/libs/post-search.ts`: a weighted MongoDB text index over title, tags, description and summary, stemmed and ranked by relevance, with a title fallback for half-typed words. The post page (`src/app/posts/[slug]/(read)/page.tsx`) adds the table of contents, reading time, votes, comments and up to three related posts (`src/libs/related-posts.ts`). Views are counted once per visitor address per 30 minutes (`src/app/api/posts/[slug]/view/route.ts`). Post cards fade in one by one through `src/components/posts/ArticleGrid.tsx`; each card animates on its own, so cards that arrive by a client navigation (search, paging, a category chip) fade in too instead of staying hidden.
 
 ## Flows
 
@@ -44,7 +44,7 @@ Readers only ever see public posts: approved, published, visible and past their 
 - 1a. An unknown slug or a deleted post: the not-found page. A post that isn't public (pending, rejected, hidden, scheduled): the not-found page for readers; its author and moderators and admins can still open it.
 - 1b. Related posts: shared tags first, then the same category, then newest; deleted and non-public posts never appear.
 
-**Tested by:** `e2e/content.spec.ts` › "a post lists related posts that share its tags"; `e2e/reading.spec.ts` › "unknown, deleted and non-public posts show readers the not-found page", "related posts put shared tags before the same category, and never show a deleted post", "a post's visitor count goes up once per visitor address, not on every reload".
+**Tested by:** `e2e/content.spec.ts` › "a post lists related posts that share its tags"; `e2e/reading.spec.ts` › "unknown, deleted and non-public posts show readers the not-found page with a 404 status", "related posts put shared tags before the same category, and never show a deleted post", "a post's visitor count goes up once per visitor address, not on every reload".
 
 ### 4. Visit an author's profile
 

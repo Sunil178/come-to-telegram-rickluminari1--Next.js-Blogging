@@ -42,7 +42,3 @@ Search uses a weighted MongoDB text index (title, tags, description, summary; st
 ### Error tracking
 
 Server errors are logged as JSON lines; an error tracker (Sentry or self-hosted GlitchTip) hooked into `onRequestError` and the client error boundary would group them and alert. See `docs/deployment-checklist.md`.
-
-### Not-found status on streamed pages
-
-The root `loading.tsx` makes every page stream, so a missing post renders the not-found page with status 200 (Next.js adds `noindex` instead). Route-level loading boundaries that leave the post page unstreamed would return a real 404.

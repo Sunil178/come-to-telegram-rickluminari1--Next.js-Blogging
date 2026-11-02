@@ -3,15 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { SoftDeleteModel } from "mongoose-delete";
-import Post from "@/models/Post";
 import User from "@/models/User";
-import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
 import Comment from "@/models/Comment";
 import type { IComment } from "@/models/Comment";
 import CommentVote from "@/models/CommentVote";
 import { getSession } from "@/libs/api-guard";
-import { hasRole, ROLES } from "@/libs/roles";
 import { renderPostContent } from "@/libs/render-post-html";
 import { buildCommentTree, type FlatComment } from "@/libs/comment-tree";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +18,7 @@ import TableOfContents from "@/components/posts/TableOfContents";
 import ViewTracker from "@/components/posts/ViewTracker";
 import VoteButtons from "@/components/votes/VoteButtons";
 import CommentSection from "@/components/comments/CommentSection";
-import { isPubliclyVisible } from "@/libs/post-visibility";
+import { getViewablePost } from "@/libs/post-page";
 import { findRelatedPosts } from "@/libs/related-posts";
 import type { Types } from "mongoose";
 
@@ -43,27 +40,6 @@ function MetaItem({ label, value, href }: { label: string; value: string; href?:
         </div>
     );
 }
-
-const getPost = cache(async (slug: string) => {
-    const post = await Post.findOne({ slug })
-        .populate({ path: "userId", model: User, select: "username" })
-        .populate({ path: "categoryId", model: Category, select: "title slug visibility" })
-        .lean();
-    if (!post) return null;
-
-    const isPublic = isPubliclyVisible(post);
-    if (isPublic) return post;
-
-    const session = await getSession();
-    if (hasRole(session?.user?.role, ROLES.MODERATOR)) return post;
-
-    const owner = post.userId as unknown as { _id?: { toString(): string } } | null;
-    if (session?.user?.id && owner?._id && owner._id.toString() === session.user.id) {
-        return post;
-    }
-
-    return null;
-});
 
 const getMyPostVote = cache(async (postId: string, userId: string | undefined) => {
     if (!userId) return null;
@@ -92,7 +68,7 @@ const getComments = cache(async (postId: string, userId: string | undefined) => 
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
     const { slug } = await params;
-    const post = await getPost(slug);
+    const post = await getViewablePost(slug);
     if (!post) return {};
 
     const description = post.summary || post.titleDescription || undefined;
@@ -114,7 +90,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 
 export default async function PostPage({ params }: PostPageProps) {
     const { slug } = await params;
-    const post = await getPost(slug);
+    const post = await getViewablePost(slug);
     if (!post) notFound();
 
     const session = await getSession();

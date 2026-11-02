@@ -4,7 +4,7 @@
 
 ## How it works
 
-`src/proxy.ts` runs on every page: it sets a per-request nonce Content-Security-Policy (`src/libs/csp.ts`) and, for gated paths (`src/libs/route-gates.ts`), checks the session and role before the page renders. Nonces need per-request rendering, so every page renders dynamically. Segments stream behind their own `loading.tsx` skeletons. The theme (light, dark, system) comes from next-themes with the nonce. The dashboard menu (`src/components/dashboard/DashboardNav.tsx`, built in `src/app/dashboard/layout.tsx`) groups its pages by role and frequency of use (each group on its own row on a phone, divided by a thin line on wider screens): the user's own pages (My Posts, Notifications, Account), then for moderators Review Queue and Comments, then for admins Publish Requests, All Posts, Users, Categories and Uploads. It highlights the current page and wraps on narrow screens. The avatar menu offers Write a post (authors and above), the same personal pages (`src/libs/dashboard-links.ts`) and Logout. `/api/health` reports the app and database state for uptime checks and the container health check.
+`src/proxy.ts` runs on every page: it sets a per-request nonce Content-Security-Policy (`src/libs/csp.ts`) and, for gated paths (`src/libs/route-gates.ts`), checks the session and role before the page renders. Nonces need per-request rendering, so every page renders dynamically. Segments stream behind their own `loading.tsx` skeletons; the home page and the posts list keep theirs in route groups (`src/app/(home)/`, `src/app/posts/(list)/`) so they don't wrap other pages. A response's status is fixed once the skeleton streams, so the post and author pages check that their post or account exists in a `layout.tsx` outside their skeleton (`src/app/posts/[slug]/(read)/`, `src/app/users/[username]/`; lookups in `src/libs/post-page.ts` and `src/libs/profile-page.ts`, cached per request; link prefetches skip the check), and a missing one answers 404. Gated pages (editor, revisions, dashboard) stay out of search and keep a 200 with the not-found page. The theme (light, dark, system) comes from next-themes with the nonce. The dashboard menu (`src/components/dashboard/DashboardNav.tsx`, built in `src/app/dashboard/layout.tsx`) groups its pages by role and frequency of use (each group on its own row on a phone, divided by a thin line on wider screens): the user's own pages (My Posts, Notifications, Account), then for moderators Review Queue and Comments, then for admins Publish Requests, All Posts, Users, Categories and Uploads. It highlights the current page and wraps on narrow screens. The avatar menu offers Write a post (authors and above), the same personal pages (`src/libs/dashboard-links.ts`) and Logout. `/api/health` reports the app and database state for uptime checks and the container health check.
 
 ## Flows
 
@@ -24,9 +24,9 @@
 ### 3. Loading and not-found states
 
 1. Opens the editor or a dashboard page on a slow connection. → A skeleton shaped like that page, not the posts grid.
-2. Opens an unknown address or post. → The not-found page.
+2. Opens an unknown address, post or author. → The not-found page, titled "Page not found", with status 404.
 
-**Tested by:** `e2e/content.spec.ts` › "the editor and dashboard pages stream their own loading skeletons, not the posts grid"; `e2e/reading.spec.ts` › "unknown, deleted and non-public posts show readers the not-found page".
+**Tested by:** `e2e/content.spec.ts` › "the editor and dashboard pages stream their own loading skeletons, not the posts grid"; `e2e/reading.spec.ts` › "unknown, deleted and non-public posts show readers the not-found page with a 404 status".
 
 ### 4. Theme and phone layout
 

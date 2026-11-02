@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { cache } from "react";
 import { notFound } from "next/navigation";
-import User from "@/models/User";
 import Post from "@/models/Post";
 import Category from "@/models/Category";
 import UserVote from "@/models/UserVote";
@@ -12,19 +10,12 @@ import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 import VoteButtons from "@/components/votes/VoteButtons";
 import { Badge } from "@/components/ui/badge";
 import { profileLinks, type PublicProfile } from "@/libs/profile";
-import type { Types } from "mongoose";
 import { publicPostFilter } from "@/libs/post-visibility";
+import { getProfileUser } from "@/libs/profile-page";
 
 interface ProfilePageProps {
     params: Promise<{ username: string }>;
 }
-
-// Shared by generateMetadata and the page, so one request queries once.
-const getProfileUser = cache(async (rawUsername: string) =>
-    User.findOne({ username: decodeURIComponent(rawUsername) })
-        .select("username avatar profile upvoteCount downvoteCount")
-        .lean<{ _id: Types.ObjectId; username: string; avatar?: string; profile?: PublicProfile; upvoteCount?: number; downvoteCount?: number }>(),
-);
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
     const user = await getProfileUser((await params).username);

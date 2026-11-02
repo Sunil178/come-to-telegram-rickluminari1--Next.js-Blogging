@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+export const metadata = { title: "Page not found" };
+
 export default function NotFound() {
     return (
         <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-6 text-center">
