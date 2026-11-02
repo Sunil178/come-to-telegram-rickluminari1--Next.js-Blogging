@@ -59,6 +59,8 @@ describe("listUploads", () => {
             "/uploads/2026-11-02/fresh.png": [false, true],
         });
         expect(files.find((file) => file.url.endsWith("orphan.gif"))?.record?.uploader).toBe("alice");
+        // Sorted by upload time: the recorded orphan (uploaded now) comes before older unrecorded files.
+        expect(files.slice(0, 2).map((file) => file.url).sort()).toEqual(["/uploads/2026-11-02/fresh.png", "/uploads/2026-11-02/orphan.gif"]);
     });
 });
 

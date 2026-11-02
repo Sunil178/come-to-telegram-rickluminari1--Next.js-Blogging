@@ -96,3 +96,52 @@ test("the health check reports the app and database as up", async ({ request }) 
     expect(response.status()).toBe(200);
     expect(await response.json()).toMatchObject({ status: "ok" });
 });
+
+test("search ranks title matches above tag and description matches, and a half-typed word still finds titles", async ({ page }) => {
+    const author = await createUser(`e2e.searcher${Date.now()}`, "author");
+    const word = `zephyrine${Date.now()}`;
+    const now = Date.now();
+    // Oldest first, so the order below can only come from relevance, not recency.
+    const inTitle = await createPost(author.id, { title: `The ${word} handbook`, publishedAt: new Date(now - 30_000) });
+    const inDescription = await createPost(author.id, { title: `Described post ${now}`, titleDescription: `All about ${word} in practice`, publishedAt: new Date(now - 20_000) });
+    const inTags = await createPost(author.id, { title: `Tagged post ${now}`, tags: [word], publishedAt: new Date(now - 10_000) });
+    await createPost(author.id, { title: `Unrelated post ${now}` });
+
+    await page.goto(`/posts?q=${word}`);
+    const main = page.locator("main");
+    for (const post of [inTitle, inTags, inDescription]) await expect(main).toContainText(post.title);
+    const text = await main.innerText();
+    const positions = [inTitle, inTags, inDescription].map((post) => text.indexOf(post.title));
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(text).not.toContain(`Unrelated post ${now}`);
+    await expect(main.getByText("3 articles", { exact: false })).toBeVisible();
+
+    await page.goto(`/posts?q=${word.slice(0, -4)}`);
+    await expect(main).toContainText(inTitle.title);
+    await expect(main).not.toContainText(inTags.title);
+
+    // Stemmed: the plural finds the singular, and a half-typed last word still finds the title.
+    await page.goto(`/posts?q=${word}s`);
+    await expect(main).toContainText(inTitle.title);
+    await page.goto(`/posts?q=the ${word.slice(0, -4)}`);
+    await expect(main).toContainText(inTitle.title);
+});
+
+test("related posts put shared tags before the same category, and never show a deleted post", async ({ page }) => {
+    const author = await createUser(`e2e.relater${Date.now()}`, "author");
+    const stamp = Date.now();
+    const categoryId = await withDb(async (db) => (await db.collection("categories").insertOne({ title: `Related ${stamp}`, slug: `related-${stamp}`, visibility: true, createdAt: new Date(), updatedAt: new Date() })).insertedId);
+    const tag = `rel${stamp}`;
+    const source = await createPost(author.id, { title: `Source ${stamp}`, tags: [tag], categoryId });
+    const sameTag = await createPost(author.id, { title: `Same tag ${stamp}`, tags: [tag], publishedAt: new Date(stamp - 60_000) });
+    const sameCategory = await createPost(author.id, { title: `Same category ${stamp}`, categoryId });
+    const deleted = await createPost(author.id, { title: `Deleted ${stamp}`, categoryId, tags: [tag], deleted: true, deletedAt: new Date() });
+
+    await page.goto(`/posts/${source.slug}`);
+    const related = page.getByRole("region", { name: "Related posts" });
+    await expect(related).toContainText(sameTag.title);
+    await expect(related).toContainText(sameCategory.title);
+    await expect(related).not.toContainText(deleted.title);
+    const text = await related.innerText();
+    expect(text.indexOf(sameTag.title)).toBeLessThan(text.indexOf(sameCategory.title));
+});

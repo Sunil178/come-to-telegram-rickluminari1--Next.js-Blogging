@@ -11,6 +11,8 @@ async function postComment(page: Page, text: string) {
     await page.getByLabel("Comment").first().fill(text);
     await page.getByRole("button", { name: "Comment", exact: true }).click();
     await expect(comment(page, text)).toBeVisible();
+    // Shown optimistically under a temporary id until the server's reply swaps in the real one.
+    await expect(comment(page, text)).not.toHaveAttribute("id", /^comment-temp-/);
 }
 
 async function reply(page: Page, parentText: string, text: string) {

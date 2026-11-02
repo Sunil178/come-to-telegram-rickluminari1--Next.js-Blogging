@@ -35,9 +35,9 @@ Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifes
 
 Consenting visitors' reads are already recorded (`VisitorEvent`, 180-day TTL, stitched to the account at sign-in; `src/libs/visitor-events.ts`), but nothing reads them yet. Next: a "Recommended for you" list from the tags of recently read posts, weighted by recency and excluding posts already read, falling back to related posts when there's no history.
 
-### Search and related posts at scale
+### Search at scale
 
-Search matches posts with a case-insensitive regular expression and related posts score shared tags across all posts, so both scan more documents as the blog grows. Next: a MongoDB text index for search (relevance-ranked, uses the index), related posts limited to an indexed tag lookup over recent posts, and Atlas Search or Meilisearch once there are tens of thousands of posts.
+Search uses a weighted MongoDB text index (title, tags, description, summary; stemmed, ranked by relevance) with a title fallback for half-typed words, and related posts score only the newest 200 tag matches and newest 200 same-category posts (`src/libs/post-search.ts`, `src/libs/related-posts.ts`). The text index has no typo tolerance or prefix matching, matches whole words only ("script" doesn't find "JavaScript") and doesn't cover post bodies. Next, once there are tens of thousands of posts or readers ask for it: Atlas Search or Meilisearch, indexing the body text too.
 
 ### Error tracking
 

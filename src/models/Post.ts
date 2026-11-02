@@ -72,6 +72,13 @@ schema.index({ categoryId: 1 });
 schema.index({ userId: 1 });
 // Related posts match on shared tags (src/libs/related-posts.ts).
 schema.index({ tags: 1 });
+// Posts search (src/libs/post-search.ts): one text index per collection, title weighted highest.
+schema.index(
+  { title: "text", tags: "text", titleDescription: "text", summary: "text" },
+  { name: "post_search", weights: { title: 10, tags: 6, titleDescription: 4, summary: 2 } }
+);
+// Public post lists and related posts: newest first.
+schema.index({ publishedAt: -1 });
 
 // Hide soft-delete metadata in API responses
 schema.set("toJSON", {

@@ -101,6 +101,8 @@ export interface UploadFile {
     record: (Pick<IUpload, "purpose" | "width" | "height" | "originalSize" | "metadata" | "createdAt"> & { uploader: string | null }) | null;
 }
 
+const uploadedAt = (file: UploadFile) => new Date(file.record?.createdAt ?? file.modifiedAt);
+
 /** Every file in UPLOAD_DIR, newest first, with whether anything uses it and who uploaded it (when recorded). */
 export async function listUploads(): Promise<UploadFile[]> {
     const files = await filesOnDisk();
@@ -125,7 +127,8 @@ export async function listUploads(): Promise<UploadFile[]> {
                     : null,
             };
         })
-        .sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime() || a.url.localeCompare(b.url));
+        // Newest upload first, by the date the report shows: the recorded upload time, else the file's.
+        .sort((a, b) => uploadedAt(b).getTime() - uploadedAt(a).getTime() || a.url.localeCompare(b.url));
 }
 
 /** Deletes the given files (or every file) that nothing uses, checked again now; files in use or under a day old are kept. */

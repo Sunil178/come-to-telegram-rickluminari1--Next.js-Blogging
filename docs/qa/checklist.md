@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** QA-M4
+**Current focus:** QA-M5
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -51,7 +51,8 @@ Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
   - Admin page `/dashboard/admin/uploads`: unused or all files with preview, size, uploader, status and private details; download one file or a zip of the selection or of every unused file; delete one, the selection or every unused file. Files used by posts (including deleted ones), revisions or profile photos are never deleted, nor unused files under a day old (they may be in a post being written).
   - Review (`/code-review high`, working tree): 10 findings, all fixed: PNG no longer quantised; revisions count as references; one-day grace for new files; the zip streams one file at a time; non-canonical addresses can't bypass the in-use check; removed files still count towards the daily limit; storage message no longer suggests an action authors can't take; "download all unused" isn't capped below "delete all unused"; "delete all" scans once; one upload-address extractor.
   - M2 review (`/code-review high 55adeb4`, run by mistake on the committed M2): 8 of 10 fixed: geolocation retries every five minutes after a failed open; impossible birth dates (2001-02-30) are refused; links split on new lines only; unreadable multipart bodies get 400; a failed avatar save removes the new file; photo buttons handle network errors and can't double-submit; the requests list says "Not recorded" like the review page; the sign-in address is recorded in `after()`. Not changed: the two findings about legacy profile fields, since the site is pre-launch with no data to migrate (owner decision).
-- [ ] QA-M4 Search text index and related-posts lookup
+- [x] QA-M4 Search text index and related-posts lookup. Search uses the weighted `post_search` text index (title 10, tags 6, description 4, summary 2), stemmed and ranked by relevance (posts with more of the words come first), then date; a query matching no whole word falls back to titles containing every typed word, and to titles alone if the index is missing (it builds in the background on a fresh deploy). The planner uses the index (TEXT_MATCH over IXSCAN). Related posts score the newest 200 tag matches plus the newest 200 same-category posts. Verified by typing in a real browser ("welc", "welcome suite", "end-to-end", no match) and by e2e tests for ranking, stemming, half-typed words and related-post ordering.
+  - Review (`/code-review high`, working tree): 9 findings, 8 fixed: quoted words lost stemming (now plain `$text`); a half-typed last word found nothing (per-word title fallback); a missing text index made search fail (title fallback); misses ran a wasted populated query (count first); a long query was cut mid-word (cut at a word boundary); the newest-200 cap let same-category posts crowd out tag matches (separate caps); the ranking test passed with a post missing (now asserts each one). Not changed: dashboard post searches keep title-substring matching, since they're author- or staff-scoped management tables sorted by column, where finding a post by part of its title is the point.
 - [ ] QA-M5 Reusable flow-doc and QA kit, and flow documents per group
 
 ## Flow groups

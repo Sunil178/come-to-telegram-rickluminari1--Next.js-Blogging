@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FilterQuery } from "mongoose";
-import Post, { IPost } from "@/models/Post";
+import type { IPost } from "@/models/Post";
 import Category from "@/models/Category";
 import PostVote from "@/models/PostVote";
 import { getSession } from "@/libs/api-guard";
@@ -9,7 +9,7 @@ import ArticleGrid from "@/components/posts/ArticleGrid";
 import PostsSearch from "@/components/posts/PostsSearch";
 import PostsPagination from "@/components/posts/PostsPagination";
 import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
-import { escapeRegExp } from "@/libs/search-query";
+import { searchPosts } from "@/libs/post-search";
 import { buildSearchParamsHref } from "@/libs/build-href";
 import { publicPostFilter } from "@/libs/post-visibility";
 import { firstParam, parsePageParam, type SearchParamValue } from "@/libs/search-params";
@@ -40,20 +40,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
         if (activeCategory) filter.categoryId = activeCategory._id;
     }
 
-    if (q) {
-        filter.title = { $regex: escapeRegExp(q), $options: "i" };
-    }
-
-    const [total, posts] = await Promise.all([
-        Post.countDocuments(filter),
-        Post.find(filter)
-            .sort({ publishedAt: -1 })
-            .skip((page - 1) * PAGE_SIZE)
-            .limit(PAGE_SIZE)
-            .populate({ path: "categoryId", model: Category, select: "title" })
-            .select("slug title titleDescription bannerImage publishedAt categoryId upvoteCount downvoteCount")
-            .lean(),
-    ]);
+    const { total, posts } = await searchPosts(filter, q, page, PAGE_SIZE);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
     const session = await getSession();

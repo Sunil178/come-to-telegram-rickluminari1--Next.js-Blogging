@@ -97,14 +97,16 @@ test("a post lists related posts that share its tags", async ({ page }) => {
 test("clearing the posts search brings every post back, even when cleared in pauses", async ({ page }) => {
     await page.goto("/posts");
     const search = page.getByLabel("Search articles");
-    await search.fill(SEEDED_POST.title);
+    // Words only the seeded post has: search ranks any-word matches, so a shared word would list both.
+    const query = "Welcome suite";
+    await search.fill(query);
     await expect(page).toHaveURL(/q=/);
     await expect(page.getByRole("link", { name: RELATED_POST.title })).toHaveCount(0);
 
     // Delete a few characters at a time and let each partial query's results arrive: the box must keep
     // the user's text and focus through every navigation.
     const urlQuery = () => new URL(page.url()).searchParams.get("q") ?? "";
-    let expected = SEEDED_POST.title;
+    let expected = query;
     await search.press("End");
     while (expected.length > 0) {
         for (let i = 0; i < 3 && expected.length > 0; i++) {
