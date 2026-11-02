@@ -42,6 +42,7 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
     const router = useRouter();
     const [avatar, setAvatar] = useState(initial.avatar);
     const [saving, setSaving] = useState(false);
+    const [photoPending, setPhotoPending] = useState(false);
     const [error, setError] = useState("");
     const fileInput = useRef<HTMLInputElement>(null);
 
@@ -50,7 +51,7 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
         setError("");
         setSaving(true);
         try {
-            // The server splits the list fields (links, expertise, topics) on commas and new lines.
+            // The server splits links on new lines and expertise and topics on commas or new lines.
             const body = Object.fromEntries(new FormData(event.currentTarget).entries());
             const response = await fetch("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             const result = await response.json().catch(() => null);
@@ -67,29 +68,47 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
         }
     }
 
-    async function uploadPhoto(file: File) {
-        const form = new FormData();
-        form.set("file", file);
-        const response = await fetch("/api/account/avatar", { method: "POST", body: form });
-        const result = await response.json().catch(() => null);
-        if (!response.ok) {
-            toast.error(result?.message ?? "Couldn't upload the photo.");
-            return;
+    // One photo request at a time; a network failure shows the same toast as a refused upload.
+    async function changePhoto(request: () => Promise<Response>, done: (result: { data?: { avatar?: string } } | null) => void, failure: string) {
+        setPhotoPending(true);
+        try {
+            const response = await request();
+            const result = await response.json().catch(() => null);
+            if (!response.ok) {
+                toast.error(result?.message ?? failure);
+                return;
+            }
+            done(result);
+            router.refresh();
+        } catch {
+            toast.error(failure);
+        } finally {
+            setPhotoPending(false);
         }
-        setAvatar(result.data.avatar);
-        toast.success("Photo updated.");
-        router.refresh();
     }
 
-    async function removePhoto() {
-        const response = await fetch("/api/account/avatar", { method: "DELETE" });
-        if (!response.ok) {
-            toast.error("Couldn't remove the photo.");
-            return;
-        }
-        setAvatar("");
-        toast.success("Photo removed.");
-        router.refresh();
+    function uploadPhoto(file: File) {
+        const form = new FormData();
+        form.set("file", file);
+        return changePhoto(
+            () => fetch("/api/account/avatar", { method: "POST", body: form }),
+            (result) => {
+                setAvatar(result?.data?.avatar ?? "");
+                toast.success("Photo updated.");
+            },
+            "Couldn't upload the photo."
+        );
+    }
+
+    function removePhoto() {
+        return changePhoto(
+            () => fetch("/api/account/avatar", { method: "DELETE" }),
+            () => {
+                setAvatar("");
+                toast.success("Photo removed.");
+            },
+            "Couldn't remove the photo."
+        );
     }
 
     return (
@@ -113,11 +132,11 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
                             e.target.value = "";
                         }}
                     />
-                    <Button type="button" variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
+                    <Button type="button" variant="outline" size="sm" disabled={photoPending} onClick={() => fileInput.current?.click()}>
                         {avatar ? "Change photo" : "Upload photo"}
                     </Button>
                     {avatar && (
-                        <Button type="button" variant="ghost" size="sm" onClick={removePhoto}>
+                        <Button type="button" variant="ghost" size="sm" disabled={photoPending} onClick={removePhoto}>
                             Remove photo
                         </Button>
                     )}

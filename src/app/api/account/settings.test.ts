@@ -24,7 +24,10 @@ vi.mock("bcrypt", () => ({
     hash: async (plain: string) => `hash:${plain}`,
 }));
 const saveImageMock = vi.fn();
-vi.mock("@/libs/image-upload", () => ({ saveUploadedImage: (...args: unknown[]) => saveImageMock(...args) }));
+vi.mock("@/libs/image-upload", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@/libs/image-upload")>()),
+    saveUploadedImage: (...args: unknown[]) => saveImageMock(...args),
+}));
 
 const { PATCH } = await import("@/app/api/account/profile/route");
 const { POST: changePassword } = await import("@/app/api/account/password/route");
@@ -91,12 +94,22 @@ describe("/api/account/avatar", () => {
         const response = await uploadAvatar(upload(), {});
         expect(response.status).toBe(200);
         expect(updateOneMock).toHaveBeenCalledWith({ _id: "u1" }, { $set: { avatar: "/uploads/2026-11-02/me.jpg" } });
+        expect(saveImageMock).toHaveBeenCalledWith(expect.any(File), { userId: "u1", purpose: "avatar" });
     });
 
     it("refuses an invalid image", async () => {
         saveImageMock.mockResolvedValue({ ok: false, message: "Unsupported file type" });
         expect((await uploadAvatar(upload(), {})).status).toBe(400);
         expect(updateOneMock).not.toHaveBeenCalled();
+    });
+
+    it("deletes the new file again when saving it as the avatar fails", async () => {
+        saveImageMock.mockResolvedValue({ ok: true, url: "/uploads/2026-11-02/new.jpg" });
+        updateOneMock.mockImplementationOnce(() => {
+            throw new Error("db down");
+        });
+        expect((await uploadAvatar(upload(), {})).status).toBe(500);
+        expect(removeUploadMock).toHaveBeenCalledWith("/uploads/2026-11-02/new.jpg");
     });
 
     it("removes the photo and its file, which stops it being served", async () => {

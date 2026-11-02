@@ -68,8 +68,9 @@ function isHttpUrl(value: string): boolean {
     }
 }
 
-function asList(value: unknown): string[] {
-    const items = Array.isArray(value) ? value : typeof value === "string" ? value.split(/[\n,]/) : [];
+// Links go one per line (addresses can contain commas); tags may also be comma-separated.
+function asList(value: unknown, separator: RegExp): string[] {
+    const items = Array.isArray(value) ? value : typeof value === "string" ? value.split(separator) : [];
     return [...new Set(items.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean))];
 }
 
@@ -92,7 +93,7 @@ export function parseProfileInput(input: unknown, fields: readonly ProfileField[
 
         if (LIST_LIMITS[field]) {
             const { items, length } = LIST_LIMITS[field]!;
-            const list = asList(raw);
+            const list = asList(raw, field === "links" ? /\n/ : /[\n,]/);
             if (list.length > items) return { ok: false, message: `${label}: at most ${items}` };
             if (list.some((item) => item.length > length)) return { ok: false, message: `${label}: each at most ${length} characters` };
             if (field === "links" && !list.every(isHttpUrl)) return { ok: false, message: "Links must be full web addresses (https://…)" };
@@ -113,7 +114,8 @@ export function parseProfileInput(input: unknown, fields: readonly ProfileField[
             if (!/^\+?[\d\s()./-]{6,30}$/.test(text)) return { ok: false, message: "Phone can contain digits, spaces, +, -, ( and ) only" };
         } else if (field === "dateOfBirth") {
             const date = new Date(`${text}T00:00:00Z`);
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(date.getTime())) return { ok: false, message: "Date of birth is invalid" };
+            // The round trip catches days Date would roll over, like 2001-02-30.
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text) return { ok: false, message: "Date of birth is invalid" };
             const age = ageOn(date, new Date());
             if (age < MIN_AGE || age > 120) return { ok: false, message: `Date of birth must make you at least ${MIN_AGE}` };
             set[path] = date;

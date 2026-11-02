@@ -34,7 +34,7 @@ export default async function AccountPage() {
 
             <section aria-labelledby="password-heading" className="flex flex-col gap-3">
                 <h2 id="password-heading" className="font-heading text-xl font-semibold text-foreground">Change password</h2>
-                <ChangePasswordForm />
+                <ChangePasswordForm email={user.email} />
             </section>
 
             <section aria-labelledby="export-heading" className="flex flex-col gap-3">

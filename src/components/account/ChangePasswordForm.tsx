@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PASSWORD_MIN_LENGTH } from "@/libs/password-policy";
 
-export default function ChangePasswordForm() {
+export default function ChangePasswordForm({ email }: { email: string }) {
     const router = useRouter();
     const [error, setError] = useState("");
     const [pending, setPending] = useState(false);
@@ -42,6 +42,8 @@ export default function ChangePasswordForm() {
 
     return (
         <form onSubmit={submit} className="flex max-w-sm flex-col gap-4" aria-label="Change password">
+            {/* Unnamed, so it isn't sent: tells password managers which account the new password is for. */}
+            <input type="email" autoComplete="username" value={email} readOnly hidden />
             <div className="flex flex-col gap-1.5">
                 <Label htmlFor="current-password">Current password</Label>
                 <Input id="current-password" name="currentPassword" type="password" autoComplete="current-password" required />

@@ -35,14 +35,6 @@ Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifes
 
 Consenting visitors' reads are already recorded (`VisitorEvent`, 180-day TTL, stitched to the account at sign-in; `src/libs/visitor-events.ts`), but nothing reads them yet. Next: a "Recommended for you" list from the tags of recently read posts, weighted by recency and excluding posts already read, falling back to related posts when there's no history.
 
-### Image metadata (EXIF)
-
-Uploaded photos are stored as sent, including EXIF metadata, which can contain the GPS location and time a photo was taken. Stripping it on upload (keeping only the orientation) with `sharp` protects authors who don't realise their photos carry their location. Pending the owner's decision.
-
-### Upload quotas and orphan cleanup
-
-Authors can upload without limit (5 MB per file). A per-user daily upload cap, a per-author storage cap, and a periodic job deleting files no post references would stop one compromised account filling the disk.
-
 ### Search and related posts at scale
 
 Search matches posts with a case-insensitive regular expression and related posts score shared tags across all posts, so both scan more documents as the blog grows. Next: a MongoDB text index for search (relevance-ranked, uses the index), related posts limited to an indexed tag lookup over recent posts, and Atlas Search or Meilisearch once there are tens of thousands of posts.

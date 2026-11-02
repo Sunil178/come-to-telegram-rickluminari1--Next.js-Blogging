@@ -9,22 +9,24 @@ const { log, data, model } = vi.hoisted(() => {
         find: (filter: unknown) => query(data[name]?.find ?? []),
         findWithDeleted: (filter: unknown) => query(data[name]?.findWithDeleted ?? []),
         findOneWithDeleted: (filter: unknown) => query(data[name]?.findOneWithDeleted ?? null),
+        findOne: (filter: unknown) => query(data[name]?.findOne ?? null),
         findById: (id: unknown) => query(data[name]?.findById ?? null),
         exists: async (filter: unknown) => data[name]?.exists ?? null,
         updateManyWithDeleted: async (filter: unknown, update: unknown) => log.push([name, "updateManyWithDeleted", filter, update]),
         bulkWrite: async (ops: unknown) => log.push([name, "bulkWrite", ops]),
         deleteMany: async (filter: unknown) => log.push([name, "deleteMany", filter]),
         deleteOne: async (filter: unknown) => log.push([name, "deleteOne", filter]),
+        updateOne: async (filter: unknown, update: unknown) => log.push([name, "updateOne", filter, update]),
     });
     return { log, data, model };
 });
 
-for (const [path, name] of [["User", "User"], ["Post", "Post"], ["Comment", "Comment"], ["PostVote", "PostVote"], ["CommentVote", "CommentVote"], ["UserVote", "UserVote"], ["PostRevision", "PostRevision"], ["Notification", "Notification"], ["PushSubscription", "PushSubscription"], ["AuthToken", "AuthToken"], ["PublishRequest", "PublishRequest"], ["VisitorEvent", "VisitorEvent"]]) {
+for (const [path, name] of [["User", "User"], ["Post", "Post"], ["Comment", "Comment"], ["PostVote", "PostVote"], ["CommentVote", "CommentVote"], ["UserVote", "UserVote"], ["PostRevision", "PostRevision"], ["Notification", "Notification"], ["PushSubscription", "PushSubscription"], ["AuthToken", "AuthToken"], ["PublishRequest", "PublishRequest"], ["VisitorEvent", "VisitorEvent"], ["Upload", "Upload"]]) {
     vi.doMock(`@/models/${path}`, () => ({ default: model(name) }));
 }
 const unlinkMock = vi.fn(async (_path: string) => {});
 vi.mock("node:fs/promises", () => ({ unlink: (path: string) => unlinkMock(path) }));
-vi.mock("@/libs/uploads", () => ({ UPLOAD_URL_PREFIX: "/uploads", resolveUploadPath: (segments: string[]) => `/data/${segments.join("/")}` }));
+vi.mock("@/libs/uploads", () => ({ UPLOAD_URL_PREFIX: "/uploads", uploadRoot: () => "/data", resolveUploadPath: (segments: string[]) => `/data/${segments.join("/")}` }));
 
 const { deleteAccount } = await import("@/libs/account-data");
 
@@ -63,7 +65,9 @@ describe("deleteAccount", () => {
         await deleteAccount("u1");
         const order = log.map(([name, op]) => `${name}.${op}`);
         expect(order.indexOf("PostVote.deleteMany")).toBeLessThan(order.indexOf("Post.bulkWrite"));
-        expect(order.at(-1)).toBe("User.deleteOne");
+        // Only file cleanup, which needs the upload records, follows the user record.
+        expect(order.filter((op) => !op.startsWith("Upload.")).at(-1)).toBe("User.deleteOne");
+        expect(order.at(-1)).toBe("Upload.deleteMany");
     });
 
     it("removes only this site's uploads that no other post still uses", async () => {
@@ -77,13 +81,20 @@ describe("deleteAccount", () => {
         expect(unlinkMock).not.toHaveBeenCalled();
     });
 
+    it("removes uploads the user never used, and drops every upload record (and its photo metadata)", async () => {
+        data.Upload = { find: [{ url: "/uploads/never-used.png" }] };
+        await deleteAccount("u1");
+        expect(unlinkMock.mock.calls.map(([path]) => path)).toContain("/data/never-used.png");
+        expect(log).toContainEqual(["Upload", "deleteMany", { userId: "u1" }]);
+    });
+
     it("removes the profile photo too, unless another account uses the same file", async () => {
         data.User = { findById: { avatar: "/uploads/me.png" } };
         await deleteAccount("u1");
         expect(unlinkMock.mock.calls.map(([path]) => path)).toContain("/data/me.png");
 
         unlinkMock.mockClear();
-        data.User = { findById: { avatar: "/uploads/me.png" }, exists: { _id: "someone-else" } };
+        data.User = { findById: { avatar: "/uploads/me.png" }, findOneWithDeleted: { _id: "someone-else" } };
         await deleteAccount("u1");
         expect(unlinkMock.mock.calls.map(([path]) => path)).not.toContain("/data/me.png");
     });

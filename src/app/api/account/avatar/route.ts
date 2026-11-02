@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import User from "@/models/User";
 import { withApiGuard } from "@/libs/api-guard";
-import { saveUploadedImage } from "@/libs/image-upload";
+import { formFile, saveUploadedImage, uploadLimits } from "@/libs/image-upload";
 import { removeUploadIfUnused } from "@/libs/upload-cleanup";
 
 // The replaced photo's file goes once nothing else uses it, so a removed photo stops being served.
@@ -15,11 +15,16 @@ export const POST = withApiGuard(async (request, { session }) => {
     if (!request.headers.get("content-type")?.includes("multipart/form-data")) {
         return NextResponse.json({ data: null, message: "Invalid request type" }, { status: 400 });
     }
-    const saved = await saveUploadedImage((await request.formData()).get("file"));
+    const saved = await saveUploadedImage(await formFile(request), { userId: session.user.id, purpose: "avatar" });
     if (!saved.ok) return NextResponse.json({ data: null, message: saved.message }, { status: 400 });
-    await replaceAvatar(session.user.id, saved.url);
+    try {
+        await replaceAvatar(session.user.id, saved.url);
+    } catch (error) {
+        await removeUploadIfUnused(saved.url);
+        throw error;
+    }
     return NextResponse.json({ data: { avatar: saved.url }, message: "Photo updated" });
-}, { rateLimit: { points: 10, duration: 60 * 60 } });
+}, { rateLimit: { points: uploadLimits().perHour, duration: 60 * 60 } });
 
 export const DELETE = withApiGuard(async (request, { session }) => {
     await replaceAvatar(session.user.id, "");

@@ -34,7 +34,7 @@ export default function RequestPublishButton({ initialStatus, profile }: { initi
         setError("");
         setPending(true);
         try {
-            // The server splits the list fields (links, expertise, topics) on commas and new lines.
+            // The server splits links on new lines and expertise and topics on commas or new lines.
             const body = Object.fromEntries(new FormData(event.currentTarget).entries());
             const response = await fetch("/api/publish-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
             const result = await response.json().catch(() => null);

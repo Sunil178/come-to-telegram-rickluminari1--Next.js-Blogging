@@ -17,6 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         { href: "/dashboard/admin/requests", label: "Publish Requests", show: hasRole(role, ROLES.ADMIN) },
         { href: "/dashboard/admin/users", label: "Users", show: hasRole(role, ROLES.ADMIN) },
         { href: "/dashboard/admin/categories", label: "Categories", show: hasRole(role, ROLES.ADMIN) },
+        { href: "/dashboard/admin/uploads", label: "Uploads", show: hasRole(role, ROLES.ADMIN) },
     ].filter((link) => link.show);
 
     return (

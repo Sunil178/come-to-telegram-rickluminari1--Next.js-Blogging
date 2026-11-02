@@ -38,6 +38,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "dompurify": "^3.4.13",
+    "exif-reader": "2.0.3",
+    "fflate": "0.8.2",
     "jsdom": "^30.0.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.31.0",

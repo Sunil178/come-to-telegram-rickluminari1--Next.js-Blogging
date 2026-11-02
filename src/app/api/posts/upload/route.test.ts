@@ -1,21 +1,16 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authMock = vi.fn().mockResolvedValue({ user: { id: "u1", username: "alice", role: "author" } });
+const authMock = vi.fn();
 vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
     auth: authMock,
 }));
 
-const mkdirSyncMock = vi.fn();
-const writeFileSyncMock = vi.fn();
-vi.mock("node:fs/promises", () => ({
-    default: {
-        mkdir: async (...args: unknown[]) => mkdirSyncMock(...args),
-        writeFile: async (...args: unknown[]) => writeFileSyncMock(...args),
-    },
+const saveImageMock = vi.fn();
+vi.mock("@/libs/image-upload", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@/libs/image-upload")>()),
+    saveUploadedImage: (...args: unknown[]) => saveImageMock(...args),
 }));
-
-vi.mock("uuid", () => ({ v4: () => "fixed-uuid" }));
 
 const { POST } = await import("@/app/api/posts/upload/route");
 
@@ -25,73 +20,52 @@ function requestWithFile(file: File | null) {
     return new NextRequest("http://localhost/api/posts/upload", { method: "POST", body: formData });
 }
 
-// Real PNG signature bytes; the rest is arbitrary padding, irrelevant to the check.
-const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
+const file = () => new File(["image bytes"], "banner.png", { type: "image/png" });
 
 describe("POST /api/posts/upload", () => {
     beforeEach(() => {
-        mkdirSyncMock.mockClear();
-        writeFileSyncMock.mockClear();
+        saveImageMock.mockReset();
         authMock.mockResolvedValue({ user: { id: "u1", username: "alice", role: "author" } });
     });
 
     it("rejects a caller below the author role minimum", async () => {
         authMock.mockResolvedValue({ user: { id: "u1", username: "alice", role: "reader" } });
-        const file = new File(["image bytes"], "banner.png", { type: "image/png" });
-        const response = await POST(requestWithFile(file), {});
+        const response = await POST(requestWithFile(file()), {});
 
         expect(response.status).toBe(403);
-        expect(writeFileSyncMock).not.toHaveBeenCalled();
+        expect(saveImageMock).not.toHaveBeenCalled();
     });
 
-    it("rejects a file type outside the image allowlist", async () => {
-        const file = new File(["not an image"], "payload.svg", { type: "image/svg+xml" });
-        const response = await POST(requestWithFile(file), {});
+    it("rejects a request that isn't a file upload", async () => {
+        const response = await POST(new NextRequest("http://localhost/api/posts/upload", { method: "POST", body: "{}", headers: { "Content-Type": "application/json" } }), {});
 
         expect(response.status).toBe(400);
-        const body = await response.json();
-        expect(body.message).toBe("Unsupported file type");
-        expect(writeFileSyncMock).not.toHaveBeenCalled();
+        expect(saveImageMock).not.toHaveBeenCalled();
     });
 
-    it("rejects a file over the 5MB size cap", async () => {
-        const oversized = new Uint8Array(5 * 1024 * 1024 + 1);
-        const file = new File([oversized], "big.png", { type: "image/png" });
-        const response = await POST(requestWithFile(file), {});
+    it("refuses an unreadable multipart body with a 400, not a server error", async () => {
+        saveImageMock.mockImplementation(async (file: unknown) => (file ? { ok: true, url: "/x" } : { ok: false, message: "Invalid file" }));
+        const broken = new NextRequest("http://localhost/api/posts/upload", { method: "POST", body: "--x\r\nnot a part", headers: { "Content-Type": "multipart/form-data; boundary=x" } });
+        const response = await POST(broken, {});
 
         expect(response.status).toBe(400);
-        const body = await response.json();
-        expect(body.message).toBe("File is too large (max 5MB)");
-        expect(writeFileSyncMock).not.toHaveBeenCalled();
+        expect(saveImageMock).toHaveBeenCalledWith(null, { userId: "u1", purpose: "post" });
     });
 
-    it("rejects a file whose content doesn't match its declared type", async () => {
-        const file = new File(["not actually a png"], "banner.png", { type: "image/png" });
-        const response = await POST(requestWithFile(file), {});
-
-        expect(response.status).toBe(400);
-        const body = await response.json();
-        expect(body.message).toBe("File content doesn't match its declared type");
-        expect(writeFileSyncMock).not.toHaveBeenCalled();
-    });
-
-    it("rejects a request with no file", async () => {
-        const response = await POST(requestWithFile(null), {});
-
-        expect(response.status).toBe(400);
-        const body = await response.json();
-        expect(body.message).toBe("Invalid file");
-    });
-
-    it("derives the stored filename/extension from the allowlist, never from the client-supplied name", async () => {
-        const file = new File([PNG_BYTES], "../../etc/passwd.png", { type: "image/png" });
-        const response = await POST(requestWithFile(file), {});
+    it("stores the image as a post image of the caller and returns its address", async () => {
+        saveImageMock.mockResolvedValue({ ok: true, url: "/uploads/2026-11-02/fixed.png" });
+        const response = await POST(requestWithFile(file()), {});
 
         expect(response.status).toBe(200);
-        const body = await response.json();
-        expect(body.location).toMatch(/fixed-uuid\.png$/);
-        expect(body.location).not.toContain("passwd");
-        expect(body.location).not.toContain("..");
-        expect(writeFileSyncMock).toHaveBeenCalledTimes(1);
+        expect(await response.json()).toMatchObject({ data: "/uploads/2026-11-02/fixed.png", location: "/uploads/2026-11-02/fixed.png" });
+        expect(saveImageMock).toHaveBeenCalledWith(expect.any(File), { userId: "u1", purpose: "post" });
+    });
+
+    it("passes on why an image was refused", async () => {
+        saveImageMock.mockResolvedValue({ ok: false, message: "Unsupported file type" });
+        const response = await POST(requestWithFile(file()), {});
+
+        expect(response.status).toBe(400);
+        expect((await response.json()).message).toBe("Unsupported file type");
     });
 });

@@ -16,15 +16,19 @@ export interface IpRecord {
     at: Date;
 }
 
-// Opened once per process on first use; a missing or unreadable file turns lookups off (they return null).
+// Opened once per process on first use. A missing or unreadable file turns lookups off (they return
+// null) and is tried again after RETRY_MS, since the server can start before the file is downloaded.
+const RETRY_MS = 5 * 60 * 1000;
 let reader: Promise<Reader<CityResponse> | null> | null = null;
+let failedAt = 0;
 
 function openReader(): Promise<Reader<CityResponse> | null> {
     const path = process.env.GEOIP_DB_PATH;
     if (!path) return Promise.resolve(null);
     // watchForUpdates reloads the file after the monthly `npm run geoip:download`, without a restart.
     return maxmind.open<CityResponse>(path, { watchForUpdates: true, watchForUpdatesNonPersistent: true }).catch((error) => {
-        logger.warn("IP geolocation database could not be opened; locations are off", { path, error });
+        logger.warn("IP geolocation database could not be opened; locations are off for now", { path, error });
+        failedAt = Date.now();
         return null;
     });
 }
@@ -32,7 +36,10 @@ function openReader(): Promise<Reader<CityResponse> | null> {
 /** Approximate location of a public IP address from the offline DB-IP Lite database (GEOIP_DB_PATH). */
 export async function lookupLocation(ip: string): Promise<IpLocation | null> {
     if (!isIP(ip)) return null;
-    reader ??= openReader();
+    if (!reader || (failedAt && Date.now() - failedAt >= RETRY_MS)) {
+        failedAt = 0;
+        reader = openReader();
+    }
     const db = await reader;
     if (!db) return null;
     try {
@@ -62,4 +69,5 @@ export function formatLocation(location: IpLocation | null | undefined): string 
 // Tests swap databases between cases.
 export function resetGeoipReaderForTests() {
     reader = null;
+    failedAt = 0;
 }

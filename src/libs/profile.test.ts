@@ -17,6 +17,14 @@ describe("parseProfileInput", () => {
         expect(parseProfileInput({ city: "Pune", phone: "123456" }, ["city"])).toEqual({ ok: true, set: { "profile.city": "Pune" } });
     });
 
+    it("splits links on new lines only, since addresses can contain commas", () => {
+        expect(parseProfileInput({ links: "https://example.com/search?tags=a,b\nhttps://gh.example" }, ALL)).toEqual({
+            ok: true,
+            set: { "profile.links": ["https://example.com/search?tags=a,b", "https://gh.example"] },
+        });
+        expect(parseProfileInput({ links: "https://x.example/a,https://y.example" }, ALL)).toEqual({ ok: true, set: { "profile.links": ["https://x.example/a,https://y.example"] } });
+    });
+
     it("refuses bad addresses, phones, lengths and list sizes", () => {
         expect(parseProfileInput({ website: "javascript:alert(1)" }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ links: ["https://ok.example", "ftp://nope"] }, ALL)).toMatchObject({ ok: false });
@@ -34,6 +42,9 @@ describe("parseProfileInput", () => {
         expect(parseProfileInput({ dateOfBirth: tooYoung.toISOString().slice(0, 10) }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ dateOfBirth: "2999-01-01" }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ dateOfBirth: "17/05/1990" }, ALL)).toMatchObject({ ok: false });
+        // Date would roll these over into the next month.
+        expect(parseProfileInput({ dateOfBirth: "2001-02-30" }, ALL)).toMatchObject({ ok: false });
+        expect(parseProfileInput({ dateOfBirth: "2001-04-31" }, ALL)).toMatchObject({ ok: false });
     });
 });
 

@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** QA-M3
+**Current focus:** QA-M4
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -45,7 +45,12 @@ Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
   - Admin review page `/dashboard/admin/requests/[id]`: application, account and activity (age, verification, comments and votes, earlier requests), addresses with location (sign-up, last sign-in, request), public profile and private details, with approve and reject; the list links to it and shows where each request came from.
   - IP and location recorded at sign-up, sign-in and request (`src/libs/geoip.ts`, `maxmind` reader over `GEOIP_DB_PATH`, `npm run geoip:download`), kept without expiry, removed with the account; privacy page and DB-IP attribution updated; included in the data export.
   - Review (`/code-review high b136878`): 10 findings, all fixed: accounts with an old plain-string `profile` can save the new profile; the application's profile write happens before the request exists; seed users carry structured profiles; replaced and removed photos (and a deleted account's photo) are deleted from disk once unused; changing the password also drops push and drafts like logging out; the geolocation file reloads after the monthly download; `data/geoip` ships in the repository so Docker doesn't create it as root; password change validates with the shared `PASSWORD_RULE`; duplicate links are dropped; list parsing lives only on the server.
-- [ ] QA-M3 Uploads: private metadata, GPS stripped, limits, unused-uploads admin page
+- [x] QA-M3 Uploads: private metadata, GPS stripped, limits, unused-uploads admin page. Verified in a real browser: a geotagged phone photo uploaded as a profile photo is served upright with no EXIF while the admin sees its camera, time and map location; a 5.9 MB file is refused at `UPLOAD_MAX_FILE_MB=1`; the 31st upload in an hour gets 429; "Download all unused" gave a valid 72-file zip and "Delete all unused" removed exactly those 72; desktop, dark and phone layouts checked.
+  - Every upload is re-encoded with sharp (auto-oriented, EXIF/XMP/IPTC dropped, colour profile kept, PNG lossless) and recorded in `uploads` with the uploader and the original camera, lens, software, time and GPS; the record is in the uploader's export and removed with their account.
+  - Limits from the environment: `UPLOAD_MAX_FILE_MB`, `UPLOAD_DAILY_LIMIT`, `UPLOAD_STORAGE_LIMIT_MB`, `UPLOAD_RATE_LIMIT_PER_HOUR`; deleted files keep a metadata-free record for two days so the daily count holds.
+  - Admin page `/dashboard/admin/uploads`: unused or all files with preview, size, uploader, status and private details; download one file or a zip of the selection or of every unused file; delete one, the selection or every unused file. Files used by posts (including deleted ones), revisions or profile photos are never deleted, nor unused files under a day old (they may be in a post being written).
+  - Review (`/code-review high`, working tree): 10 findings, all fixed: PNG no longer quantised; revisions count as references; one-day grace for new files; the zip streams one file at a time; non-canonical addresses can't bypass the in-use check; removed files still count towards the daily limit; storage message no longer suggests an action authors can't take; "download all unused" isn't capped below "delete all unused"; "delete all" scans once; one upload-address extractor.
+  - M2 review (`/code-review high 55adeb4`, run by mistake on the committed M2): 8 of 10 fixed: geolocation retries every five minutes after a failed open; impossible birth dates (2001-02-30) are refused; links split on new lines only; unreadable multipart bodies get 400; a failed avatar save removes the new file; photo buttons handle network errors and can't double-submit; the requests list says "Not recorded" like the review page; the sign-in address is recorded in `after()`. Not changed: the two findings about legacy profile fields, since the site is pre-launch with no data to migrate (owner decision).
 - [ ] QA-M4 Search text index and related-posts lookup
 - [ ] QA-M5 Reusable flow-doc and QA kit, and flow documents per group
 

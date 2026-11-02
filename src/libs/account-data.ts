@@ -12,9 +12,10 @@ import PushSubscription from "@/models/PushSubscription";
 import AuthToken from "@/models/AuthToken";
 import PublishRequest from "@/models/PublishRequest";
 import VisitorEvent from "@/models/VisitorEvent";
+import Upload from "@/models/Upload";
 import { ROLES } from "@/libs/roles";
 import { UPLOAD_URL_PREFIX } from "@/libs/uploads";
-import { removeUploadIfUnused } from "@/libs/upload-cleanup";
+import { removeUploadIfUnused, uploadUrlsIn } from "@/libs/upload-cleanup";
 
 const SoftPost = Post as unknown as SoftDeleteModel<IPost>;
 const SoftComment = Comment as unknown as SoftDeleteModel<IComment>;
@@ -27,7 +28,7 @@ type Id = Types.ObjectId | string;
 /** Everything stored about the user, for the "Download my data" export. */
 export async function exportAccountData(userId: string) {
     const ownPostIds = (await SoftPost.findWithDeleted({ userId }).select("_id").lean<{ _id: Types.ObjectId }[]>()).map((p) => p._id);
-    const [profile, posts, revisions, comments, postVotes, commentVotes, userVotes, notifications, pushSubscriptions, publishRequests, readingHistory] = await Promise.all([
+    const [profile, posts, revisions, comments, postVotes, commentVotes, userVotes, notifications, pushSubscriptions, publishRequests, readingHistory, uploads] = await Promise.all([
         User.findById(userId).select("-password -__v").lean(),
         SoftPost.findWithDeleted({ userId }).select("-__v").lean(),
         // Earlier versions of their posts, and the versions their edits replaced on anyone's post.
@@ -41,6 +42,7 @@ export async function exportAccountData(userId: string) {
         PushSubscription.find({ userId }).select("createdAt").lean(),
         PublishRequest.find({ userId }).select("status motivation writingSample requestedFrom createdAt reviewedAt").lean(),
         VisitorEvent.find({ userId }).select("postId type createdAt").lean(),
+        Upload.find({ userId, removedAt: null }).select("url purpose mimeType size originalSize width height metadata createdAt").lean(),
     ]);
     return {
         exportedAt: new Date().toISOString(),
@@ -53,6 +55,7 @@ export async function exportAccountData(userId: string) {
         pushSubscriptions,
         publishRequests,
         readingHistory,
+        uploads,
     };
 }
 
@@ -74,8 +77,7 @@ async function removeVotes(voteModel: SoftDeleteModel<any>, counterModel: SoftDe
 
 // Site-relative upload URLs only (an attribute value starting with /uploads/), never another site's /uploads/ path.
 function uploadedFiles(posts: { bannerImage?: string; content?: string }[]): string[] {
-    const pattern = new RegExp(`(?<=["'(])${UPLOAD_URL_PREFIX}/[\\w./-]+`, "g");
-    const urls = posts.flatMap((post) => [post.bannerImage ?? "", ...((post.content ?? "").match(pattern) ?? [])]);
+    const urls = posts.flatMap((post) => [post.bannerImage ?? "", ...uploadUrlsIn(post.content)]);
     return [...new Set(urls.filter((url) => url.startsWith(`${UPLOAD_URL_PREFIX}/`)))];
 }
 
@@ -121,5 +123,8 @@ export async function deleteAccount(userId: string): Promise<void> {
     await User.deleteOne({ _id: userId });
 
     // Another author may have reused the same image URL; their copy keeps working.
-    for (const url of [...uploadedFiles(posts), ...(avatar ? [avatar] : [])]) await removeUploadIfUnused(url);
+    const recorded = (await Upload.find({ userId }).select("url").lean<{ url: string }[]>()).map((upload) => upload.url);
+    for (const url of new Set([...uploadedFiles(posts), ...(avatar ? [avatar] : []), ...recorded])) await removeUploadIfUnused(url);
+    // Files kept for someone else's post lose their record, and with it the photo metadata.
+    await Upload.deleteMany({ userId });
 }

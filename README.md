@@ -6,7 +6,9 @@ A multi-author blogging platform built with Next.js 16 (App Router), React 19, M
 
 - Rich-text posts with banner images, tags, categories, table of contents, reading time and related posts
 - Scheduled publishing (an approved post stays hidden until its publish time), revision history with restore, and editor drafts autosaved in the browser
-- Roles: reader → author → moderator → admin, with publish requests and post approval
+- Roles: reader → author → moderator → admin, with publish requests (an application reviewed alongside the applicant's profile and approximate sign-up, sign-in and request locations) and post approval
+- Profiles: photo, public author profile and private details visible only to the user and admins; change password from the account page
+- Image uploads stripped of their metadata (GPS included) before they're served, with the original camera, time and place kept privately; per-file, daily, storage and rate limits from the environment; an admin uploads report to download and delete unused files
 - Accounts with email verification and password reset over SMTP (one-time, expiring links; a reset signs out other sessions), passwords of at least 8 characters
 - Privacy: a privacy policy page (`/privacy`), a JSON download of everything stored about the account, and self-service account deletion (`/dashboard/account`)
 - Threaded comments, votes on posts, comments and profiles
@@ -48,6 +50,10 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
 | `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
+| `UPLOAD_MAX_FILE_MB` | no | Largest image a user can upload, in MB (default 5) |
+| `UPLOAD_DAILY_LIMIT` | no | Images one user can upload in 24 hours (default 50; 0 = no limit) |
+| `UPLOAD_STORAGE_LIMIT_MB` | no | Total size of one user's uploads, in MB (default 500; 0 = no limit) |
+| `UPLOAD_RATE_LIMIT_PER_HOUR` | no | Upload requests per hour from one address, for each upload endpoint (default 30) |
 | `GEOIP_DB_PATH` | no | DB-IP City Lite database (`npm run geoip:download`, refresh monthly) used to show admins the approximate location of sign-up, sign-in and publish-request addresses; unset, locations are off. Loaded into memory on first use (about 130 MB) and reloaded when the file changes. Compose mounts `./data/geoip` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
 | `NOTIFICATION_READ_TTL_DAYS` | no | Days read notifications are kept before MongoDB's TTL monitor deletes them (default 90; `0` keeps them forever). Applied at server start; unread notifications never expire |
