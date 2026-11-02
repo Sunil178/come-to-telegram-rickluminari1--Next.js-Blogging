@@ -11,3 +11,4 @@
 - [Verify everything yourself](feedback_verify_everything_yourself.md) — readiness means I tested every flow in real browsers, staging and under load; "not verified" is my to-do, not the owner's.
 - [Code review target](feedback_code_review_target.md) — `/code-review high <sha>` reviews that commit; use no target for uncommitted work.
 - [Verify status against code](feedback_verify_status_against_code.md) — check code and git log before reporting a feature missing; stale doc lines misled me once.
+- [Commit approval default](feedback_commit_approval_default.md) — owner reviews before every commit unless they explicitly said to commit myself (D-13 here, for now).
