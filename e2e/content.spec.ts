@@ -124,7 +124,14 @@ test("clearing the posts search brings every post back, even when cleared in pau
     // A navigation the box didn't make (the navbar's Posts link) empties it.
     await search.fill("Welcome");
     await expect.poll(urlQuery).toBe("Welcome");
-    await page.getByRole("banner").getByRole("link", { name: "Posts", exact: true }).click();
+    // On a phone the navbar links sit behind the menu button.
+    const openMenu = page.getByRole("button", { name: "Open menu" });
+    if (await openMenu.isVisible()) {
+        await openMenu.click();
+        await page.getByRole("link", { name: "Posts", exact: true }).last().click();
+    } else {
+        await page.getByRole("banner").getByRole("link", { name: "Posts", exact: true }).click();
+    }
     await expect.poll(urlQuery).toBe("");
     await expect(search).toHaveValue("");
 });

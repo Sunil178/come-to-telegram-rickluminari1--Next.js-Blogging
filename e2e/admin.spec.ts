@@ -55,7 +55,9 @@ test("an admin creates, renames and deletes categories, with clear refusals alon
     await adminPage.getByRole("button", { name: "Add category" }).click();
     await adminPage.getByLabel("Title").fill(renamed);
     await adminPage.getByRole("button", { name: "Save" }).click();
-    await expect(adminPage.getByText("Category created.")).toBeVisible();
+    // The first "Category created." toast can still be on screen (phones keep toasts longer).
+    await expect(adminPage.getByText("Category created.").last()).toBeVisible();
+    await expect(row(renamed)).toHaveCount(1);
     await adminPage.context().close();
     await reader.context().close();
 });

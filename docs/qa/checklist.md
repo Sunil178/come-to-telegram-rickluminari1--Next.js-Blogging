@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** final multi-browser run (`npm run test:e2e:browsers`, Mailpit up), the pass report to the owner, then stop Mailpit and verify ports 5100/1025/8025 free.
+**Current focus:** pass 1 complete; summary in `docs/qa/report.md`. Next pass: none scheduled.
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -55,6 +55,7 @@ Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
   - Review (`/code-review high`, working tree): 9 findings, 8 fixed: quoted words lost stemming (now plain `$text`); a half-typed last word found nothing (per-word title fallback); a missing text index made search fail (title fallback); misses ran a wasted populated query (count first); a long query was cut mid-word (cut at a word boundary); the newest-200 cap let same-category posts crowd out tag matches (separate caps); the ranking test passed with a post missing (now asserts each one). Not changed: dashboard post searches keep title-substring matching, since they're author- or staff-scoped management tables sorted by column, where finding a post by part of its title is the point.
 - [x] QA-M5 Reusable flow-doc and QA kit, and flow documents per group. `docs/kits/flow-qa/` is project-agnostic (README with adoption steps, flow-doc standard, QA method, templates for a flow document, the inventory, a project profile, a QA pass and a Claude skill); `docs/procedures/qa-testing.md` is now this project's profile for it (and corrects the old claim of a seeded moderator). Twelve flow documents in `docs/flows/`, checked against the code; a script confirmed all 69 cited tests exist, every e2e test is cited, and every linked file exists.
   - Review (`/code-review high`, working tree): 10 findings, all fixed: new comments go at the end of the thread (oldest first), not the top; a deleted post has no restore in the app; not-found behaviour now has an e2e test (unknown, pending, scheduled, hidden and deleted posts for readers; the author still opens their own pending post); the citation check is committed as `src/flow-docs.test.ts` (part of `npm test`, proven to fail on a broken citation) and offered in the kit as `templates/flow-docs.test.ts`; the moderation diagram shows that a decision can be changed from any state; the standard allows file references outside the steps; the manual-session setup names the seed command and explains VAPID keys; the standard no longer promises an inventory coverage column; the kit README says where it works as-is; the privacy flow lost its roadmap sentence.
+- [x] QA-FINAL Full multi-browser run: Chromium, Chrome, Edge, Firefox and Pixel 7 all green (push skipped where there's no push service); two phone-only test assumptions fixed (a lingering earlier toast in the categories test, the navbar Posts link behind the phone menu in the search test). Report: `docs/qa/report.md`.
 
 ## Flow groups
 
