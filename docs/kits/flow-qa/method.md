@@ -1,0 +1,56 @@
+# QA method
+
+How an agent or a person tests a web app as a real user before calling a feature done. It complements the automated suites: unit tests prove logic, end-to-end tests prove the flows already written down, and this method finds the ones nobody wrote down yet. Every bug it finds ends as a failing test, then a fix. Project specifics (servers, test data, accounts) come from the project profile (see [templates/project-profile.md](templates/project-profile.md)).
+
+Distilled from: Anthropic's `webapp-testing` skill (reconnaissance before action, wait for the page to settle, read console logs), Playwright's test planner agent (Markdown test plans with independent, numbered scenarios covering happy paths, edge cases and errors), session-based exploratory testing (Jonathan and James Bach: a charter and a time box per session), James Bach's SFDIPOT coverage heuristic, Elisabeth Hendrickson's *Explore It!* test heuristics, and the FEW HICCUPPS consistency oracles (Michael Bolton and James Bach).
+
+## 1. Isolation first
+
+Test against a production build on its own port and its own database, never a developer's running server or real data. Capture outgoing email with a local catcher. Give each role its own browser context (separate cookies), so effects across users (notifications, approvals, sign-outs) are seen from the other side, as a second real person would see them. Stop every server you started and check its port is free before you finish.
+
+## 2. One session per flow group
+
+Pick the next group from the project's flow inventory. Write a one-line charter, for example: "Explore commenting as a reader and as the post's author, to find wrong counts, stale UI and permission gaps." Keep the session on its charter; note other bugs you trip over and move on.
+
+Work reconnaissance-first: open the page, wait until it settles, take an accessibility snapshot (cheaper and more exact than a screenshot) to learn the real controls, then act. Read the browser console and the server log after every step; an error there is a finding even if the page looks fine. Use screenshots for layout questions only: dark mode, phone width, overflow.
+
+## 3. What to vary (SFDIPOT)
+
+| Factor | Ask |
+|---|---|
+| Structure | Every page, dialog, menu item and link of the group: does each one go somewhere sensible? Which loading and not-found states does it show? |
+| Function | Every action, including the rarely used ones (edit, delete, undo, restore, reject, retry, request again). |
+| Data | Empty, one character, the maximum length and one over, whitespace only, Unicode and emoji, HTML and script text, very long words, duplicates, impossible dates, a deleted or foreign id in the URL. |
+| Interfaces | The same action through the UI, the API directly (wrong role, logged out, malformed body) and any email or push notification link. |
+| Platform | The browsers the project supports and a phone viewport; light and dark theme; keyboard only. |
+| Operations | Each role, logged out included, and the transitions between them (a user just promoted, demoted or deleted). |
+| Time | Refresh mid-flow, back and forward, two tabs, double-clicks, slow network, actions that land after another user's change, scheduled and expiring things (tokens, time-to-live values, grace periods). |
+
+## 4. Edge-case heuristics to run every time
+
+- **State survives a reload.** After every action, reload: does the page still show what the action did?
+- **Undo the input.** Type, then clear; filter, then remove the filter; open a dialog, cancel, reopen. The page must return to its original state.
+- **The other side updates.** After user A acts, look at what user B sees: counters, badges, lists, emails. Stale state there is a bug.
+- **Do it twice.** Double-click submit buttons, repeat a request, open the same link twice; expect one effect and a clear message.
+- **Loading states match.** Throttle the network or hard-reload each page and check the loading skeleton belongs to that page.
+- **Affordance.** Everything clickable shows a pointer cursor and a focus ring, and works from the keyboard. Nothing non-clickable looks clickable.
+- **Permissions both ways.** Each action is available to exactly the roles that should have it, in the UI and in the API.
+- **Errors are humane.** Validation messages say what to do; server failures show a message, never a blank page or a raw error.
+- **Counts add up.** Every counter matches the data after create, edit, delete and account deletion.
+- **Private stays private.** Data marked private (personal details, file metadata, other users' email addresses) appears only where it should: check public pages, exports, feeds and API responses.
+
+## 5. Oracles: deciding something is a bug (FEW HICCUPPS)
+
+Behaviour is suspicious when it's inconsistent with: the product's own behaviour elsewhere (History, Image, Comparable products), what a user would reasonably expect (Claims made in the UI text, User expectations), the purpose of the feature (Product, Purpose), or Standards and Statutes (accessibility, privacy law). A pattern familiar from mainstream products is a fair expectation.
+
+## 6. Recording and closing findings
+
+- Log each finding in the current QA pass (see [templates/qa-pass.md](templates/qa-pass.md)) with steps to reproduce, expected versus actual, the role and browser, and severity: blocker, major, minor, polish.
+- For a bug: write the failing end-to-end test (or a unit test for pure logic) first, fix the root cause and every instance of the pattern, then re-run the session's flows.
+- For a test that fails without an app bug (a race in the test, a shared fixture, a rate limit hit by repeated runs), fix the test and say so; don't loosen the app.
+- For a missing feature or a product question: record it as a decision for the owner; don't build it unasked.
+- Update the group's flow document with anything the session taught about how the feature really behaves.
+
+## 7. Pacing
+
+Agent sessions cost tokens, and the person paying often shares that budget across projects. Run one flow group per session, prefer accessibility snapshots over screenshots, run one browser while exploring and the full browser matrix only at the end of a pass, and avoid agent loops that spawn one sub-agent per test case (such as Playwright's planner, generator and healer agents); this kit reuses their Markdown plan format instead.

@@ -33,7 +33,7 @@ A multi-author blogging platform: Next.js 16 App Router (Turbopack, `src/proxy.t
 
 ## Active initiative
 
-QA pass 1: `docs/qa/checklist.md` (resume point), following `docs/procedures/qa-testing.md` and the flow inventory in `docs/flows/README.md`.
+QA pass 1: `docs/qa/checklist.md` (resume point), following the project profile `docs/procedures/qa-testing.md`, the reusable QA kit in `docs/kits/flow-qa/` (method and flow-doc standard; project-agnostic, copied as-is to other repositories) and the flow documents in `docs/flows/`. A change to a flow's behaviour updates its flow document and the test it cites in the same commit.
 
 Production readiness (complete except owner decisions): `docs/production-readiness/` (findings, plan, checklist). Resume from `checklist.md`; follow `plan.md`, including decision D-13 (the agent commits each milestone after tests, a code review and real-browser verification; never push).
 

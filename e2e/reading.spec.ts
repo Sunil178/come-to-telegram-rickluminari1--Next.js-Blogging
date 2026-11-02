@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, login, newPage, test, USERS } from "./fixtures";
 import { createPost, createUser, withDb } from "./db";
 
 test("the posts list pages through more than one page of posts", async ({ page }) => {
@@ -144,4 +144,27 @@ test("related posts put shared tags before the same category, and never show a d
     await expect(related).not.toContainText(deleted.title);
     const text = await related.innerText();
     expect(text.indexOf(sameTag.title)).toBeLessThan(text.indexOf(sameCategory.title));
+});
+
+test("unknown, deleted and non-public posts show readers the not-found page", async ({ browser }) => {
+    const authorId = await withDb(async (db) => (await db.collection("users").findOne({ email: USERS.author.email }))!._id);
+    const pending = await createPost(authorId, { approval: "Pending", published: false });
+    const scheduled = await createPost(authorId, { publishedAt: new Date(Date.now() + 24 * 60 * 60 * 1000) });
+    const hidden = await createPost(authorId, { visibility: false });
+    const deleted = await createPost(authorId, { deleted: true, deletedAt: new Date() });
+
+    const reader = await newPage(browser);
+    for (const slug of ["no-such-post-anywhere", pending.slug, scheduled.slug, hidden.slug, deleted.slug]) {
+        await reader.goto(`/posts/${slug}`);
+        await expect(reader.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    }
+    await reader.context().close();
+
+    // The author can still open their own pending post; a deleted one is gone for everyone.
+    const author = await newPage(browser);
+    await login(author, USERS.author.email, undefined, `/posts/${pending.slug}`);
+    await expect(author.getByRole("heading", { name: pending.title })).toBeVisible();
+    await author.goto(`/posts/${deleted.slug}`);
+    await expect(author.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    await author.context().close();
 });
