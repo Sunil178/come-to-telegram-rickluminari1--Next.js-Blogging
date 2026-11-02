@@ -5,6 +5,8 @@ import Link from "next/link";
 import PublishRequestActions from "@/components/dashboard/admin/PublishRequestActions";
 import { formatLocation, type IpRecord } from "@/libs/geoip";
 
+export const metadata = { title: "Publish Requests" };
+
 export default async function AdminRequestsPage() {
     const requests = await PublishRequest.find({ status: "Pending" })
         .populate({ path: "userId", model: User, select: "email username" })

@@ -7,3 +7,14 @@ export function isGatedPath(pathname: string): boolean {
         pathname.startsWith("/dashboard/")
     );
 }
+
+// Next.js answers a 500 for a dynamic segment it can't percent-decode, so proxy.ts rejects these pages first.
+// API routes stay outside the proxy: running it there would buffer every request body.
+export function hasMalformedEscape(pathname: string): boolean {
+    try {
+        decodeURIComponent(pathname);
+        return false;
+    } catch {
+        return true;
+    }
+}

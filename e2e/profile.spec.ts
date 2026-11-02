@@ -58,6 +58,12 @@ test("a user fills in their profile; the public part shows on their author page 
     expect(await fresh.locator("main img").first().getAttribute("src")).toMatch(/^\/uploads\//);
 });
 
+test("an author page is titled with the username, and a malformed address is a bad request, not a server error", async ({ page }) => {
+    await page.goto(`/users/${USERS.author.username}`);
+    await expect(page).toHaveTitle(`${USERS.author.username} — Vedev.Guru`);
+    for (const path of ["/users/%E0%A4%A", "/posts/%E0%A4%A"]) expect((await page.request.get(path)).status()).toBe(400);
+});
+
 test("a user changes their password, is signed out, and only the new password works", async ({ browser }) => {
     const user = await createUser(`e2e.changer${Date.now()}`);
     const page = await newPage(browser);

@@ -16,6 +16,8 @@ interface AdminCommentsPageProps {
     searchParams: Promise<{ page?: SearchParamValue; q?: SearchParamValue }>;
 }
 
+export const metadata = { title: "Comment Moderation" };
+
 export default async function AdminCommentsPage({ searchParams }: AdminCommentsPageProps) {
     const params = await searchParams;
     const q = firstParam(params.q);

@@ -3,7 +3,7 @@ import NextAuth from "next-auth";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasRole, ROLES, type RoleName } from "@/libs/roles";
 import { buildContentSecurityPolicy } from "@/libs/csp";
-import { isGatedPath } from "@/libs/route-gates";
+import { hasMalformedEscape, isGatedPath } from "@/libs/route-gates";
 import { SITE_URL } from "@/libs/site-url";
 
 const { auth } = NextAuth(authConfig);
@@ -56,6 +56,7 @@ const gatedProxy = auth((req) => {
 // The Auth.js wrapper runs only on gated pages: elsewhere it would re-issue the session cookie on
 // every response and re-check the role in the DB for no reason.
 export default function proxy(request: NextRequest, event: Parameters<typeof gatedProxy>[1]) {
+    if (hasMalformedEscape(request.nextUrl.pathname)) return new NextResponse("Bad Request", { status: 400 });
     return isGatedPath(request.nextUrl.pathname) ? gatedProxy(request, event) : withCsp(request);
 }
 

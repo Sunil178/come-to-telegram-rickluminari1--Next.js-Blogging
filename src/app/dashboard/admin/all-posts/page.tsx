@@ -4,6 +4,8 @@ interface AllPostsPageProps {
     searchParams: Promise<PostsManageSearchParams>;
 }
 
+export const metadata = { title: "All Posts" };
+
 export default async function AllPostsPage({ searchParams }: AllPostsPageProps) {
     // proxy.ts (isGatedPath) redirects unauthenticated/under-privileged requests before this renders.
     const resolvedSearchParams = await searchParams;

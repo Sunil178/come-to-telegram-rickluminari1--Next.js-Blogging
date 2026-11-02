@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import User from "@/models/User";
 import Post from "@/models/Post";
@@ -18,20 +19,21 @@ interface ProfilePageProps {
     params: Promise<{ username: string }>;
 }
 
+// Shared by generateMetadata and the page, so one request queries once.
+const getProfileUser = cache(async (rawUsername: string) =>
+    User.findOne({ username: decodeURIComponent(rawUsername) })
+        .select("username avatar profile upvoteCount downvoteCount")
+        .lean<{ _id: Types.ObjectId; username: string; avatar?: string; profile?: PublicProfile; upvoteCount?: number; downvoteCount?: number }>(),
+);
+
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
-    const { username } = await params;
-    const user = await User.findOne({ username: decodeURIComponent(username) }).select("username").lean();
+    const user = await getProfileUser((await params).username);
     if (!user) return {};
-    return { title: `${user.username} — Vedev.Guru` };
+    return { title: user.username };
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-    const { username: rawUsername } = await params;
-    const username = decodeURIComponent(rawUsername);
-
-    const profileUser = await User.findOne({ username })
-        .select("username avatar profile upvoteCount downvoteCount")
-        .lean<{ _id: Types.ObjectId; username: string; avatar?: string; profile?: PublicProfile; upvoteCount?: number; downvoteCount?: number }>();
+    const profileUser = await getProfileUser((await params).username);
     if (!profileUser) notFound();
 
     const session = await getSession();

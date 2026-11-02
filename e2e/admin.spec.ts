@@ -66,6 +66,7 @@ test("an admin finds a user, changes their role, and the user's access follows",
     const user = await createUser(`e2e.promote${Date.now()}`);
     const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/users");
+    await expect(adminPage).toHaveTitle("Users — Vedev.Guru");
 
     await adminPage.getByLabel("Search users").fill(user.username);
     await expect.poll(() => new URL(adminPage.url()).searchParams.get("q")).toBe(user.username);

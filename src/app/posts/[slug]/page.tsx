@@ -98,9 +98,11 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     const description = post.summary || post.titleDescription || undefined;
 
     return {
-        title: `${post.title} — Vedev.Guru`,
+        title: post.title,
         description,
+        // Replaces the root layout's openGraph rather than merging with it.
         openGraph: {
+            siteName: "Vedev.Guru",
             title: post.title,
             description,
             images: post.bannerImage ? [post.bannerImage] : undefined,

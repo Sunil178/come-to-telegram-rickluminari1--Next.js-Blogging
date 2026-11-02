@@ -21,7 +21,7 @@ interface PostsPageProps {
 }
 
 export const metadata = {
-    title: "Posts — Vedev.Guru",
+    title: "Posts",
     description: "Essays and deep dives on technology, culture, and the questions in between.",
 };
 

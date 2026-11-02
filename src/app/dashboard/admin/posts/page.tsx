@@ -21,6 +21,8 @@ interface AdminPostsPageProps {
     searchParams: Promise<{ approval?: string }>;
 }
 
+export const metadata = { title: "Review Queue" };
+
 export default async function AdminPostsPage({ searchParams }: AdminPostsPageProps) {
     // proxy.ts (isGatedPath) redirects unauthenticated/under-privileged requests before this renders.
     const { approval: approvalParam } = await searchParams;

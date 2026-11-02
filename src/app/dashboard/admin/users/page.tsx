@@ -16,6 +16,8 @@ interface AdminUsersPageProps {
     searchParams: Promise<{ page?: SearchParamValue; q?: SearchParamValue }>;
 }
 
+export const metadata = { title: "Users" };
+
 export default async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
     const session = (await getSession()) as AuthenticatedSession;
     const params = await searchParams;

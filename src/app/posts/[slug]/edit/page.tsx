@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Post from "@/models/Post";
@@ -11,12 +13,22 @@ interface EditPostPageProps {
     params: Promise<{ slug: string }>;
 }
 
-export default async function EditPostPage({ params }: EditPostPageProps) {
-    const { slug } = await params;
+// Shared by generateMetadata and the page, so one request queries once.
+const getEditablePost = cache(async (slug: string) => {
     // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
     const post = await Post.findOne(isAdmin ? { slug } : { slug, userId: session.user.id }).lean();
+    return { session, post };
+});
+
+export async function generateMetadata({ params }: EditPostPageProps): Promise<Metadata> {
+    const { post } = await getEditablePost((await params).slug);
+    return { title: post ? `Edit: ${post.title}` : "Edit post", robots: { index: false } };
+}
+
+export default async function EditPostPage({ params }: EditPostPageProps) {
+    const { session, post } = await getEditablePost((await params).slug);
     if (!post) notFound();
     const categories = await categoryOptions();
 

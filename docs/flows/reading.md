@@ -48,9 +48,13 @@ Readers only ever see public posts: approved, published, visible and past their 
 
 ### 4. Visit an author's profile
 
-1. Chooses an author's name. → `/users/<username>` with photo, public profile (headline, location, bio, expertise, topics, links), profile votes and their published posts only.
+1. Chooses an author's name. → `/users/<username>`, titled with the username, with photo, public profile (headline, location, bio, expertise, topics, links), profile votes and their published posts only.
 
-**Tested by:** `e2e/reading.spec.ts` › "an author's profile lists their published posts only"; `e2e/profile.spec.ts` › "a user fills in their profile; the public part shows on their author page and the private part doesn't".
+**Extensions:**
+
+- 1a. An address with a malformed percent-escape (here or under `/posts/`): a plain 400 from `src/proxy.ts` instead of a server error.
+
+**Tested by:** `e2e/reading.spec.ts` › "an author's profile lists their published posts only"; `e2e/profile.spec.ts` › "a user fills in their profile; the public part shows on their author page and the private part doesn't", "an author page is titled with the username, and a malformed address is a bad request, not a server error".
 
 ### 5. Feeds for machines
 

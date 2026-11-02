@@ -3,6 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import CategoryFormDialog from "@/components/dashboard/admin/CategoryFormDialog";
 import DeleteCategoryButton from "@/components/dashboard/admin/DeleteCategoryButton";
 
+export const metadata = { title: "Categories" };
+
 export default async function AdminCategoriesPage() {
     const categories = await Category.find({}).sort({ title: 1 }).lean();
 

@@ -19,6 +19,8 @@ function currentRequestStatus(request: { status: RequestStatus; reviewedAt: Date
     return request.status;
 }
 
+export const metadata = { title: "My Posts" };
+
 export default async function DashboardPostsPage({ searchParams }: DashboardPostsPageProps) {
     // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
