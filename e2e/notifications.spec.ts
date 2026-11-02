@@ -62,14 +62,28 @@ test("a reader's request to publish reaches the admins, and the approval reaches
     await login(newbiePage, newbie.email, undefined, "/dashboard/posts");
     await newbiePage.getByRole("button", { name: "Request to publish" }).click();
     await expect(newbiePage.getByText("Request sent — an admin will review it.")).toBeVisible();
+    // A reload remembers the pending request instead of offering the button again.
+    await newbiePage.reload();
+    await expect(newbiePage.getByText("Your request to publish is pending review.")).toBeVisible();
+    await expect(newbiePage.getByRole("button", { name: "Request to publish" })).toHaveCount(0);
 
     const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/notifications");
     await expectNotification(adminPage, `${newbie.username} asked to become an author`);
+    // Bell entries are links and look clickable.
+    await adminPage.getByRole("button", { name: "Notifications" }).click();
+    const bellItem = adminPage.getByRole("menuitem", { name: new RegExp(`${newbie.username} asked to become an author`) }).first();
+    expect(await bellItem.evaluate((el) => getComputedStyle(el).cursor)).toBe("pointer");
+    await adminPage.keyboard.press("Escape");
     await adminPage.goto("/dashboard/admin/requests");
     const row = adminPage.getByRole("row").filter({ hasText: newbie.email });
     await row.getByRole("button", { name: "Approve request" }).click();
     await expect(adminPage.getByText("Request approved — user is now an Author.")).toBeVisible();
+    // Handled requests stop counting as unread in every admin's bell.
+    expect(await withDb(async (db) => {
+        const user = await db.collection("users").findOne({ email: newbie.email });
+        return db.collection("notifications").countDocuments({ type: "publish_request", actorId: user!._id, read: false });
+    })).toBe(0);
     await adminPage.context().close();
 
     await expectNotification(newbiePage, "Your request to publish was approved. You can write posts now");

@@ -5,6 +5,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { notify } from "@/libs/notify";
+import { markRequestNotificationsRead } from "@/libs/publish-request-notifications";
 
 export const POST = withApiGuard(async (request, { session }) => {
     try {
@@ -18,7 +19,14 @@ export const POST = withApiGuard(async (request, { session }) => {
             return NextResponse.json({ data: null, message: "You already have a pending request" }, { status: 400 });
         }
 
-        const publishRequest = await PublishRequest.create({ userId: session.user.id });
+        const publishRequest = await PublishRequest.create({ userId: session.user.id }).catch((error) => {
+            // Two clicks racing past the check above: the unique index on pending requests rejects the second.
+            if (error?.code === 11000) return null;
+            throw error;
+        });
+        if (!publishRequest) {
+            return NextResponse.json({ data: null, message: "You already have a pending request" }, { status: 400 });
+        }
         // Only admins can review requests (PATCH /api/publish-requests/[id]), so only they are told.
         after(async () => {
             try {
@@ -31,6 +39,9 @@ export const POST = withApiGuard(async (request, { session }) => {
                         type: "publish_request",
                     })
                 ));
+                // An admin may have reviewed the request before these notifications existed.
+                const current = await PublishRequest.findById(publishRequest._id).select("status").lean<{ status: string }>();
+                if (current && current.status !== "Pending") await markRequestNotificationsRead(session.user.id);
             } catch (error) {
                 logger.error("Failed to notify admins of a publish request", { error });
             }

@@ -5,7 +5,7 @@
 - [dbConnect is centralized](feedback_dbconnect_centralized.md) — never call `dbConnect()` outside `instrumentation-node.ts` and the standalone scripts (`seeder.ts`, `bootstrap-admin.ts`); the server-boot hook already connects once.
 - [Next.js proxy.ts, not middleware.ts](feedback_nextjs_proxy_not_middleware.md) — check for `proxy.ts` (the renamed convention) before concluding a repo has no route-protection middleware.
 - [Keep comments terse](feedback_terse_comments.md) — 1-2 lines max, even for tricky framework-quirk explanations; corrected twice in one session.
-- [Usage pacing](feedback_usage_pacing.md) — weekly limit must last across many repos; prefer direct tools, diff-scoped medium reviews, no fan-out unless asked.
+- [Usage pacing](feedback_usage_pacing.md) — hard rule: weekly limit must last across many repos; slow and steady, direct tools, no fan-out; keep Claude setup repo-local.
 - [Mandatory todo list](feedback_mandatory_todo.md) — every multi-step task in every chat gets a live todo list (load deferred TodoWrite first).
-- [Production readiness initiative](project_production_readiness.md) — M1–M8 in docs/production-readiness/; owner authorized per-milestone commits; never push; never print git remote.
+- [Production readiness initiative](project_production_readiness.md) — docs/production-readiness/ and docs/qa/; agent commits each milestone (D-13, re-authorized 2026-11-02); never push; never print git remote.
 - [Verify everything yourself](feedback_verify_everything_yourself.md) — readiness means I tested every flow in real browsers, staging and under load; "not verified" is my to-do, not the owner's.

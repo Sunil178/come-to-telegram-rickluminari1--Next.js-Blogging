@@ -119,7 +119,7 @@ export default async function PostsManageView({
             <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">{heading}</h1>
             {description && <p className="mt-2 text-muted-foreground">{description}</p>}
             <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <PostsSearch key={q || ""} defaultValue={q || ""} />
+                <PostsSearch />
                 {composeControl}
             </div>
 

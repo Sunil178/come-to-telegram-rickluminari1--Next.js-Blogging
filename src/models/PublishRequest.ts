@@ -24,6 +24,8 @@ const schema = new Schema<IPublishRequest>(
 );
 
 schema.index({ userId: 1, status: 1 });
+// At most one pending request per user, even when two requests race.
+schema.index({ userId: 1 }, { unique: true, partialFilterExpression: { status: "Pending" } });
 
 const PublishRequest = mongoose.models?.PublishRequest || mongoose.model<IPublishRequest>("PublishRequest", schema, "publishrequests");
 export default PublishRequest;

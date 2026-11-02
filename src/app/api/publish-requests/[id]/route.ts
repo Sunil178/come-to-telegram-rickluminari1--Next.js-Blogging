@@ -5,6 +5,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { notify } from "@/libs/notify";
+import { markRequestNotificationsRead } from "@/libs/publish-request-notifications";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -38,6 +39,8 @@ export const PATCH = withApiGuard<RouteContext>(
                     await User.updateOne({ _id: publishRequest.userId }, { role: ROLES.AUTHOR });
                 }
             }
+
+            await markRequestNotificationsRead(publishRequest.userId);
 
             const requesterId = publishRequest.userId.toString();
             after(() =>

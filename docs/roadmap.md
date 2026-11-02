@@ -41,7 +41,7 @@ Uploaded photos are stored as sent, including EXIF metadata, which can contain t
 
 ### Upload quotas and orphan cleanup
 
-Authors can upload without limit (10 MB per file). A per-user daily upload cap, a per-author storage cap, and a periodic job deleting files no post references would stop one compromised account filling the disk.
+Authors can upload without limit (5 MB per file). A per-user daily upload cap, a per-author storage cap, and a periodic job deleting files no post references would stop one compromised account filling the disk.
 
 ### Search and related posts at scale
 

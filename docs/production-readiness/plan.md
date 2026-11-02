@@ -1,6 +1,6 @@
 # Plan — production readiness
 
-Follows the review-gated delivery workflow (`~/.claude/delivery-workflow.md`) with the owner's adjustment recorded in the decision log (D-01): the agent commits each milestone itself after tests, a code review and Playwright verification; there is no per-milestone owner review.
+Follows the review-gated delivery workflow (`~/.claude/delivery-workflow.md`) with the owner's adjustments recorded in the decision log (D-01, D-12, D-13): the agent verifies each milestone with tests, a code review and Playwright, then commits it; never push.
 
 ## Milestones
 
@@ -49,3 +49,5 @@ Re-verify → find every instance of the pattern → failing test first (except 
 - **D-09 (2026-10-31):** Account deletion is self-service and permanent. The user record, their posts (with revisions, comments, votes and notifications on them), votes, notifications they received or caused, push subscriptions, tokens, publish requests and reading history are hard-deleted, and vote counts on other content are corrected. Their comments on other people's posts are emptied and soft-deleted, so replies keep their thread under a "[deleted]" placeholder. Revision entries recording their edits of other people's posts stay, because they hold the post owner's earlier text; the editor then shows as unknown. Uploaded images are removed unless another post still uses them. The last admin can't delete their account (admin deletions are serialized). The data export includes the same records, plus revisions of their posts and the versions their edits replaced.
 - **D-10 (2026-10-31):** The bundled `mongo:8` service sets `GLIBC_TUNABLES=glibc.pthread.rseq=1`, the published workaround for SERVER-121912 (mongod 8 refuses to start on Linux 6.19+). Costs some allocator performance; remove once MongoDB ships a fix.
 - **D-11 (2026-10-31):** Local staging runs the full Compose stack with Caddy's internal CA on `https://localhost:8443` and `skip_install_trust`, so nothing is installed into the host's trust store; Mailpit stands in for the SMTP provider.
+- **D-12 (2026-11-02):** D-01 is revoked: nothing is committed without the owner's explicit approval.
+- **D-13 (2026-11-02):** For QA pass 1 the owner re-authorizes the agent to commit each milestone itself after tests, a code review and real-browser verification, at a steady pace. Never push.

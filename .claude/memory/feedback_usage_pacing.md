@@ -1,12 +1,12 @@
 ---
 name: feedback_usage_pacing
-description: Conserve Claude Code weekly usage — user works across many repos all week; 5-hour block OK, week-long block not.
+description: Conserve Claude Code weekly usage — user works across many repos all week; slow and steady is fine, burning the limit is not. Repeated as a hard rule on 2026-11-02.
 metadata:
   type: feedback
 ---
 
-Pace token use so the weekly plan limit lasts: prefer direct Read/grep over subagents, scope reviews to the diff, `/code-review medium` for ad-hoc reviews (milestone gates keep `high`), never `max`/workflows/fan-out without an explicit ask, don't re-read files already in context. Mandatory todo list for every multi-step task (see [[feedback_mandatory_todo]]).
+Pace token use so the weekly plan limit lasts: prefer direct Read/grep over subagents, scope reviews to the diff, `/code-review medium` for ad-hoc reviews, never `max`/workflows/fan-out without an explicit ask, don't re-read files already in context, run the cheapest test project (chromium) unless a browser matters, keep web research to a few targeted searches. A steady slow pace across several turns is preferred over one expensive burst. Mandatory todo list for every multi-step task (see [[feedback_mandatory_todo]]).
 
-**Why:** user stated (2026-10-31) they work on many aspects of many repos through the week and can tolerate a 5-hour session block but not a week-long one.
+**Why:** user stated (2026-10-31, again firmly 2026-11-02) they use Claude Code for many things across many repos; a slow pace is fine, burning the weekly limit is not.
 
-**How to apply:** before spawning agents or running heavy review levels, ask whether a cheaper direct approach gives the same answer; mirrored as a "Usage pacing" bullet in ~/.claude/CLAUDE.md.
+**How to apply:** before spawning agents, heavy reviews or long browser runs, ask whether a cheaper direct approach gives the same answer; split large work into milestones across turns. Keep all Claude setup (skills, commands, memory) local to this repo's `.claude/`, not global. Mirrored as a "Usage pacing" bullet in ~/.claude/CLAUDE.md.

@@ -27,6 +27,9 @@ vi.mock("@/models/User", () => ({
     },
 }));
 
+const markReadMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/libs/publish-request-notifications", () => ({ markRequestNotificationsRead: (...args: unknown[]) => markReadMock(...args) }));
+
 const { PATCH } = await import("@/app/api/publish-requests/[id]/route");
 
 function context(id: string) {
@@ -42,6 +45,7 @@ describe("PATCH /api/publish-requests/[id]", () => {
         findOneAndUpdateMock.mockReset();
         notifyMock.mockReset();
         updateOneMock.mockClear();
+        markReadMock.mockClear();
         userFindByIdMock.mockClear();
         userSelectMock.mockReset();
         userSelectMock.mockResolvedValue({ role: "reader" });
@@ -88,5 +92,18 @@ describe("PATCH /api/publish-requests/[id]", () => {
 
         expect(response.status).toBe(200);
         expect(updateOneMock).not.toHaveBeenCalled();
+    });
+
+    it("marks every admin's unread notification of the request read once it's reviewed", async () => {
+        findOneAndUpdateMock.mockResolvedValue({ _id: "6500000000000000000000a1", userId: "reader1", status: "Rejected" });
+        await PATCH(requestWithBody({ action: "reject" }), context("6500000000000000000000a1"));
+
+        expect(markReadMock).toHaveBeenCalledWith("reader1");
+    });
+
+    it("leaves notifications alone when the request was already reviewed", async () => {
+        findOneAndUpdateMock.mockResolvedValue(null);
+        await PATCH(requestWithBody({ action: "approve" }), context("6500000000000000000000a1"));
+        expect(markReadMock).not.toHaveBeenCalled();
     });
 });

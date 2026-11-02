@@ -93,3 +93,47 @@ test("a post lists related posts that share its tags", async ({ page }) => {
     const related = page.getByRole("region", { name: "Related posts" });
     await expect(related.getByRole("link", { name: new RegExp(RELATED_POST.title) })).toBeVisible();
 });
+
+test("clearing the posts search brings every post back, even when cleared in pauses", async ({ page }) => {
+    await page.goto("/posts");
+    const search = page.getByLabel("Search articles");
+    await search.fill(SEEDED_POST.title);
+    await expect(page).toHaveURL(/q=/);
+    await expect(page.getByRole("link", { name: RELATED_POST.title })).toHaveCount(0);
+
+    // Delete a few characters at a time and let each partial query's results arrive: the box must keep
+    // the user's text and focus through every navigation.
+    const urlQuery = () => new URL(page.url()).searchParams.get("q") ?? "";
+    let expected = SEEDED_POST.title;
+    await search.press("End");
+    while (expected.length > 0) {
+        for (let i = 0; i < 3 && expected.length > 0; i++) {
+            await search.press("Backspace");
+            expected = expected.slice(0, -1);
+        }
+        await expect.poll(urlQuery).toBe(expected.trim());
+        await expect(search).toHaveValue(expected);
+    }
+    await expect(search).toBeFocused();
+    await expect(page).not.toHaveURL(/q=/);
+    await expect(page.getByRole("link", { name: RELATED_POST.title }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: SEEDED_POST.title }).first()).toBeVisible();
+
+    // A navigation the box didn't make (the navbar's Posts link) empties it.
+    await search.fill("Welcome");
+    await expect.poll(urlQuery).toBe("Welcome");
+    await page.getByRole("banner").getByRole("link", { name: "Posts", exact: true }).click();
+    await expect.poll(urlQuery).toBe("");
+    await expect(search).toHaveValue("");
+});
+
+test("the editor and dashboard pages stream their own loading skeletons, not the posts grid", async ({ page }) => {
+    await login(page, USERS.author.email, undefined, "/dashboard/posts");
+    // The loading.tsx fallback is part of the streamed HTML, before the page itself.
+    const add = await (await page.request.get("/posts/add")).text();
+    expect(add).toContain('aria-label="Loading editor"');
+    const edit = await (await page.request.get(`/posts/${SEEDED_POST.slug}/edit`)).text();
+    expect(edit).toContain('aria-label="Loading editor"');
+    const notifications = await (await page.request.get("/dashboard/notifications")).text();
+    expect(notifications).toContain('aria-label="Loading page"');
+});

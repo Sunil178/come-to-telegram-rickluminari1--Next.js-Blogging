@@ -89,7 +89,8 @@ test("deleting an account removes its content, keeps reply threads and corrects 
     await expect(readerPage.getByText(leaverComment)).toHaveCount(0);
     // Scoped to this thread: earlier runs or other tests may have left placeholders on the same post.
     await expect(readerPage.getByRole("article").filter({ hasText: reply }).getByText("[deleted]").first()).toBeVisible();
-    await expect(readerPage.getByText(reply)).toBeVisible();
+    // Exactly one visible copy: a reloaded page can briefly hold a hidden streamed copy as well.
+    await expect(readerPage.getByText(reply).filter({ visible: true })).toHaveCount(1);
     expect(await relatedVotes()).toBe(votesBefore);
 
     await withDb(async (db) => {

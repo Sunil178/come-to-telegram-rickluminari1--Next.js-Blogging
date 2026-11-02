@@ -33,11 +33,13 @@ A multi-author blogging platform: Next.js 16 App Router (Turbopack, `src/proxy.t
 
 ## Active initiative
 
-Production readiness: `docs/production-readiness/` (findings, plan, checklist). Resume from `checklist.md`; follow `plan.md`, including decision D-01 (the agent commits each milestone after tests, a high-effort code review and real-browser verification; never push).
+QA pass 1: `docs/qa/checklist.md` (resume point), following `docs/procedures/qa-testing.md` and the flow inventory in `docs/flows/README.md`.
+
+Production readiness (complete except owner decisions): `docs/production-readiness/` (findings, plan, checklist). Resume from `checklist.md`; follow `plan.md`, including decision D-13 (the agent commits each milestone after tests, a code review and real-browser verification; never push).
 
 ## Git
 
-- Outside D-01, never stage or unstage changes (`git add`, `git restore --staged`, `git reset`, `git stash`, `git mv`, …) unless explicitly asked for that action at that moment: the owner stages manually and relies on telling their own staged changes apart. Don't "fix" an accidental staging either; report it. `git mv` and `git stash` both change the index.
+- Outside D-13 milestone commits, never stage or unstage changes (`git add`, `git restore --staged`, `git reset`, `git stash`, `git mv`, …) unless explicitly asked for that action at that moment: the owner stages manually and relies on telling their own staged changes apart. Don't "fix" an accidental staging either; report it. `git mv` and `git stash` both change the index.
 - `git commit` without a pathspec commits the whole index; check `git status` first.
 - Commit messages: plain descriptive title (no `feat:`/`fix:` prefixes), blank line, a few unwrapped `- ` bullets; no AI attribution trailers. Never push.
 

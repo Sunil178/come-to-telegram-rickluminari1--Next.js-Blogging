@@ -1,12 +1,12 @@
 ---
 name: project_production_readiness
-description: Production-readiness initiative (started 2026-10-31) — owner authorized per-milestone commits without owner review; state lives in docs/production-readiness/.
+description: Production-readiness initiative and QA pass 1 (docs/qa/); commits: owner re-authorized per-milestone agent commits on 2026-11-02 (D-13) after briefly revoking them (D-12).
 metadata:
   type: project
 ---
 
-Initiative M1–M8 plus final re-audit (committed 2026-10-31) and M9 launch QA and hardening (from the owner's launch review; EXIF, upload quotas and search scaling await owner decisions), tracked in `docs/production-readiness/checklist.md` (resume point after compaction). Owner explicitly authorized (2026-10-31) committing each milestone myself after vitest/tsc/lint/build, `/code-review high <base>`, and Playwright real-user verification — no per-milestone owner review; never push. GitHub token exposure in the `origin` remote URL is known; the owner will rotate it later — never print `git remote -v`.
+Initiative M1–M8 plus final re-audit and M9 launch QA and hardening (commit 6124fa1), tracked in `docs/production-readiness/checklist.md`. EXIF, upload quotas and search scaling await owner decisions. On 2026-11-02 the owner first revoked commit authorization (D-12), then later the same day re-authorized it for QA pass 1: "Make commits by your own. And complete all in steady pace." (D-13). Commit each milestone after tests, review and real-browser verification; never push. GitHub token exposure in the `origin` remote URL is known; never print `git remote -v`.
 
-**Why:** owner wants to review only at the end and asked me to verify as a real user with Playwright.
+**Why:** the owner found many real-user issues on their own after M9 and wants to review before anything lands.
 
-**How to apply:** e2e needs Mailpit running (`docker compose --profile mail up -d mailpit`); the official mongo Docker image refuses to start on this host's kernel ≥ 6.19 (SERVER-121912), so containers were verified against the host MongoDB. This authorization covers staging + committing this initiative's milestone files only; still never push, never touch the owner's database or port 5000 (use port 5100 and a `blog_e2e` DB). Related: [[feedback_usage_pacing]], [[feedback_mandatory_todo]].
+**How to apply:** verify (vitest/tsc/lint, Playwright on port 5100 with `blog_e2e`), review, then commit the milestone; if the owner revokes again, stop committing. Never touch the owner's database or ports 5000/3000. Mailpit for e2e: `docker compose --profile mail up -d mailpit`. Related: [[feedback_usage_pacing]], [[feedback_verify_everything_yourself]].

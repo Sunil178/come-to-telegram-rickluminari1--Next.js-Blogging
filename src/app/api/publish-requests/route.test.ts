@@ -13,12 +13,16 @@ vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: authMock }));
 
 const findOneMock = vi.fn();
 const createMock = vi.fn();
+const requestStatusMock = vi.fn().mockResolvedValue({ status: "Pending" });
 vi.mock("@/models/PublishRequest", () => ({
     default: {
         findOne: (...args: unknown[]) => findOneMock(...args),
         create: (...args: unknown[]) => createMock(...args),
+        findById: () => ({ select: () => ({ lean: () => requestStatusMock() }) }),
     },
 }));
+const markReadMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/libs/publish-request-notifications", () => ({ markRequestNotificationsRead: (...args: unknown[]) => markReadMock(...args) }));
 
 const userSelectMock = vi.fn();
 const userFindByIdMock = vi.fn().mockReturnValue({ select: userSelectMock });
@@ -77,6 +81,18 @@ describe("POST /api/publish-requests", () => {
         expect(createMock).toHaveBeenCalledWith({ userId: "u1" });
     });
 
+    it("answers a concurrent duplicate (unique index violation) as an existing pending request", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockRejectedValue(Object.assign(new Error("E11000 duplicate key"), { code: 11000 }));
+
+        const response = await POST(request(), {});
+
+        expect(response.status).toBe(400);
+        expect((await response.json()).message).toBe("You already have a pending request");
+    });
+
     it("allows a session with no role field (stale JWT) to submit a request, reading the current DB role", async () => {
         authMock.mockResolvedValue({ user: { id: "u1" } });
         userSelectMock.mockResolvedValue({ role: undefined });
@@ -104,5 +120,34 @@ describe("POST /api/publish-requests notifications", () => {
         expect(userFindMock).toHaveBeenCalledWith({ role: "admin" });
         expect(notifyMock).toHaveBeenCalledTimes(2);
         expect(notifyMock).toHaveBeenCalledWith(expect.objectContaining({ recipientId: "admin-b", actorId: "u1", type: "publish_request" }));
+    });
+
+    it("marks the new notifications read when an admin reviewed the request before they were written", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader", username: "reader.one" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockResolvedValue({ _id: "new1" });
+        userFindMock.mockResolvedValue([{ _id: "admin-a" }]);
+        requestStatusMock.mockResolvedValueOnce({ status: "Approved" });
+        markReadMock.mockClear();
+
+        await POST(request(), {});
+
+        // after() work isn't awaited by the response.
+        await vi.waitFor(() => expect(markReadMock).toHaveBeenCalledWith("u1"));
+    });
+
+    it("leaves the notifications unread while the request is still pending", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader", username: "reader.one" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockResolvedValue({ _id: "new1" });
+        userFindMock.mockResolvedValue([{ _id: "admin-a" }]);
+        markReadMock.mockClear();
+
+        await POST(request(), {});
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(markReadMock).not.toHaveBeenCalled();
     });
 });
