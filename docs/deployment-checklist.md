@@ -2,6 +2,23 @@
 
 What a first production deployment of the Docker Compose stack needs, in order. `deploy/staging.sh` runs the same stack locally (on `https://localhost:8443`, with Mailpit instead of a real mail provider) and is the place to try changes before they reach the server.
 
+## Before launch
+
+The application is ready for a single-instance launch: every flow has an end-to-end test, and the suite passes in Chromium, Chrome, Edge, Firefox and a phone viewport (real Web Push is tested in Chrome and Edge only, and one intermittent Firefox failure, QA-24 in `docs/qa/checklist.md`, is still open); security, backups, staging and load were tested (`docs/production-readiness/`, `docs/qa/report.md`). What remains needs the owner's accounts or decisions:
+
+| Item | Who | Where |
+|---|---|---|
+| Server, domain, DNS | Owner | Sections 1 and 2 |
+| Transactional email provider with SPF, DKIM and DMARC records | Owner | Sections 1 and 3 |
+| Production `.env` with fresh secrets, stored in a password manager | Owner, with agent help | Section 4 |
+| First start, first admin, geolocation file, smoke test | Owner, with agent help | Section 5 |
+| Scheduled backups with an offsite copy, and one restore drill | Owner (storage account), agent (cron and drill) | Section 5, `docs/procedures/backup-restore.md` |
+| Uptime monitor | Owner (account) | Section 6 |
+| Error tracker (Sentry or GlitchTip) | Owner picks; agent integrates | Section 6, `docs/roadmap.md` (Error tracking) |
+| First run of the CI workflow on GitHub (`.github/workflows/ci.yml`, written but never run there) | Owner approves a push; agent fixes what fails | `docs/roadmap.md` (CI/CD) |
+| The real logo for the app icons (generated stand-ins until then) | Owner | `docs/roadmap.md` (PWA icons) |
+| Optional, not needed for launch: whether search needs typo tolerance (Atlas Search or Meilisearch) | Owner decides | `docs/roadmap.md` (Search at scale) |
+
 ## 1. Accounts and resources to have ready
 
 | What | Why | Examples |

@@ -24,7 +24,7 @@ Chrome's install prompt needs 192×192 and 512×512 PNG icons in the web manifes
 
 ### CI/CD (GitHub Actions)
 
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request: lint, typecheck, unit tests and build, and the Playwright suite (Chromium) against MongoDB and Mailpit service containers. Next steps:
+`.github/workflows/ci.yml` is set to run on every push to `main` and every pull request (it has not run on GitHub yet): lint, typecheck, unit tests and build, and the Playwright suite (Chromium) against MongoDB and Mailpit service containers. Next steps:
 
 - On `main`: build the Docker image and push it to GitHub Container Registry (`ghcr.io`), tagged with the commit SHA and `latest`.
 - Deploy: a manually triggered job that pulls the image on the target host (SSH or the host's webhook), since the deployment target is chosen later. GitHub-hosted runners' free tier covers this; no paid runners are needed.

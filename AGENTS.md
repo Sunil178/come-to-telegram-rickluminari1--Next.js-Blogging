@@ -69,6 +69,8 @@ Client components where only an action is gated (voting, commenting, deleting) d
 ## Conventions
 
 - Fix root causes and every instance of a pattern; write the failing test first for behavioural fixes.
+- Before reporting a feature as missing or an item as open, check the code and `git log`, not only the docs; fix a stale line in the same change.
+- Testing mistakes made before, and the guards against them, are in `docs/kits/flow-qa/method.md` § 8 (Known traps); add to it when a new one slips through.
 - Comments: short, about the non-obvious why.
 - Configuration is read at runtime so one Docker image fits every environment: no new `NEXT_PUBLIC_*` variables (Next inlines them at build); server components read env (`src/libs/runtime-config.ts`) and pass values to client components as props.
 - Account emails (verification, password reset) go through `src/libs/mailer.ts` (SMTP; the features are off without `SMTP_HOST`) with one-time hashed tokens from `src/libs/auth-tokens.ts`; flows that take an email answer identically whether or not an account exists and do the lookup in `after()`.

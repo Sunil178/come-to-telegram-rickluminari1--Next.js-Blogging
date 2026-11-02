@@ -87,6 +87,7 @@ test("a post's visitor count goes up once per visitor address, not on every relo
     // A fresh browser from the same address doesn't count again either (deduplicated per hashed IP).
     await page.context().clearCookies();
     await page.reload();
+    // eslint-disable-next-line no-restricted-properties -- Checks that the count does not go up again.
     await page.waitForTimeout(1500);
     expect(await visits()).toBe(1);
 });

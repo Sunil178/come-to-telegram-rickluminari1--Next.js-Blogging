@@ -84,6 +84,7 @@ test("a reset request for an unknown email looks the same and sends nothing", as
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(page.getByText("If an account uses that email, a password reset link is on its way")).toBeVisible();
 
+    // eslint-disable-next-line no-restricted-properties -- Checks that no email is sent: nothing to wait for.
     await page.waitForTimeout(1_000);
     expect(await messagesTo(request, email)).toHaveLength(0);
 });

@@ -75,6 +75,7 @@ test("a reader's comment reaches the author as a real Web Push notification, unt
     await readerPage.getByRole("button", { name: "Comment", exact: true }).click();
     await expect(readerPage.getByText(muted)).toBeVisible();
     await expectNotification(authorPage, commentNotice, before + 1);
+    // eslint-disable-next-line no-restricted-properties -- Checks that no second push arrives while push is off.
     await authorPage.waitForTimeout(5_000);
     expect((await shownNotifications(authorPage)).filter((n) => n === expected)).toHaveLength(1);
 

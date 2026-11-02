@@ -36,6 +36,7 @@ Follow the verification loop in [method.md § 7](../kits/flow-qa/method.md#7-fix
 
 - Reproduce on a manual session (above) with the Playwright browser; save screenshots in the agent's scratch directory, not the repository.
 - Assert what a person sees: `expectSeen()` in `e2e/fixtures.ts` (scrolled into view, fully opaque); `clickNavLink()` for navbar links on desktop and phone.
+- Read the known traps first ([method.md § 8](../kits/flow-qa/method.md#8-known-traps)). ESLint enforces part of it in `e2e/` (the `no-restricted-properties` block in `eslint.config.mjs` lists the banned waits); the rule can't require the reason in a disable comment, so a review checks that each one says why.
 - After a click that changes page, wait for something only the new page has (its heading) before filling a field: the old page stays on screen until the new one arrives, and a label both pages share (login and forgot-password both have "Email") fills the old page's field.
 - To prove a test catches the bug after the fix is written: copy the fixed file aside, `git show HEAD:<path> > <path>`, `npx next build`, run the test with `-g`, then copy the fixed file back. Never use `git stash` (it changes the index).
 - Sideways scrolling: `document.documentElement.scrollWidth === clientWidth` at 390 px.

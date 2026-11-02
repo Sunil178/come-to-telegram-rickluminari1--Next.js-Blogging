@@ -71,6 +71,21 @@ When a person reports a bug, the report is evidence that the earlier testing mis
 8. **Run every supported browser.** For each failure, read the trace before changing anything: an app bug gets a fix, while a race in the test gets a test fix that you report as one. Confirm a flaky fix by repeating that test several times.
 9. **Close it out.** Update the flow document and the QA log, stop every server you started and check the ports are free, then report plainly: what was wrong, why it was missed, what changed, and the test results.
 
-## 8. Pacing
+## 8. Known traps
+
+Mistakes made while testing real projects with this method, each with the guard that stops it. Read the list before a pass; when a new mistake slips through, add it here with its guard (a helper, a lint rule, a checklist step), not just a note to be careful.
+
+| Trap | What went wrong | Guard |
+|---|---|---|
+| Present is not seen | An element at opacity 0 passed a visibility assertion | Assert what a person sees (§ 5); look at screenshots after client navigations (§ 2) |
+| Filling the old page | After a click that changes page, the old page stayed on screen and had a field with the same label, so the test typed into it | Wait for something only the new page has before filling a field |
+| Waiting on the wrong response | A response wait matched an earlier, identical response, or a load-state wait returned at once because the state was already reached | Wait on what the page shows, not on network events or load states; enforce with a lint rule where the test tool allows it |
+| Reload during a refresh | A reload cancelled the page's own in-flight refresh, and the browser aborted the reload | Check persisted state in a fresh tab or after the refresh has visibly finished |
+| Reviewing the wrong change | A review pointed at a commit reviewed that commit, not the uncommitted work | Name the review target explicitly and check what the reviewer says it reviewed |
+| Diagnosis written as fact | A suspected cause was logged as the cause before it was proven, then turned out wrong | Log a cause only after an experiment shows it (forced timing, tagged elements, a failing test); until then write "suspected" |
+| Fix checked by reasoning only | A guard added in page code never ran, because the framework failed earlier | Prove every fix with the test against the real server, not only against unit tests |
+| Status from stale docs | A feature was reported missing because an old "open items" line said so, though it had been built | Before reporting anything as missing or open, check the code and the commit history; correct the stale line in the same change |
+
+## 9. Pacing
 
 Agent sessions cost tokens, and the person paying often shares that budget across projects. Run one flow group per session, prefer accessibility snapshots for finding controls (screenshots stay mandatory where section 2 and section 7 ask for them), run one browser while exploring and the full browser matrix only at the end of a pass, and avoid agent loops that spawn one sub-agent per test case (such as Playwright's planner, generator and healer agents); this kit reuses their Markdown plan format instead.

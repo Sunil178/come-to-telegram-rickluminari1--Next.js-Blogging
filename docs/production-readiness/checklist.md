@@ -1,6 +1,6 @@
 # Checklist — production readiness
 
-**Current focus:** none — M9 committed; open items need the owner: EXIF stripping, upload quotas and search scaling decisions (docs/roadmap.md), and a real server, domain and SMTP provider (docs/deployment-checklist.md)
+**Current focus:** none — M9 committed. Upload metadata stripping and upload limits were built later in QA-M3 (f5790c7). What production still needs is listed under "Before launch" in `docs/deployment-checklist.md`; later enhancements are in `docs/roadmap.md`.
 
 Legend: `[ ]` pending · `[~]` in progress / done but uncommitted · `[x]` committed (date, hash)
 

@@ -11,4 +11,18 @@ export default defineConfig([
     {
         extends: [...nextCoreWebVitals],
     },
+    {
+        // Each banned call caused a test race here; docs/kits/flow-qa/method.md § 8 (Known traps).
+        files: ["e2e/**/*.ts"],
+        rules: {
+            "no-restricted-properties": [
+                "error",
+                { property: "waitForResponse", message: "Can match an earlier identical response; wait for what the page shows instead." },
+                { property: "waitForRequest", message: "Can match an earlier identical request; wait for what the page shows instead." },
+                { property: "waitForNavigation", message: "Deprecated and racy; wait for what the new page shows instead." },
+                { property: "waitForLoadState", message: "Returns at once when the state was already reached; wait for what the page shows instead." },
+                { property: "waitForTimeout", message: "Only for checking that nothing happens; add an eslint-disable-next-line comment saying so." },
+            ],
+        },
+    },
 ]);

@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** pass 1 complete, with the owner's follow-up rounds (QA-15..22); summary in `docs/qa/report.md`. Next pass: none scheduled.
+**Current focus:** pass 1 complete, with the owner's follow-up rounds (QA-15..27; QA-24 open); summary in `docs/qa/report.md`. Next pass: none scheduled.
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -73,20 +73,23 @@ The owner found two blank-list bugs the pass had missed. The suite asserted that
 - [ ] QA-24 (found by the suite, intermittent, Firefox; investigated, not reproduced) Once in about eight full runs of "an admin finds a user, changes their role…", the users search box showed the first query again after the second was typed right after a role change; the failure snapshot showed the role change applied and no second search sent, which points to the search box being remounted. 32 targeted runs passed. Each case was forced on purpose: the second search typed while the page's refresh was held back up to 2 s, the refresh landing at 0 to 700 ms inside the search box's 400 ms typing pause, and typing 0 to 200 ms after choosing the role while the menu closes (focus stayed in the box), in Chromium and Firefox, plus 15 plain Firefox runs. Next's router discards a pending refresh when a navigation starts, so that ordering is safe. The remaining suspect is a full page reload in Firefox (Next falls back to one when an RSC fetch fails, as in the profile test's earlier Firefox race); the test keeps its trace on failure, which will show a document reload if it recurs. No real-user impact seen: a person can't type a new search in the fraction of a second involved.
 - [x] QA-25 Page titles: twelve pages had no title of their own and showed the generic default (the users page showed "Vedev Blog"), and the site name was inconsistent ("Vedev Blog" against "Vedev.Guru"). The root layout now sets a "%s — Vedev.Guru" template; every page has a title (the auth pages, which are client components, take theirs from a small layout), and post, author and posts-list titles no longer add the suffix by hand. The users, forgot-password and author-page specs check the title; the edit page names the post being edited; share previews carry the site name (`openGraph.siteName`, repeated in the post page's own `openGraph`, which replaces the root's); login, register and forgot-password are `noindex` like the other auth pages.
 - [x] QA-26 (found by the code review of QA-23..25) A page address with a malformed percent-escape (`/users/%E0%A4%A`, `/posts/%E0%A4%A`) got a 500 from Next.js before any page code ran; `src/proxy.ts` now answers 400 (`hasMalformedEscape()` in `src/libs/route-gates.ts`, unit-tested; the author-page spec checks both addresses). API routes and `/uploads` keep Next's 500 for such addresses: putting them behind the proxy would make Next buffer every request body (`proxyClientMaxBodySize`), a real cost against a response only probing bots see. The author page also shares one cached user query between its title and its body.
+- [x] QA-27 Status check and guards against repeat mistakes. The last report listed photo-location stripping and per-user upload limits as not done, from the stale "open items" line in `docs/production-readiness/checklist.md`; both were built in QA-M3 (f5790c7) and are tested (`e2e/uploads.spec.ts`, `src/libs/image-upload.test.ts`). The stale line is corrected, and `AGENTS.md` now requires checking the code and `git log` before reporting anything as missing. Every testing mistake made so far is listed with its guard in `docs/kits/flow-qa/method.md` § 8 (Known traps), and ESLint enforces part of it in `e2e/` (`eslint.config.mjs` bans network and load-state waits and allows `waitForTimeout` only with a disable comment; that the comment gives a reason is checked in review, since ESLint can't require it). `docs/deployment-checklist.md` opens with a "Before launch" table of what production still needs and who does it.
 - Not a finding: the Edge push test timed out once waiting for the message from Microsoft's push service and passed twice on re-run; it depends on that external service.
 
 ## Flow groups
 
-- [ ] Accounts
-- [ ] Account self-service
-- [ ] Reading
-- [ ] Writing
-- [ ] Moderation
-- [ ] Comments
-- [ ] Votes
-- [ ] Publish requests
-- [ ] Notifications
-- [ ] Administration
-- [ ] Privacy and consent
-- [ ] Platform
-- [ ] Final multi-browser run and pass report
+Each group was tested, documented in `docs/flows/` and automated across QA-M1 to QA-M5 (b136878 to b655fc7).
+
+- [x] Accounts
+- [x] Account self-service
+- [x] Reading
+- [x] Writing
+- [x] Moderation
+- [x] Comments
+- [x] Votes
+- [x] Publish requests
+- [x] Notifications
+- [x] Administration
+- [x] Privacy and consent
+- [x] Platform
+- [x] Final multi-browser run and pass report (503b23a)

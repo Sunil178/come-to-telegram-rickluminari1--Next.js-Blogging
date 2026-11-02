@@ -12,7 +12,7 @@ It gives a project two things that reinforce each other:
 | File | Purpose |
 |---|---|
 | [flow-doc-standard.md](flow-doc-standard.md) | The flow document format and the industry practices it combines |
-| [method.md](method.md) | The QA procedure: sessions, reconnaissance, coverage heuristics, edge cases, oracles, recording findings, and the verification loop for a reported bug |
+| [method.md](method.md) | The QA procedure: sessions, reconnaissance, coverage heuristics, edge cases, oracles, recording findings, the verification loop for a reported bug, and the known traps with their guards |
 | [templates/flow.md](templates/flow.md) | Skeleton for one flow group's document |
 | [templates/inventory.md](templates/inventory.md) | Skeleton for the project's flow index (`docs/flows/README.md`) |
 | [templates/project-profile.md](templates/project-profile.md) | Skeleton for the project-specific QA setup: servers, test data, accounts, email capture, commands |

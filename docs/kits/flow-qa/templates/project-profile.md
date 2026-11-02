@@ -29,6 +29,7 @@ Helpers for creating extra users and records inside tests: <file and function na
 
 The project's specifics for the verification loop in `docs/kits/flow-qa/method.md` § 7:
 
+- Guards for the known traps (`method.md` § 8) that this project enforces: <e.g. lint rules banning network and load-state waits in end-to-end tests, helpers that wait for the new page>
 - Helpers that assert what a person sees: <e.g. a fully-opaque-and-scrolled-into-view check, a navbar helper that handles the phone menu>
 - How to run a test against the unfixed code: <e.g. copy the fixed file aside, restore the committed version, rebuild, run the test, copy the fix back; never a command that changes the version-control index>
 - How to review the uncommitted diff: <the reviewer or command, and how to point it at the diff rather than a commit>
