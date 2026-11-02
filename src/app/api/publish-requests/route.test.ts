@@ -18,6 +18,7 @@ vi.mock("@/models/PublishRequest", () => ({
     default: {
         findOne: (...args: unknown[]) => findOneMock(...args),
         create: (...args: unknown[]) => createMock(...args),
+        updateOne: vi.fn().mockResolvedValue({}),
         findById: () => ({ select: () => ({ lean: () => requestStatusMock() }) }),
     },
 }));
@@ -27,17 +28,20 @@ vi.mock("@/libs/review-notifications", () => ({ markRequestNotificationsRead: (.
 const userSelectMock = vi.fn();
 const userFindByIdMock = vi.fn().mockReturnValue({ select: userSelectMock });
 const userFindMock = vi.fn();
+const userUpdateMock = vi.fn();
 vi.mock("@/models/User", () => ({
     default: {
         findById: (...args: unknown[]) => userFindByIdMock(...args),
         find: (...args: unknown[]) => ({ select: () => ({ lean: () => userFindMock(...args) }) }),
+        updateOne: (...args: unknown[]) => userUpdateMock(...args),
     },
 }));
 
 const { POST } = await import("@/app/api/publish-requests/route");
 
-function request() {
-    return new NextRequest("http://localhost/api/publish-requests", { method: "POST" });
+const APPLICATION = { motivation: "I write about distributed systems every week.", writingSample: "A sample paragraph. ".repeat(8) };
+function request(body: Record<string, unknown> = APPLICATION) {
+    return new NextRequest("http://localhost/api/publish-requests", { method: "POST", body: JSON.stringify(body) });
 }
 
 describe("POST /api/publish-requests", () => {
@@ -78,7 +82,7 @@ describe("POST /api/publish-requests", () => {
         const response = await POST(request(), {});
 
         expect(response.status).toBe(200);
-        expect(createMock).toHaveBeenCalledWith({ userId: "u1" });
+        expect(createMock).toHaveBeenCalledWith({ userId: "u1", motivation: APPLICATION.motivation, writingSample: APPLICATION.writingSample.trim() });
     });
 
     it("answers a concurrent duplicate (unique index violation) as an existing pending request", async () => {
@@ -102,7 +106,33 @@ describe("POST /api/publish-requests", () => {
         const response = await POST(request(), {});
 
         expect(response.status).toBe(200);
-        expect(createMock).toHaveBeenCalledWith({ userId: "u1" });
+        expect(createMock).toHaveBeenCalledWith({ userId: "u1", motivation: APPLICATION.motivation, writingSample: APPLICATION.writingSample.trim() });
+    });
+});
+
+describe("POST /api/publish-requests application", () => {
+    beforeEach(() => {
+        authMock.mockResolvedValue({ user: { id: "u1", role: "reader" } });
+        userSelectMock.mockResolvedValue({ role: "reader" });
+        findOneMock.mockResolvedValue(null);
+        createMock.mockReset().mockResolvedValue({ _id: "new1" });
+        userUpdateMock.mockReset();
+    });
+
+    it("refuses a too-short motivation or writing sample", async () => {
+        expect((await POST(request({ ...APPLICATION, motivation: "Please" }), {})).status).toBe(400);
+        expect((await POST(request({ ...APPLICATION, writingSample: "Too short." }), {})).status).toBe(400);
+        expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it("saves the profile fields from the form to the applicant's profile", async () => {
+        await POST(request({ ...APPLICATION, topics: "rust, databases", website: "https://me.example", phone: "+1 555 0100" }), {});
+        expect(userUpdateMock).toHaveBeenCalledWith({ _id: "u1" }, { $set: { "profile.topics": ["rust", "databases"], "profile.website": "https://me.example" } });
+    });
+
+    it("refuses invalid profile fields before creating the request", async () => {
+        expect((await POST(request({ ...APPLICATION, website: "nope" }), {})).status).toBe(400);
+        expect(createMock).not.toHaveBeenCalled();
     });
 });
 

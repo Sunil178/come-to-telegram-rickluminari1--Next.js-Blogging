@@ -47,3 +47,18 @@ export async function login(page: Page, email: string, password = PASSWORD, call
     await page.getByRole("button", { name: "Login" }).click();
     await expect(page).toHaveURL(new RegExp(`${callbackUrl.replace(/[/?]/g, "\\$&")}$`));
 }
+
+export const APPLICATION = {
+    motivation: "I have written about web performance for five years and want to share it here.",
+    sample: "Caching is the cheapest performance win most sites never take. ".repeat(3),
+};
+
+// Opens the request-to-publish form from /dashboard/posts and sends it.
+export async function submitApplication(page: Page, button = "Request to publish") {
+    await page.getByRole("button", { name: button }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Why do you want to write here?").fill(APPLICATION.motivation);
+    await dialog.getByLabel("Writing sample").fill(APPLICATION.sample);
+    await dialog.getByRole("button", { name: "Send request" }).click();
+    await expect(page.getByText("Request sent — an admin will review it.")).toBeVisible();
+}

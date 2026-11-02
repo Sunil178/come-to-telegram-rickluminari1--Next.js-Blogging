@@ -15,6 +15,7 @@ import { logger } from "@/libs/logger";
 import { consentedVisitorId } from "@/libs/visitor";
 import { stitchVisitor } from "@/libs/visitor-events";
 import { PASSWORD_RULE } from "@/libs/password-policy";
+import { recordSignupIp } from "@/libs/ip-history";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -45,7 +46,8 @@ export async function registerAction(initialState: RegisterState, formData: Form
     }
 
     // Counted after validation, so fixing form errors doesn't use up the budget.
-    if (!(await consumeRegistrationAttempt(getClientIp({ headers: await headers() })))) {
+    const ip = getClientIp({ headers: await headers() });
+    if (!(await consumeRegistrationAttempt(ip))) {
         return { error: "Too many registration attempts. Please try again later." };
     }
 
@@ -71,6 +73,7 @@ export async function registerAction(initialState: RegisterState, formData: Form
             // Without SMTP there's no way to verify, so accounts start verified.
             emailVerifiedAt: mustVerify ? null : new Date(),
         });
+        after(() => recordSignupIp(user.id, ip));
         const visitorId = consentedVisitorId(await cookies());
         if (visitorId) await stitchVisitor(visitorId, user.id);
         if (mustVerify) {

@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const NOTICES: Record<string, string> = {
     "registered:verify": "Account created. We've emailed you a link to confirm your address; confirm it, then log in.",
     "registered:1": "Account created. You can log in now.",
+    "passwordChanged:1": "Password changed. Log in with your new password.",
     "verified:1": "Email confirmed. You can log in now.",
     "reset:1": "Password changed. Log in with your new password.",
 };
@@ -36,7 +37,7 @@ function LoginForm() {
 
     // Catch errors passed in the URL (e.g. from the proxy redirect on an expired session)
     const urlError = searchParams.get("error");
-    const notice = ["registered", "verified", "reset"]
+    const notice = ["registered", "verified", "reset", "passwordChanged"]
         .map((key) => NOTICES[`${key}:${searchParams.get(key)}`])
         .find(Boolean);
 

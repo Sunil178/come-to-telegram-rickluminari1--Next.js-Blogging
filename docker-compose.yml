@@ -15,11 +15,15 @@ services:
     environment:
       MONGODB_URI: ${COMPOSE_MONGODB_URI:-mongodb://mongo:27017/blog}
       UPLOAD_DIR: /app/uploads
+      GEOIP_DB_PATH: /app/geoip/dbip-city-lite.mmdb
       TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     volumes:
       - uploads:/app/uploads
+      # Filled by `npm run geoip:download` on the host (the folder is in the repository, so Docker
+      # doesn't create it as root); without the file, locations are off.
+      - ./data/geoip:/app/geoip:ro
     depends_on:
       mongo:
         condition: service_healthy

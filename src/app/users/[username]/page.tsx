@@ -9,6 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ArticleGrid from "@/components/posts/ArticleGrid";
 import ArticleCard, { toArticleCardData } from "@/components/posts/ArticleCard";
 import VoteButtons from "@/components/votes/VoteButtons";
+import { Badge } from "@/components/ui/badge";
+import { profileLinks, type PublicProfile } from "@/libs/profile";
+import type { Types } from "mongoose";
 import { publicPostFilter } from "@/libs/post-visibility";
 
 interface ProfilePageProps {
@@ -27,8 +30,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     const username = decodeURIComponent(rawUsername);
 
     const profileUser = await User.findOne({ username })
-        .select("username avatar intro profile upvoteCount downvoteCount")
-        .lean();
+        .select("username avatar profile upvoteCount downvoteCount")
+        .lean<{ _id: Types.ObjectId; username: string; avatar?: string; profile?: PublicProfile; upvoteCount?: number; downvoteCount?: number }>();
     if (!profileUser) notFound();
 
     const session = await getSession();
@@ -57,8 +60,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <h1 className="mt-4 font-heading text-4xl font-semibold tracking-tight text-foreground">
                     {profileUser.username}
                 </h1>
-                {profileUser.intro && <p className="mt-2 text-muted-foreground">{profileUser.intro}</p>}
-                {profileUser.profile && <p className="mt-4 max-w-xl text-sm text-foreground">{profileUser.profile}</p>}
+                <ProfileDetails profile={profileUser.profile ?? {}} />
 
                 {!isOwnProfile && (
                     <div className="mt-6">
@@ -90,5 +92,49 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 </div>
             </div>
         </div>
+    );
+}
+
+function hostOf(url: string): string {
+    try {
+        return new URL(url).host.replace(/^www\./, "");
+    } catch {
+        return url;
+    }
+}
+
+function ProfileDetails({ profile }: { profile: PublicProfile }) {
+    const place = [profile.city, profile.country].filter(Boolean).join(", ");
+    const links = profileLinks(profile);
+    const tags = [...(profile.expertise ?? []), ...(profile.topics ?? [])];
+    return (
+        <>
+            {profile.headline && <p className="mt-2 text-muted-foreground">{profile.headline}</p>}
+            {(place || profile.education) && (
+                <p className="mt-2 text-sm text-muted-foreground">{[place, profile.education].filter(Boolean).join(" · ")}</p>
+            )}
+            {profile.bio && <p className="mt-4 max-w-xl text-sm whitespace-pre-wrap text-foreground">{profile.bio}</p>}
+            {tags.length > 0 && (
+                <ul className="mt-4 flex max-w-xl flex-wrap justify-center gap-2" aria-label="Expertise and topics">
+                    {[...new Set(tags)].map((tag) => (
+                        <li key={tag}>
+                            <Badge variant="secondary">{tag}</Badge>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {links.length > 0 && (
+                <ul className="mt-4 flex flex-wrap justify-center gap-4 text-sm" aria-label="Links">
+                    {links.map((link) => (
+                        <li key={link}>
+                            {/* ugc + nofollow: user-supplied links shouldn't pass the site's reputation. */}
+                            <a href={link} rel="ugc nofollow noopener noreferrer" target="_blank" className="text-primary hover:underline">
+                                {hostOf(link)}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </>
     );
 }

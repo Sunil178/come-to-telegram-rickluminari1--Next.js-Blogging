@@ -35,12 +35,15 @@ export default function PrivacyPage() {
 
             <Section title="What we store">
                 <ul className="flex flex-col gap-2">
-                    <li><strong>Your account:</strong> username, name, email address, a one-way hash of your password (never the password itself), your role, profile text you add, and when you last signed in. Needed to run your account.</li>
+                    <li><strong>Your account:</strong> username, name, email address, a one-way hash of your password (never the password itself), your role and your profile photo. Needed to run your account.</li>
+                    <li><strong>Profile, only what you choose to add:</strong> a public part shown on your author page (headline, bio, country, city, website and links, expertise, topics, education) and private details only you and the site&apos;s admins see (date of birth, gender, phone, address). Every field is optional; edit or clear it any time from <Link href="/dashboard/account" className="text-primary hover:underline">Account</Link>.</li>
+                    <li><strong>Requests to publish:</strong> why you want to write and your writing sample, kept with the request so admins can review it.</li>
+                    <li><strong>Where you sign in from:</strong> the IP address and its approximate location (country, region, city) when you create your account, when you last signed in and when you ask to publish. Only admins see them, to judge requests to publish and to spot abuse. They&apos;re kept for as long as your account exists.</li>
                     <li><strong>What you write and do:</strong> posts and their earlier revisions, comments, and votes. Posts and comments are public once published; votes are not shown individually.</li>
                     <li><strong>Notifications:</strong> the in-app notifications you receive and your notification settings. {ttlDays > 0 ? `Read notifications are deleted after ${ttlDays} days.` : "Notifications are kept while your account exists."}</li>
                     <li><strong>Push notifications:</strong> if you turn them on, the delivery address your browser gives us. It&apos;s removed when you sign out or turn push off. Push messages travel through your browser maker&apos;s push service (for example Google or Mozilla).</li>
                     <li><strong>Reading history, only if you accept cookies:</strong> which posts this browser read, kept for {VISITOR_EVENT_TTL_DAYS} days and linked to your account when you sign in, to suggest posts you&apos;ll like. Declining, or withdrawing consent later, deletes this browser&apos;s history.</li>
-                    <li><strong>Technical data:</strong> your IP address is used briefly to count each post view once and to rate-limit sign-in attempts; for view counting we keep only a one-way hash of it for 30 minutes. Server logs record errors and request paths for troubleshooting.</li>
+                    <li><strong>Technical data:</strong> your IP address is used briefly to count each post view once and to rate-limit sign-in attempts; for view counting we keep only a one-way hash of it for 30 minutes. Server logs record errors and request paths for troubleshooting. Locations come from an offline database on our server; your address isn&apos;t sent to anyone else.</li>
                     <li><strong>Emails:</strong> verification and password-reset links are sent through our email provider. The links expire after 24 hours and 1 hour and work once.</li>
                 </ul>
             </Section>
@@ -59,10 +62,17 @@ export default function PrivacyPage() {
             <Section title="Your choices and rights">
                 <ul className="flex flex-col gap-2">
                     <li><strong>See your data:</strong> download everything we store about your account from <Link href="/dashboard/account" className="text-primary hover:underline">Account</Link>.</li>
-                    <li><strong>Correct it:</strong> edit your posts and comments, or contact us for anything else.</li>
+                    <li><strong>Correct it:</strong> edit your profile, posts and comments, or contact us for anything else.</li>
                     <li><strong>Delete it:</strong> delete your account from <Link href="/dashboard/account" className="text-primary hover:underline">Account</Link>. Your account, posts, votes, notifications and reading history are removed permanently; your comments on other people&apos;s posts are replaced by &ldquo;[deleted]&rdquo; so replies to them still make sense. Backups containing it are overwritten within our backup retention period.</li>
                     <li><strong>Withdraw consent:</strong> use &ldquo;Cookie preferences&rdquo; to stop reading history.</li>
                 </ul>
+            </Section>
+
+            <Section title="Credits">
+                <p>
+                    <a href="https://db-ip.com" className="text-primary hover:underline">IP Geolocation by DB-IP</a>, licensed under{" "}
+                    <a href="https://creativecommons.org/licenses/by/4.0/" className="text-primary hover:underline">CC BY 4.0</a>.
+                </p>
             </Section>
 
             <Section title="Contact">

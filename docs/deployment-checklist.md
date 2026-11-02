@@ -43,8 +43,9 @@ Generate fresh values for this environment; never reuse local or staging ones. E
 
 1. `git clone` the repository on the server, add `.env`, then `docker compose --profile proxy up -d --build`.
 2. Create the first admin: `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin` (from the checkout, with Node installed).
-3. Schedule backups and the offsite copy ([procedure](procedures/backup-restore.md)), then run one backup and one restore drill.
-4. Smoke test in a real browser: register (the email arrives and isn't in spam), verify, sign in, write a post, approve it as admin, comment from another account, enable push notifications, reset a password, download your data.
+3. Download the IP geolocation database (`npm run geoip:download` in the checkout; Compose mounts `./data/geoip`) and schedule a monthly refresh, for example `0 4 2 * * cd /srv/vedev-blog && npm run geoip:download` (the app reloads the file on its own).
+4. Schedule backups and the offsite copy ([procedure](procedures/backup-restore.md)), then run one backup and one restore drill.
+5. Smoke test in a real browser: register (the email arrives and isn't in spam), verify, sign in, write a post, approve it as admin, comment from another account, enable push notifications, reset a password, download your data.
 
 ## 6. Monitoring
 

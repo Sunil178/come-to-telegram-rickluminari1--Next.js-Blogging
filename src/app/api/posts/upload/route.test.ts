@@ -6,14 +6,12 @@ vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({
     auth: authMock,
 }));
 
-const existsSyncMock = vi.fn().mockReturnValue(true);
 const mkdirSyncMock = vi.fn();
 const writeFileSyncMock = vi.fn();
-vi.mock("fs", () => ({
+vi.mock("node:fs/promises", () => ({
     default: {
-        existsSync: (...args: unknown[]) => existsSyncMock(...args),
-        mkdirSync: (...args: unknown[]) => mkdirSyncMock(...args),
-        writeFileSync: (...args: unknown[]) => writeFileSyncMock(...args),
+        mkdir: async (...args: unknown[]) => mkdirSyncMock(...args),
+        writeFile: async (...args: unknown[]) => writeFileSyncMock(...args),
     },
 }));
 
@@ -32,7 +30,6 @@ const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 
 describe("POST /api/posts/upload", () => {
     beforeEach(() => {
-        existsSyncMock.mockClear();
         mkdirSyncMock.mockClear();
         writeFileSyncMock.mockClear();
         authMock.mockResolvedValue({ user: { id: "u1", username: "alice", role: "author" } });

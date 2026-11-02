@@ -1,8 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 import webpush from "web-push";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 // End-to-end smoke suite against a production build (`npm run test:e2e` builds first).
 // Always an isolated database: e2e/seed.ts refuses names that don't end in `_e2e`.
+const GEOIP_DB = resolve("data/geoip/dbip-city-lite.mmdb");
 const PORT = Number(process.env.E2E_PORT ?? 5100);
 // E2E_BASE_URL targets an already-running deployment (e.g. the Docker image) instead of starting
 // `next start`; seed its database first with `MONGODB_URI=... npx tsx e2e/seed.ts`, and point its
@@ -56,6 +59,8 @@ export default defineConfig({
             VAPID_PUBLIC_KEY: VAPID.publicKey,
             VAPID_PRIVATE_KEY: VAPID.privateKey,
             VAPID_CONTACT_EMAIL: "mailto:e2e@example.com",
+            // The downloaded DB-IP database when present (npm run geoip:download); profile.spec checks real locations with it.
+            ...(existsSync(GEOIP_DB) ? { GEOIP_DB_PATH: GEOIP_DB } : {}),
         },
     },
 });

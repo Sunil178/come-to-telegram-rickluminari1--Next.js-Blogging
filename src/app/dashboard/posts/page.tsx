@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import PostsManageView, { type PostsManageSearchParams } from "@/components/dashboard/PostsManageView";
 import RequestPublishButton, { type RequestStatus } from "@/components/dashboard/RequestPublishButton";
 import PublishRequest from "@/models/PublishRequest";
+import User from "@/models/User";
+import type { PublicProfile } from "@/libs/profile";
 
 interface DashboardPostsPageProps {
     searchParams: Promise<PostsManageSearchParams>;
@@ -26,6 +28,7 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
         ? null
         : await PublishRequest.findOne({ userId: session.user.id }).sort({ createdAt: -1 }).select("status reviewedAt").lean<{ status: RequestStatus; reviewedAt: Date | null }>();
     const requestStatus = currentRequestStatus(lastRequest);
+    const profile = isAuthor ? null : (await User.findById(session.user.id).select("profile").lean<{ profile?: PublicProfile }>())?.profile ?? {};
 
     return (
         <PostsManageView
@@ -41,6 +44,14 @@ export default async function DashboardPostsPage({ searchParams }: DashboardPost
                 ) : (
                     <RequestPublishButton
                         initialStatus={requestStatus}
+                        profile={{
+                            headline: profile?.headline ?? "",
+                            bio: profile?.bio ?? "",
+                            website: profile?.website ?? "",
+                            links: profile?.links ?? [],
+                            expertise: profile?.expertise ?? [],
+                            topics: profile?.topics ?? [],
+                        }}
                     />
                 )
             }

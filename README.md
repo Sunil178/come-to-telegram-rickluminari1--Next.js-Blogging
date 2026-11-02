@@ -48,6 +48,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |
 | `UPLOAD_DIR` | no | Directory uploaded images are stored in and served from at `/uploads/...` (default `uploads/`; `/app/uploads` in Docker) |
+| `GEOIP_DB_PATH` | no | DB-IP City Lite database (`npm run geoip:download`, refresh monthly) used to show admins the approximate location of sign-up, sign-in and publish-request addresses; unset, locations are off. Loaded into memory on first use (about 130 MB) and reloaded when the file changes. Compose mounts `./data/geoip` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
 | `NOTIFICATION_READ_TTL_DAYS` | no | Days read notifications are kept before MongoDB's TTL monitor deletes them (default 90; `0` keeps them forever). Applied at server start; unread notifications never expire |
 | `PRIVACY_CONTACT_EMAIL` | no | Address shown on `/privacy` for data requests; without it the page says to contact the site administrator |
@@ -65,6 +66,7 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `npm run test:e2e:browsers` | The same suite in Chromium, Google Chrome, Microsoft Edge, Firefox and a phone viewport |
 | `npm run lint` | ESLint |
 | `npm run seed` | Seed demo data into `MONGODB_URI` |
+| `npm run geoip:download` | Download this month's DB-IP City Lite database to `GEOIP_DB_PATH` (default `data/geoip/dbip-city-lite.mmdb`) |
 | `npm run bootstrap-admin` | Create or promote the first admin |
 
 ## Testing

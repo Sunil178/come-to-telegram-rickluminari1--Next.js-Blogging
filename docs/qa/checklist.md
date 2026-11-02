@@ -2,7 +2,7 @@
 
 A real-user QA pass over every flow group in `docs/flows/README.md`, following `docs/procedures/qa-testing.md`. One group per session; each group ends with its flow document written, its findings fixed or recorded as owner decisions, and its scenarios automated. The agent commits each milestone after tests, a code review and real-browser verification (D-13).
 
-**Current focus:** QA-M2
+**Current focus:** QA-M3
 
 Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
 
@@ -37,9 +37,14 @@ Legend: `[ ]` pending · `[~]` done, uncommitted · `[x]` committed
   - QA-11 Deleting a category and removing a comment in admin happened on one click: both ask first (`ConfirmIconButton`).
   - QA-12 Admin comments showed only the latest 20 and users had no search or paging: both have search and pagination.
   - QA-13 No page had a `<main>` landmark, and the footer (with the privacy link and cookie preferences) only appeared on the home page: the root layout wraps pages in `<main>` and renders the footer on every page.
-  - QA-14 Signed-in users can't change their password without the emailed reset link (unavailable without SMTP): scheduled for QA-M2 with the account section.
+  - QA-14 Signed-in users can't change their password without the emailed reset link (unavailable without SMTP): fixed in QA-M2: the account page has a change-password form.
   - Review (`/code-review high 846b70d`): 9 findings, all fixed: a deleted or hidden category no longer blocks saving a post; post-review notifications written after a fast review or a deletion are marked read; the resubmit banner shows only to the post's author; deleting a post clears its review notifications; admin paging sorts with an `_id` tiebreaker; repeated query parameters (`?q=a&q=b`) no longer crash list pages (`src/libs/search-params.ts`, shared page parsing); the post page links its category only when the posts page can filter by it; marking reviews read runs after the response.
-- [ ] QA-M2 Profiles, application form, admin review page, IP and location, change password (QA-14)
+- [x] QA-M2 Profiles, application form, admin review page, IP and location, change password (QA-14). New spec `profile`; geolocation verified for real (8.8.8.8 → Mountain View, California, United States) with the downloaded DB-IP City Lite database.
+  - Account page: photo upload and removal, public profile (headline, bio, country, city, website, links, expertise, topics, education), private details (date of birth with a 13+ check, gender, phone, address), change password (current password checked, signs every session out). Author pages show the public profile; private details never leave the account and admin pages.
+  - Request to publish opens an application form (motivation and writing sample kept on the request; headline, bio, website, links, expertise and topics prefilled from and saved back to the profile).
+  - Admin review page `/dashboard/admin/requests/[id]`: application, account and activity (age, verification, comments and votes, earlier requests), addresses with location (sign-up, last sign-in, request), public profile and private details, with approve and reject; the list links to it and shows where each request came from.
+  - IP and location recorded at sign-up, sign-in and request (`src/libs/geoip.ts`, `maxmind` reader over `GEOIP_DB_PATH`, `npm run geoip:download`), kept without expiry, removed with the account; privacy page and DB-IP attribution updated; included in the data export.
+  - Review (`/code-review high b136878`): 10 findings, all fixed: accounts with an old plain-string `profile` can save the new profile; the application's profile write happens before the request exists; seed users carry structured profiles; replaced and removed photos (and a deleted account's photo) are deleted from disk once unused; changing the password also drops push and drafts like logging out; the geolocation file reloads after the monthly download; `data/geoip` ships in the repository so Docker doesn't create it as root; password change validates with the shared `PASSWORD_RULE`; duplicate links are dropped; list parsing lives only on the server.
 - [ ] QA-M3 Uploads: private metadata, GPS stripped, limits, unused-uploads admin page
 - [ ] QA-M4 Search text index and related-posts lookup
 - [ ] QA-M5 Reusable flow-doc and QA kit, and flow documents per group

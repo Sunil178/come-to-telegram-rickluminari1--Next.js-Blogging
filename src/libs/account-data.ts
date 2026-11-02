@@ -1,4 +1,3 @@
-import { unlink } from "node:fs/promises";
 import type { Types } from "mongoose";
 import type { SoftDeleteModel } from "mongoose-delete";
 import User from "@/models/User";
@@ -14,9 +13,8 @@ import AuthToken from "@/models/AuthToken";
 import PublishRequest from "@/models/PublishRequest";
 import VisitorEvent from "@/models/VisitorEvent";
 import { ROLES } from "@/libs/roles";
-import { resolveUploadPath, UPLOAD_URL_PREFIX } from "@/libs/uploads";
-import { escapeRegExp } from "@/libs/search-query";
-import { logger } from "@/libs/logger";
+import { UPLOAD_URL_PREFIX } from "@/libs/uploads";
+import { removeUploadIfUnused } from "@/libs/upload-cleanup";
 
 const SoftPost = Post as unknown as SoftDeleteModel<IPost>;
 const SoftComment = Comment as unknown as SoftDeleteModel<IComment>;
@@ -41,7 +39,7 @@ export async function exportAccountData(userId: string) {
         Notification.find({ recipientId: userId }).select("-__v -recipientId").lean(),
         // The endpoint and keys are delivery secrets of the browser, not something the user needs back.
         PushSubscription.find({ userId }).select("createdAt").lean(),
-        PublishRequest.find({ userId }).select("status createdAt reviewedAt").lean(),
+        PublishRequest.find({ userId }).select("status motivation writingSample requestedFrom createdAt reviewedAt").lean(),
         VisitorEvent.find({ userId }).select("postId type createdAt").lean(),
     ]);
     return {
@@ -81,16 +79,11 @@ function uploadedFiles(posts: { bannerImage?: string; content?: string }[]): str
     return [...new Set(urls.filter((url) => url.startsWith(`${UPLOAD_URL_PREFIX}/`)))];
 }
 
-// Another author may have reused the same image URL; their copy must keep working.
-async function stillReferenced(url: string): Promise<boolean> {
-    const filter = { $or: [{ bannerImage: url }, { content: { $regex: escapeRegExp(url) } }] };
-    return Boolean(await SoftPost.findOneWithDeleted(filter).select("_id").lean());
-}
-
 /**
  * Permanently deletes the account (decision D-09): the user's own content goes with it, their
  * comments under other people's posts become "[deleted]" placeholders so replies keep their thread.
- * The user record is removed last, so a failure part-way can be retried by signing in again.
+ * The user record is removed after the content, so a failure part-way can be retried by signing in again;
+ * its uploaded files go last, once nothing references them.
  */
 export async function deleteAccount(userId: string): Promise<void> {
     const posts = await SoftPost.findWithDeleted({ userId }).select("_id bannerImage content").lean<{ _id: Types.ObjectId; bannerImage?: string; content?: string }[]>();
@@ -124,13 +117,9 @@ export async function deleteAccount(userId: string): Promise<void> {
         VisitorEvent.deleteMany({ userId }),
     ]);
     await Post.deleteMany({ _id: { $in: postIds } });
-
-    for (const url of uploadedFiles(posts)) {
-        if (await stillReferenced(url)) continue;
-        const path = resolveUploadPath(url.slice(UPLOAD_URL_PREFIX.length + 1).split("/"));
-        if (path) await unlink(path).catch((error) => {
-            if (error.code !== "ENOENT") logger.warn("Failed to remove an uploaded file of a deleted account", { path, error });
-        });
-    }
+    const avatar = (await User.findById(userId).select("avatar").lean<{ avatar?: string }>())?.avatar;
     await User.deleteOne({ _id: userId });
+
+    // Another author may have reused the same image URL; their copy keeps working.
+    for (const url of [...uploadedFiles(posts), ...(avatar ? [avatar] : [])]) await removeUploadIfUnused(url);
 }

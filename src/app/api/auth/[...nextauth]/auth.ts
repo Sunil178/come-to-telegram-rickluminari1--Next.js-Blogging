@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import User from "@/models/User";
 import authConfig from "@/auth.config";
 import { compare } from "bcrypt";
+import { recordLoginIp } from "@/libs/ip-history";
 import { getClientIp } from "@/libs/client-ip";
 import { beginLoginAttempt, recordLoginSuccess } from "@/libs/auth-rate-limit";
 import { isMailConfigured } from "@/libs/mailer";
@@ -52,6 +53,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     // recordLoginSuccess, so a refused login neither refunds attempts nor marks the IP trusted.
                     if (user.emailVerifiedAt === null && isMailConfigured()) throw new EmailUnverifiedSignin();
                     await recordLoginSuccess(ip, credentials.username);
+                    // Not awaited: the geolocation lookup shouldn't delay signing in.
+                    void recordLoginIp(user.id, ip);
                     const visitorId = consentedVisitorId(cookiesFromHeader(request.headers.get("cookie")));
                     if (visitorId) await stitchVisitor(visitorId, user.id);
                     const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();

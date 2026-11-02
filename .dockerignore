@@ -19,3 +19,4 @@ coverage
 npm-debug.log*
 backups
 deploy/staging
+data/geoip

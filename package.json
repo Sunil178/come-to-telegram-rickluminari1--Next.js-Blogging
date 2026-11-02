@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "seed": "tsx --env-file=.env ./src/seeds/seeder.ts",
     "bootstrap-admin": "tsx --env-file=.env ./src/scripts/bootstrap-admin.ts",
+    "geoip:download": "tsx ./src/scripts/download-geoip.ts",
     "test:e2e": "next build && playwright test --project=chromium",
     "test:e2e:browsers": "next build && for p in chromium chrome msedge firefox mobile; do playwright test --project=$p || exit 1; done"
   },
@@ -40,6 +41,7 @@
     "jsdom": "^30.0.1",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.31.0",
+    "maxmind": "^5.0.7",
     "mongoose": "^9.9.2",
     "mongoose-delete": "^1.0.7",
     "motion": "^13.1.0",

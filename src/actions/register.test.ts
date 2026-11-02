@@ -22,6 +22,9 @@ vi.mock("@/models/User", () => ({
     default: { findOne: (...args: unknown[]) => ({ collation: () => findOneMock(...args) }), create: (...args: unknown[]) => createMock(...args) },
 }));
 
+const recordSignupMock = vi.fn();
+vi.mock("@/libs/ip-history", () => ({ recordSignupIp: (...args: unknown[]) => recordSignupMock(...args) }));
+
 const { registerAction } = await import("@/actions/register");
 
 function form(overrides: Record<string, string> = {}) {
@@ -74,6 +77,12 @@ describe("registerAction email verification", () => {
 
         expect(createMock.mock.calls[0][0].emailVerifiedAt).toBeNull();
         expect(sendVerificationMock).toHaveBeenCalledWith({ id: "u1", email: "v@example.com", username: "verifyme" });
+    });
+
+    it("records the address the account was created from", async () => {
+        createMock.mockResolvedValue({ id: "u-new", email: "new@example.com", username: "newuser" });
+        await registerAction({}, form({ email: `ip${Date.now()}@example.com` }));
+        expect(recordSignupMock).toHaveBeenCalledWith("u-new", clientIp);
     });
 
     it("creates the account verified when SMTP isn't configured", async () => {

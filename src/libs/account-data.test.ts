@@ -9,6 +9,8 @@ const { log, data, model } = vi.hoisted(() => {
         find: (filter: unknown) => query(data[name]?.find ?? []),
         findWithDeleted: (filter: unknown) => query(data[name]?.findWithDeleted ?? []),
         findOneWithDeleted: (filter: unknown) => query(data[name]?.findOneWithDeleted ?? null),
+        findById: (id: unknown) => query(data[name]?.findById ?? null),
+        exists: async (filter: unknown) => data[name]?.exists ?? null,
         updateManyWithDeleted: async (filter: unknown, update: unknown) => log.push([name, "updateManyWithDeleted", filter, update]),
         bulkWrite: async (ops: unknown) => log.push([name, "bulkWrite", ops]),
         deleteMany: async (filter: unknown) => log.push([name, "deleteMany", filter]),
@@ -73,5 +75,16 @@ describe("deleteAccount", () => {
         data.Post.findOneWithDeleted = { _id: "someone-elses-post" };
         await deleteAccount("u1");
         expect(unlinkMock).not.toHaveBeenCalled();
+    });
+
+    it("removes the profile photo too, unless another account uses the same file", async () => {
+        data.User = { findById: { avatar: "/uploads/me.png" } };
+        await deleteAccount("u1");
+        expect(unlinkMock.mock.calls.map(([path]) => path)).toContain("/data/me.png");
+
+        unlinkMock.mockClear();
+        data.User = { findById: { avatar: "/uploads/me.png" }, exists: { _id: "someone-else" } };
+        await deleteAccount("u1");
+        expect(unlinkMock.mock.calls.map(([path]) => path)).not.toContain("/data/me.png");
     });
 });

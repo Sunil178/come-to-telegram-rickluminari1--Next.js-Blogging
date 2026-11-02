@@ -1,5 +1,5 @@
 import { type Browser } from "@playwright/test";
-import { expect, expectNotification, login, newPage, SEEDED_POST, test, USERS } from "./fixtures";
+import { expect, expectNotification, login, newPage, SEEDED_POST, submitApplication, test, USERS } from "./fixtures";
 import { createUser, withDb } from "./db";
 
 async function upvoteSeededPost(browser: Browser, email: string) {
@@ -60,11 +60,10 @@ test("a reader's request to publish reaches the admins, and the approval reaches
     const newbie = await createUser(`e2e.newbie${Date.now()}`);
     const newbiePage = await newPage(browser);
     await login(newbiePage, newbie.email, undefined, "/dashboard/posts");
-    await newbiePage.getByRole("button", { name: "Request to publish" }).click();
-    await expect(newbiePage.getByText("Request sent — an admin will review it.")).toBeVisible();
+    await submitApplication(newbiePage);
     // A reload remembers the pending request instead of offering the button again.
     await newbiePage.reload();
-    await expect(newbiePage.getByText("Your request to publish is pending review.")).toBeVisible();
+    await expect(newbiePage.getByText("Your request to publish is pending review.").filter({ visible: true })).toHaveCount(1);
     await expect(newbiePage.getByRole("button", { name: "Request to publish" })).toHaveCount(0);
 
     const adminPage = await newPage(browser);
@@ -134,8 +133,7 @@ test("a declined reader is told, sees why the button changed, and can ask again"
     const reader = await createUser(`e2e.declined${Date.now()}`);
     const readerPage = await newPage(browser);
     await login(readerPage, reader.email, undefined, "/dashboard/posts");
-    await readerPage.getByRole("button", { name: "Request to publish" }).click();
-    await expect(readerPage.getByText("Request sent — an admin will review it.")).toBeVisible();
+    await submitApplication(readerPage);
 
     const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/requests");
@@ -145,10 +143,9 @@ test("a declined reader is told, sees why the button changed, and can ask again"
 
     await expectNotification(readerPage, "Your request to publish was declined");
     await readerPage.goto("/dashboard/posts");
-    await expect(readerPage.getByText("Your last request was declined.")).toBeVisible();
-    await readerPage.getByRole("button", { name: "Request again" }).click();
-    await expect(readerPage.getByText("Request sent — an admin will review it.")).toBeVisible();
+    await expect(readerPage.getByText("Your last request was declined.").filter({ visible: true })).toHaveCount(1);
+    await submitApplication(readerPage, "Request again");
     await readerPage.reload();
-    await expect(readerPage.getByText("Your request to publish is pending review.")).toBeVisible();
+    await expect(readerPage.getByText("Your request to publish is pending review.").filter({ visible: true })).toHaveCount(1);
     await readerPage.context().close();
 });

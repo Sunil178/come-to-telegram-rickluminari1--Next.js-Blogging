@@ -5,8 +5,10 @@
         "firstName": "Ananya",
         "lastName": "Iyer",
         "email": "ananya@example.com",
-        "intro": "Mathematician turned software person.",
-        "profile": "Writes about the history and theory of computing when not arguing on the internet."
+        "profile": {
+            "headline": "Mathematician turned software person.",
+            "bio": "Writes about the history and theory of computing when not arguing on the internet."
+        }
     },
     {
         "username": "aarav.mehta",
@@ -14,8 +16,10 @@
         "firstName": "Aarav",
         "lastName": "Mehta",
         "email": "aarav@example.com",
-        "intro": "Breaks things to see how they work.",
-        "profile": "Interested in machine intelligence, cryptography, and long walks."
+        "profile": {
+            "headline": "Breaks things to see how they work.",
+            "bio": "Interested in machine intelligence, cryptography, and long walks."
+        }
     },
     {
         "username": "sunil.thakur",
@@ -23,8 +27,10 @@
         "firstName": "Sunil",
         "lastName": "Thakur",
         "email": "sunil@example.com",
-        "intro": "Builder of this blog.",
-        "profile": "Ships fast, reviews carefully, and reads every PR before merging."
+        "profile": {
+            "headline": "Builder of this blog.",
+            "bio": "Ships fast, reviews carefully, and reads every PR before merging."
+        }
     },
     {
         "username": "arjun.nair",
@@ -32,8 +38,10 @@
         "firstName": "Arjun",
         "lastName": "Nair",
         "email": "arjun@example.com",
-        "intro": "Opinionated about tabs vs. spaces.",
-        "profile": "Reads every changelog. Comments on maybe a third of them."
+        "profile": {
+            "headline": "Opinionated about tabs vs. spaces.",
+            "bio": "Reads every changelog. Comments on maybe a third of them."
+        }
     },
     {
         "username": "priya.deshmukh",
@@ -41,7 +49,9 @@
         "firstName": "Priya",
         "lastName": "Deshmukh",
         "email": "priya@example.com",
-        "intro": "Systems thinker.",
-        "profile": "Cares more about reliability than features. Always asks about the failure modes."
+        "profile": {
+            "headline": "Systems thinker.",
+            "bio": "Cares more about reliability than features. Always asks about the failure modes."
+        }
     }
 ]
