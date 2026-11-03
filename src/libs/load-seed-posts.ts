@@ -21,8 +21,8 @@ export interface SeedPostFixture {
     markdownBody: string;
 }
 
-// One .md file per post (frontmatter metadata + markdown body) instead of the old
-// single posts.json array — editing, adding, or removing a post is a single-file change.
+// One .md file per post (frontmatter metadata + markdown body), so editing, adding, or removing a
+// post is a single-file change.
 export function loadSeedPosts(): SeedPostFixture[] {
     const files = fs.readdirSync(POSTS_DIR).filter((file) => file.endsWith(".md"));
 

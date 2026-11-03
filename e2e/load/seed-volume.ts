@@ -14,7 +14,7 @@ async function seedVolume() {
     const now = Date.now();
     const authors = Array.from({ length: 50 }, (_, i) => ({
         _id: new mongoose.Types.ObjectId(), username: `load.author${i}`, email: `load-author${i}@example.com`, firstName: "Load", lastName: `Author ${i}`,
-        role: "author", password, upvoteCount: 0, downvoteCount: 0, createdAt: new Date(now), updatedAt: new Date(now),
+        role: "author", password, upvoteCount: 0, downvoteCount: 0, emailVerifiedAt: new Date(now), createdAt: new Date(now), updatedAt: new Date(now),
     }));
     await db.collection("users").insertMany(authors);
 

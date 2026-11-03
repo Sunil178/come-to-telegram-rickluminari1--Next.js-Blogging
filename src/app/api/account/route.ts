@@ -15,7 +15,7 @@ function serialized<T>(task: () => Promise<T>): Promise<T> {
     return run;
 }
 
-// Permanently deletes the signed-in account after re-checking its password (D-09).
+// Permanently deletes the signed-in account after re-checking its password.
 export const DELETE = withApiGuard(async (request, { session }) => {
     const body = await request.json().catch(() => null);
     const password = typeof body?.password === "string" ? body.password : "";

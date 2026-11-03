@@ -31,7 +31,7 @@ vi.mock("@/libs/toggle-vote", () => ({ toggleVote: (...args: unknown[]) => toggl
 const { POST } = await import("@/app/api/comments/[id]/vote/route");
 
 const COMMENT_ID = "6500000000000000000000c1";
-const PUBLIC_POST = { _id: "post-1", userId: "author-1", approval: "Approved", published: true, visibility: true };
+const PUBLIC_POST = { _id: "post-1", userId: "author-1", approval: "Approved", published: true, visibility: true, publishedAt: new Date("2026-01-01T00:00:00Z") };
 
 function vote(body: unknown, id = COMMENT_ID) {
     return POST(new NextRequest(`http://localhost/api/comments/${id}/vote`, { method: "POST", body: JSON.stringify(body) }), {

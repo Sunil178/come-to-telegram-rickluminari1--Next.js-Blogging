@@ -3,8 +3,8 @@ import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
 import { processPostContent, type ProcessedContent } from "@/libs/post-content";
 
-// One window and DOMPurify instance per process: creating a JSDOM window per request cost tens of
-// milliseconds and leaked memory (windows were never closed). Sanitizing is synchronous, so sharing is safe.
+// One window and DOMPurify instance per process: a JSDOM window per request costs tens of milliseconds
+// and memory until closed. Sanitizing is synchronous, so sharing is safe.
 let shared: { document: Document; purify: ReturnType<typeof DOMPurify> } | null = null;
 
 function sharedDom() {

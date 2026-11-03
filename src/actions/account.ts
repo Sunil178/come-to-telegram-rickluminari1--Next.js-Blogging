@@ -21,9 +21,6 @@ export type AccountFormState = {
     validationErrors?: Record<string, string[]>;
 };
 
-// Explicit null only: `{ emailVerifiedAt: null }` would also match legacy accounts that lack the field.
-const PENDING_VERIFICATION = { $type: "null" } as const;
-
 const GENERIC_RESEND = "If that account is waiting for verification, a new confirmation link is on its way.";
 const GENERIC_RESET = "If an account uses that email, a password reset link is on its way. It expires in 1 hour.";
 const MAIL_UNAVAILABLE = "Email isn't set up on this site yet. Please contact an administrator.";
@@ -49,7 +46,7 @@ export async function resendVerificationAction(_state: AccountFormState, formDat
 
     after(async () => {
         try {
-            const user = await User.findOne({ email, emailVerifiedAt: PENDING_VERIFICATION }).collation(EMAIL_COLLATION);
+            const user = await User.findOne({ email, emailVerifiedAt: null }).collation(EMAIL_COLLATION);
             if (user) await sendVerificationEmail({ id: user.id, email: user.email, username: user.username });
         } catch (error) {
             logger.error("Failed to resend verification email", { error });

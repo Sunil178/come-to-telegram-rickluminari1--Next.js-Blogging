@@ -1,4 +1,4 @@
-// First-party visitor identity, gated by consent (D-07): no visitor cookie and no events without it.
+// First-party visitor identity, gated by consent: no visitor cookie and no events without it.
 export const CONSENT_COOKIE = "consent";
 export const VISITOR_COOKIE = "vid";
 export type ConsentChoice = "granted" | "denied";

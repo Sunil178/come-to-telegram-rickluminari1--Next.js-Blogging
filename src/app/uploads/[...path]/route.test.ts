@@ -43,7 +43,7 @@ describe("GET /uploads/[...path]", () => {
         expect(Buffer.from(await response.arrayBuffer())).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     });
 
-    it("caches files that can be rewritten in place (seed banners, legacy names) only briefly", async () => {
+    it("caches files that can be rewritten in place (seed banners) only briefly", async () => {
         const response = await get(["seed", "hello-world.jpg"]);
 
         expect(response.status).toBe(200);

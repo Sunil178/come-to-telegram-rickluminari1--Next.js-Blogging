@@ -25,7 +25,7 @@ export interface IUser extends IUserWithSoftDelete {
   // Where the account was created from and last signed in from; admins see them when reviewing requests.
   signup: IpRecord | null;
   lastLogin: IpRecord | null;
-  // null = awaiting verification; absent on accounts created before verification existed (treated as verified).
+  // null = awaiting verification; every account creation sets it.
   emailVerifiedAt: Date | null;
   passwordChangedAt: Date;
   // Per-category channel switches (src/libs/notification-types.ts); missing entries mean "on".
@@ -72,7 +72,7 @@ const schema = new Schema<IUser>(
     downvoteCount: Number,
     signup: { type: ipRecordSchema, default: null },
     lastLogin: { type: ipRecordSchema, default: null },
-    emailVerifiedAt: Date,
+    emailVerifiedAt: { type: Date, default: null },
     passwordChangedAt: Date,
     notificationPrefs: { type: Schema.Types.Mixed, default: undefined },
   },

@@ -52,7 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 if (user && passwordMatches) {
                     // Without SMTP there's no way to verify, so the requirement is off with it. Checked before
                     // recordLoginSuccess, so a refused login neither refunds attempts nor marks the IP trusted.
-                    if (user.emailVerifiedAt === null && isMailConfigured()) throw new EmailUnverifiedSignin();
+                    if (!user.emailVerifiedAt && isMailConfigured()) throw new EmailUnverifiedSignin();
                     await recordLoginSuccess(ip, credentials.username);
                     // After the response: the geolocation lookup shouldn't delay signing in.
                     after(() => recordLoginIp(user.id, ip));

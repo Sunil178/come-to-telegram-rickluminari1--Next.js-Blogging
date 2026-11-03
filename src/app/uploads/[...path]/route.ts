@@ -11,7 +11,7 @@ interface RouteContext {
 
 const notFound = () => NextResponse.json({ data: null, message: "Not found" }, { status: 404 });
 
-// Upload-route files are named <uuid>.<ext> and never rewritten; seed banners and legacy files aren't.
+// Upload-route files are named <uuid>.<ext> and never rewritten; seed banners (named by slug) can be.
 const IMMUTABLE_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z]+$/;
 
 // Serves files from the upload directory (UPLOAD_DIR), so uploads work wherever that directory is

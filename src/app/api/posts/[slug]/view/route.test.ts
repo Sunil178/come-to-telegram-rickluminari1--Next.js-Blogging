@@ -66,7 +66,7 @@ describe("POST /api/posts/[slug]/view", () => {
 
         expect(createViewMock).toHaveBeenCalledWith(expect.objectContaining({ slug: "some-slug" }));
         expect(updateOneMock).toHaveBeenCalledWith(
-            { slug: "some-slug", approval: "Approved", published: true, visibility: true, publishedAt: { $not: { $gt: expect.any(Date) } } },
+            { slug: "some-slug", approval: "Approved", published: true, visibility: true, publishedAt: { $lte: expect.any(Date) } },
             { $inc: { visitorCount: 1 } },
             { projection: { _id: 1 } }
         );

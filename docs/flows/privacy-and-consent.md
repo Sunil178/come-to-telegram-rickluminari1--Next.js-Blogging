@@ -4,7 +4,7 @@
 
 ## How it works
 
-Reading history is recorded only with consent (decision D-07). The banner (`src/components/consent/ConsentBanner.tsx`) stores the choice in the `consent` cookie. On "Accept", the browser gets a random visitor id in the `vid` cookie, and each post read is recorded as a visitor event (`src/libs/visitor-events.ts`, `src/models/VisitorEvent.ts`, kept 180 days); signing in or registering attaches that history to the account (`stitchVisitor`). `consentedVisitorId()` in `src/libs/visitor.ts` returns an id only when consent was given and the cookie holds an id the site issued. The history appears in the account's data export.
+Reading history is recorded only with consent. The banner (`src/components/consent/ConsentBanner.tsx`) stores the choice in the `consent` cookie. On "Accept", the browser gets a random visitor id in the `vid` cookie, and each post read is recorded as a visitor event (`src/libs/visitor-events.ts`, `src/models/VisitorEvent.ts`, kept 180 days); signing in or registering attaches that history to the account (`stitchVisitor`). `consentedVisitorId()` in `src/libs/visitor.ts` returns an id only when consent was given and the cookie holds an id the site issued. The history appears in the account's data export.
 
 ## Flows
 

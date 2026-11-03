@@ -3,13 +3,12 @@ const APPROVED = "Approved";
 
 // The one definition of "readers can see this post": approved, published, visible, and its publish
 // time reached. Scheduled posts (publishedAt in the future) stay hidden until then, with no scheduler.
-// A missing publishedAt (posts approved by older code) counts as published.
 export function publicPostFilter(now: Date = new Date()) {
     return {
         approval: APPROVED,
         published: true,
         visibility: true,
-        publishedAt: { $not: { $gt: now } },
+        publishedAt: { $lte: now },
     };
 }
 
@@ -25,7 +24,8 @@ export function isPubliclyVisible(post: VisibilityFields, now: Date = new Date()
         post.approval === APPROVED &&
         Boolean(post.published) &&
         Boolean(post.visibility) &&
-        (post.publishedAt == null || new Date(post.publishedAt).getTime() <= now.getTime())
+        post.publishedAt != null &&
+        new Date(post.publishedAt).getTime() <= now.getTime()
     );
 }
 

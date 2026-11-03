@@ -25,7 +25,7 @@ export async function createUser(username: string, role = "reader"): Promise<{ i
     const now = new Date();
     await withDb(async (db) => db.collection("users").insertOne({
         _id: id, username, email, firstName: "Temp", lastName: "E2E", role, password: await hash(PASSWORD, 10),
-        upvoteCount: 0, downvoteCount: 0, createdAt: now, updatedAt: now,
+        upvoteCount: 0, downvoteCount: 0, emailVerifiedAt: now, createdAt: now, updatedAt: now,
     }));
     return { id, email, username };
 }

@@ -82,13 +82,13 @@ describe("requestPasswordResetAction", () => {
 });
 
 describe("resendVerificationAction", () => {
-    it("only looks up accounts explicitly awaiting verification, never legacy ones", async () => {
+    it("only looks up accounts awaiting verification", async () => {
         findOneMock.mockResolvedValueOnce(user);
         const state = await resendVerificationAction({}, form({ email: "resend@example.com" }));
         expect(state.message).toBeDefined();
 
         await runAfter();
-        expect(findOneMock).toHaveBeenCalledWith({ email: "resend@example.com", emailVerifiedAt: { $type: "null" } }, { locale: "en", strength: 2 });
+        expect(findOneMock).toHaveBeenCalledWith({ email: "resend@example.com", emailVerifiedAt: null }, { locale: "en", strength: 2 });
         expect(sendVerificationMock).toHaveBeenCalledWith(user);
     });
 });

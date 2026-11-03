@@ -17,30 +17,6 @@ import usersData from "./users.json";
 import commentTemplates from "./comment-templates.json";
 import { isPubliclyVisible } from "@/libs/post-visibility";
 
-// Old posts.json fixtures, retired now that src/seeds/posts/*.md replaces them.
-// Matched on slug+title, not slug alone: some slugs (e.g. "5g-and-beyond") are generic
-// enough that a real post could collide, and this cleanup hard-deletes past soft-delete.
-const LEGACY_POSTS = [
-    { slug: "future-of-ai", title: "The Future of AI" },
-    { slug: "blockchain-next-payment-methods", title: "The Blockchain Dominance" },
-    { slug: "james-webb-discoveries", title: "James Webb's Latest Discoveries" },
-    { slug: "covid-19-long-term-effects", title: "Understanding Long COVID" },
-    { slug: "climate-change-opinions", title: "Climate Change: Voices Around the World" },
-    { slug: "ai-in-healthcare", title: "How AI is Saving Lives" },
-    { slug: "mars-colonization", title: "Mars Colonization by 2050?" },
-    { slug: "indian-election-2025", title: "Indian General Election 2025" },
-    { slug: "digital-nomad-lifestyle", title: "Rise of Digital Nomads" },
-    { slug: "quantum-computing-explained", title: "Quantum Computing Explained" },
-    { slug: "mental-health-awareness", title: "Breaking the Mental Health Stigma" },
-    { slug: "climate-science-data", title: "Latest Climate Science Reports" },
-    { slug: "5g-and-beyond", title: "5G and Beyond" },
-    { slug: "women-in-tech", title: "Women in Tech: Breaking Barriers" },
-    { slug: "vaccines-and-future", title: "Future of Vaccines" },
-    { slug: "global-warming-politics", title: "Politics of Global Warming" },
-    { slug: "top-travel-destinations-2025", title: "Top Travel Destinations in 2025" },
-    { slug: "ai-vs-human-creativity", title: "AI vs Human Creativity" },
-];
-
 // Demo users are seeded with this password so they can be logged into for manual testing.
 const DEMO_PASSWORD = "Passw0rd!";
 
@@ -67,7 +43,7 @@ async function seedDemoUsers(): Promise<UserDoc[]> {
     for (const raw of usersData) {
         let user = await User.findOne({ $or: [{ username: raw.username }, { email: raw.email }] });
         if (!user) {
-            user = await User.create({ ...raw, password: hashSync(DEMO_PASSWORD, 10) });
+            user = await User.create({ ...raw, password: hashSync(DEMO_PASSWORD, 10), emailVerifiedAt: new Date() });
             console.log(`👤 Demo user created: ${raw.username}`);
         } else {
             if (user.role !== raw.role) {
@@ -79,25 +55,6 @@ async function seedDemoUsers(): Promise<UserDoc[]> {
         users.push(user);
     }
     return users;
-}
-
-// Hard-deletes (via .collection, bypassing mongoose-delete) the retired fixtures and
-// everything referencing them, so they don't linger in trash views.
-async function retireLegacyPosts(): Promise<void> {
-    const legacyPosts = await Post.collection
-        .find({ $or: LEGACY_POSTS.map(({ slug, title }) => ({ slug, title })) }, { projection: { _id: 1 } })
-        .toArray();
-    if (legacyPosts.length === 0) return;
-    const postIds = legacyPosts.map((p) => p._id);
-
-    const legacyComments = await Comment.collection.find({ postId: { $in: postIds } }, { projection: { _id: 1 } }).toArray();
-    const commentIds = legacyComments.map((c) => c._id);
-
-    await CommentVote.collection.deleteMany({ commentId: { $in: commentIds } });
-    await Comment.collection.deleteMany({ postId: { $in: postIds } });
-    await PostVote.collection.deleteMany({ postId: { $in: postIds } });
-    await Post.collection.deleteMany({ _id: { $in: postIds } });
-    console.log(`🗑️  Retired ${legacyPosts.length} legacy demo post(s) and their engagement`);
 }
 
 async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string, Types.ObjectId>): Promise<PostDoc[]> {
@@ -256,8 +213,6 @@ async function main() {
         const userArg = args.find((arg) => arg.startsWith("--user="));
         const userValue = userArg?.split("=")[1];
         if (userArg && !userValue) throw new Error("❌ Invalid --user argument");
-
-        await retireLegacyPosts();
 
         const categories = await seedCategories();
         const demoUsers = await seedDemoUsers();

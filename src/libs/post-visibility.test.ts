@@ -10,8 +10,7 @@ describe("post visibility", () => {
         expect(isPubliclyVisible({ ...live, approval: "Pending" }, now)).toBe(false);
         expect(isPubliclyVisible({ ...live, published: false }, now)).toBe(false);
         expect(isPubliclyVisible({ ...live, visibility: false }, now)).toBe(false);
-        // Approved by older code that didn't record a publish time.
-        expect(isPubliclyVisible({ ...live, publishedAt: null }, now)).toBe(true);
+        expect(isPubliclyVisible({ ...live, publishedAt: null }, now)).toBe(false);
     });
 
     it("hides a scheduled post until its publish time", () => {
@@ -25,6 +24,6 @@ describe("post visibility", () => {
     });
 
     it("builds the matching query", () => {
-        expect(publicPostFilter(now)).toEqual({ approval: "Approved", published: true, visibility: true, publishedAt: { $not: { $gt: now } } });
+        expect(publicPostFilter(now)).toEqual({ approval: "Approved", published: true, visibility: true, publishedAt: { $lte: now } });
     });
 });

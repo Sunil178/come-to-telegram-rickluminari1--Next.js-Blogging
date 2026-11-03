@@ -57,7 +57,7 @@ If a rate limiter is needed: prefer `rate-limiter-flexible` (MIT, supports in-me
 
 ## `proxy.ts`'s role — complementary, not a substitute
 
-`src/proxy.ts` (Next.js 16 renamed `middleware.ts` → `proxy.ts`; the two file conventions cannot coexist in one project) still handles **page-level** redirects for logged-out users hitting protected pages (e.g. `/posts/add`, `/dashboard/**`), matched by `isGatedPath()` in `src/libs/route-gates.ts`. That's good UX (redirect before rendering anything) but it is *not* the security boundary. Keep both layers doing their job:
+`src/proxy.ts` (Next.js 16's name for the `middleware.ts` convention) handles **page-level** redirects for logged-out users hitting protected pages (e.g. `/posts/add`, `/dashboard/**`), matched by `isGatedPath()` in `src/libs/route-gates.ts`. That's good UX (redirect before rendering anything) but it is *not* the security boundary. Keep both layers doing their job:
 
 - `proxy.ts` (`isGatedPath()`) → optimistic page-level redirect
 - `withApiGuard` → actual enforcement at every mutation-capable API route

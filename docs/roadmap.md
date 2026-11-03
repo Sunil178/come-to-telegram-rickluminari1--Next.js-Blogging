@@ -2,9 +2,7 @@
 
 ## Context
 
-The revamp in `docs/revamp-plan.md` covers the UI stack, editor, and core comment/voting/auth systems, all of which are in place. This doc scopes the next layer of work: closing gaps between "a working blog" and "a blog that's fully operable and discoverable in production."
-
-All items previously scoped here (SEO/production plumbing, real page-view tracking, in-app notifications) have shipped. In-app notifications are backed by a `Notification` model plus real Web Push (`src/libs/notify.ts`, `src/models/PushSubscription.ts`, `public/sw.js`) rather than polling — a push event updates the navbar bell live in an open tab and can deliver an OS-level notification when none is open; the bell also fetches once on mount as a correctness fallback for browsers or permission states where push isn't available.
+This doc lists the known limits of the current system and the work planned beyond it. What the system does today is described in `README.md` and the flow documents in `docs/flows/`.
 
 ## Deferred infrastructure
 
@@ -12,7 +10,7 @@ Known limits that are fine for a single-instance deployment and are scheduled fo
 
 ### Upload storage
 
-Uploads (`src/app/api/posts/upload/route.ts`) are written to the local `uploads/` directory. That needs a persistent disk and a single instance; files are lost on serverless platforms and aren't shared between instances. Next step: an object-storage backend (S3 or Cloudflare R2) behind the same upload route, or a mounted persistent volume when running in containers.
+Uploads (`src/app/api/posts/upload/route.ts`) are written to the local upload directory (`UPLOAD_DIR`). That needs a persistent disk and a single instance; files are lost on serverless platforms and aren't shared between instances. Next step: an object-storage backend (S3 or Cloudflare R2) behind the same upload route, or a mounted persistent volume when running in containers.
 
 ### Shared rate limiter
 

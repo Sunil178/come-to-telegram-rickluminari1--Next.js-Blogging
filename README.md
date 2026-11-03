@@ -44,8 +44,8 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `MONGODB_URI` | yes | MongoDB connection string |
 | `AUTH_SECRET` | yes | Auth.js signing secret (`openssl rand -base64 32`) |
 | `AUTH_URL` | production | Canonical site URL; without it (or `AUTH_TRUST_HOST=true`), Auth.js rejects sessions under `next start` outside Vercel/Cloudflare |
-| `SITE_URL` | production | Public origin for metadata, sitemap, RSS and OG links; an `https://` origin also enables `upgrade-insecure-requests` in the CSP. Read at runtime (`NEXT_PUBLIC_SITE_URL` accepted as a fallback) |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT_EMAIL` | for push | Web Push keys (`npx web-push generate-vapid-keys`), read at runtime; without them notifications are in-app only (`NEXT_PUBLIC_VAPID_PUBLIC_KEY` accepted as a fallback) |
+| `SITE_URL` | production | Public origin for metadata, sitemap, RSS and OG links; an `https://` origin also enables `upgrade-insecure-requests` in the CSP. Read at runtime |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT_EMAIL` | for push | Web Push keys (`npx web-push generate-vapid-keys`), read at runtime; without them notifications are in-app only |
 | `TRUSTED_PROXY_HOPS` | behind a proxy | Number of trusted proxies appending to `X-Forwarded-For` (default 1) |
 | `CLIENT_IP_HEADER` | behind a CDN | Header carrying the client IP instead, e.g. `cf-connecting-ip` |
 | `VIEW_RATE_LIMIT_POINTS`, `VIEW_RATE_LIMIT_DURATION_SECONDS` | no | Page-view endpoint rate limit (defaults 20 per 60 s) |

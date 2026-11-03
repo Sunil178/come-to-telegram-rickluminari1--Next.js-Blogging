@@ -97,7 +97,7 @@ export default async function ReviewRequestPage({ params }: { params: Promise<{ 
                     rows={[
                         ["Role", user.role],
                         ["Joined", `${formatDate(user.createdAt)} (${daysSince(user.createdAt, now)} days ago)`],
-                        ["Email", user.emailVerifiedAt === null ? "Not verified" : user.emailVerifiedAt ? `Verified ${formatDate(user.emailVerifiedAt)}` : "Verified (before verification existed)"],
+                        ["Email", user.emailVerifiedAt ? `Verified ${formatDate(user.emailVerifiedAt)}` : "Not verified"],
                         ["Comments", `${activity.comments} (${activity.commentUpvotes} upvotes, ${activity.commentDownvotes} downvotes received)`],
                         ["Votes cast", String(activity.votesCast)],
                         ["Profile score", String(user.profileScore)],

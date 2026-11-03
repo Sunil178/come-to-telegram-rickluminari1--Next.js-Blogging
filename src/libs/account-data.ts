@@ -82,7 +82,7 @@ function uploadedFiles(posts: { bannerImage?: string; content?: string }[]): str
 }
 
 /**
- * Permanently deletes the account (decision D-09): the user's own content goes with it, their
+ * Permanently deletes the account: the user's own content goes with it, their
  * comments under other people's posts become "[deleted]" placeholders so replies keep their thread.
  * The user record is removed after the content, so a failure part-way can be retried by signing in again;
  * its uploaded files go last, once nothing references them.

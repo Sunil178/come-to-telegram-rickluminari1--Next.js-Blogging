@@ -54,7 +54,7 @@ function commentRequest(body: unknown) {
     });
 }
 
-const POST_DOC = { _id: "post-1", slug: "some-slug", title: "Docker for Developers", userId: "author-1", approval: "Approved", published: true, visibility: true };
+const POST_DOC = { _id: "post-1", slug: "some-slug", title: "Docker for Developers", userId: "author-1", approval: "Approved", published: true, visibility: true, publishedAt: new Date("2026-01-01T00:00:00Z") };
 
 describe("POST /api/posts/[slug]/comments", () => {
     beforeEach(() => {

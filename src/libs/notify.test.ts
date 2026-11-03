@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("VAPID_PRIVATE_KEY", "test-private-key");
-vi.stubEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY", "test-public-key");
+vi.stubEnv("VAPID_PUBLIC_KEY", "test-public-key");
 vi.stubEnv("VAPID_CONTACT_EMAIL", "mailto:test@example.com");
 
 const setVapidDetailsMock = vi.fn();

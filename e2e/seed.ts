@@ -26,6 +26,7 @@ async function seed() {
             password,
             upvoteCount: 0,
             downvoteCount: 0,
+            emailVerifiedAt: now,
             createdAt: now,
             updatedAt: now,
         }))
