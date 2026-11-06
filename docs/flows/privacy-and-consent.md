@@ -1,6 +1,6 @@
 # Privacy and consent
 
-**Who:** every visitor. **Entry points:** the consent banner on a first visit, "Cookie preferences" in the footer, "Privacy" in the footer (`/privacy`).
+**Who:** every visitor. **Entry points:** the consent banner on a first visit, "Cookie preferences" in the footer, "About", "Contact", "Terms" and "Privacy" in the footer (`/about`, `/contact`, `/terms`, `/privacy`).
 
 ## How it works
 
@@ -26,7 +26,21 @@ Reading history is recorded only with consent. The banner (`src/components/conse
 
 **Tested by:** `e2e/consent.spec.ts` › "declining sets no visitor cookie and records nothing, and the choice can be changed later".
 
+### 3. Read the site's policies
+
+1. Follows "About", "Contact", "Terms" or "Privacy" in the footer. → The page opens; all four are in the sitemap.
+
+**Extensions:**
+
+- 1a. `OPERATOR_NAME`, `OPERATOR_LOCATION` or `CONTACT_EMAIL` unset: the pages say "the site's operator" or "the site administrator" instead, and Contact says the address isn't set up yet.
+
+**Side effects:** none.
+
+**Tested by:** `e2e/legal-and-private.spec.ts` › "the footer links to the About, Contact, Terms and Privacy pages".
+
 ## Rules and limits
+
+- The policies are written for India: the privacy page follows the DPDP Act 2023 (data fiduciary, purposes, children under 18, rights including nomination, the Data Protection Board), the terms list the content the IT Rules 2021 prohibit and require labelled AI-generated media, and Contact names the grievance officer with the response times (acknowledge within 24 hours, resolve within 15 days, intimate images within 24 hours). Their text and contacts come from `OPERATOR_NAME`, `OPERATOR_LOCATION` and `CONTACT_EMAIL` (`siteOperator()` in `src/libs/runtime-config.ts`).
 
 - Cookies: the session cookie (essential, up to 30 days), `consent` (essential, 1 year), `vid` (only with consent, 1 year), `viewed:…` (essential, 30 minutes, stops a visit counting twice).
 - Visitor events expire after 180 days through a TTL index.

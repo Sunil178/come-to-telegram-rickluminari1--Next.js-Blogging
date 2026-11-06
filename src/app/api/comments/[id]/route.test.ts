@@ -14,7 +14,7 @@ vi.mock("@/models/Post", () => ({
     default: { updateOne: (...args: unknown[]) => updateOneMock(...args) },
 }));
 
-const { DELETE } = await import("@/app/api/comments/[id]/route");
+const { DELETE, PATCH } = await import("@/app/api/comments/[id]/route");
 
 function context(id: string) {
     return { params: Promise.resolve({ id }) };
@@ -66,5 +66,23 @@ describe("DELETE /api/comments/[id]", () => {
         expect(response.status).toBe(200);
         expect(findOneMock).toHaveBeenCalledWith({ _id: "6500000000000000000000c1" });
         expect(comment.delete).toHaveBeenCalledWith("mod1");
+    });
+});
+
+describe("PATCH /api/comments/[id]", () => {
+    it("refuses edits when COMMENTS_ENABLED=false", async () => {
+        vi.stubEnv("COMMENTS_ENABLED", "false");
+        try {
+            authMock.mockResolvedValue({ user: { id: "owner1", role: "reader" } });
+            const request = new NextRequest("http://localhost/api/comments/507f1f77bcf86cd799439011", {
+                method: "PATCH",
+                headers: { "x-forwarded-for": "10.0.9.1" },
+                body: JSON.stringify({ content: "edited" }),
+            });
+            const response = await PATCH(request, context("507f1f77bcf86cd799439011"));
+            expect(response.status).toBe(403);
+        } finally {
+            vi.unstubAllEnvs();
+        }
     });
 });

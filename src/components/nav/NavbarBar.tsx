@@ -38,7 +38,7 @@ export default function NavbarBar({ user, vapidPublicKey }: NavbarBarProps) {
                         </>
                     ) : (
                         <Button asChild size="sm" className="hidden md:inline-flex">
-                            <Link href="/auth/login">Login</Link>
+                            <Link href="/auth/login">Log in</Link>
                         </Button>
                     )}
                     <MobileNav links={BASE_LINKS} user={user} />

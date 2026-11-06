@@ -7,6 +7,7 @@ import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
 import { notify } from "@/libs/notify";
 import { logger } from "@/libs/logger";
+import { commentsEnabled } from "@/libs/runtime-config";
 import { isPubliclyVisible } from "@/libs/post-visibility";
 
 const SoftDeleteComment = Comment as unknown as SoftDeleteModel<IComment>;
@@ -17,6 +18,9 @@ interface RouteContext {
 
 export const POST = withApiGuard<RouteContext>(async (request, { params, session }) => {
     try {
+        if (!commentsEnabled()) {
+            return NextResponse.json({ data: null, message: "Comments are turned off" }, { status: 403 });
+        }
         const { slug } = await params;
         const body = await request.json().catch(() => null);
         const content = typeof body?.content === "string" ? body.content.trim() : "";

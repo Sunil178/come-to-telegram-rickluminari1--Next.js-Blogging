@@ -16,7 +16,7 @@ A multi-author blogging platform: Next.js 16 App Router (Turbopack, `src/proxy.t
 | `src/instrumentation*.ts` | DB connection at server boot |
 | `src/seeds/`, `src/scripts/` | Seeder and admin bootstrap (standalone, outside Next.js) |
 | `public/sw.js` | Web Push service worker |
-| `docs/` | Roadmap, reviews, procedures, initiatives |
+| `docs/` | Roadmap, reviews, procedures, initiatives; `docs/business/` holds the launch and growth plan (name, India legal and tax, monetization, multi-site) |
 
 ## Commands
 
@@ -78,6 +78,7 @@ Client components where only an action is gated (voting, commenting, deleting) d
 - Account emails (verification, password reset) go through `src/libs/mailer.ts` (SMTP; the features are off without `SMTP_HOST`) with one-time hashed tokens from `src/libs/auth-tokens.ts`; flows that take an email answer identically whether or not an account exists and do the lookup in `after()`.
 - Visitor tracking needs consent: `consentedVisitorId()` (`src/libs/visitor.ts`) returns an id only after the visitor accepted the banner; interest events go through `src/libs/visitor-events.ts`. E2E specs import `test`/`expect` from `e2e/fixtures.ts`, which presets a consent choice.
 - Uploaded files live in `UPLOAD_DIR` and are served by `src/app/uploads/[...path]/route.ts` (`src/libs/uploads.ts`), not from `public/`.
+- Feature switches (`SIGNUP_ENABLED`, `COMMENTS_ENABLED`) go through `featureEnabled()` in `src/libs/runtime-config.ts`: on unless set to `false`, `0`, `off` or `no`, read per request. The legal pages read the operator's details through `siteOperator()` there.
 - Server code logs through `logger` (`src/libs/logger.ts`), never `console.*`; client components may use `console`.
 - New user-facing flows get a Playwright test in `e2e/` alongside their unit tests.
 - Documentation changes in the same commit as the behaviour; reference docs describe the current system in the present tense.

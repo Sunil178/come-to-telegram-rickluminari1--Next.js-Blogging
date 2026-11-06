@@ -38,7 +38,9 @@ MAIL_FROM="Vedev.Guru Staging <no-reply@localhost>"
 VAPID_PUBLIC_KEY=$(node -p "JSON.parse(process.argv[1]).publicKey" "$vapid")
 VAPID_PRIVATE_KEY=$(node -p "JSON.parse(process.argv[1]).privateKey" "$vapid")
 VAPID_CONTACT_EMAIL=mailto:staging@example.com
-PRIVACY_CONTACT_EMAIL=privacy@example.com
+OPERATOR_NAME="Staging Operator"
+OPERATOR_LOCATION="Thane, Maharashtra, India"
+CONTACT_EMAIL=contact@example.com
 ENV
         fi
         compose build app

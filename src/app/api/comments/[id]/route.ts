@@ -4,6 +4,7 @@ import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
+import { commentsEnabled } from "@/libs/runtime-config";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -11,6 +12,9 @@ interface RouteContext {
 
 export const PATCH = withApiGuard<RouteContext>(async (request, { params, session }) => {
     try {
+        if (!commentsEnabled()) {
+            return NextResponse.json({ data: null, message: "Comments are turned off" }, { status: 403 });
+        }
         const { id } = await params;
         const body = await request.json().catch(() => null);
         const content = typeof body?.content === "string" ? body.content.trim() : "";

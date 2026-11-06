@@ -19,6 +19,7 @@ import ViewTracker from "@/components/posts/ViewTracker";
 import VoteButtons from "@/components/votes/VoteButtons";
 import CommentSection from "@/components/comments/CommentSection";
 import { getViewablePost } from "@/libs/post-page";
+import { commentsEnabled } from "@/libs/runtime-config";
 import { findRelatedPosts } from "@/libs/related-posts";
 import type { Types } from "mongoose";
 
@@ -95,8 +96,9 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const session = await getSession();
     const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
+    const showComments = commentsEnabled();
     const [comments, related] = await Promise.all([
-        getComments(post._id.toString(), session?.user?.id),
+        showComments ? getComments(post._id.toString(), session?.user?.id) : [],
         // categoryId is populated above; relate by its id.
         findRelatedPosts({ _id: post._id, tags: post.tags, categoryId: (post.categoryId as unknown as { _id?: Types.ObjectId } | null)?._id ?? null }),
     ]);
@@ -216,13 +218,15 @@ export default async function PostPage({ params }: PostPageProps) {
                 </section>
             )}
 
-            <CommentSection
-                postSlug={post.slug}
-                initialComments={comments}
-                isLoggedIn={Boolean(session?.user)}
-                currentUserId={session?.user?.id ?? null}
-                currentUsername={session?.user?.username ?? null}
-            />
+            {showComments && (
+                <CommentSection
+                    postSlug={post.slug}
+                    initialComments={comments}
+                    isLoggedIn={Boolean(session?.user)}
+                    currentUserId={session?.user?.id ?? null}
+                    currentUsername={session?.user?.username ?? null}
+                />
+            )}
         </article>
     );
 }

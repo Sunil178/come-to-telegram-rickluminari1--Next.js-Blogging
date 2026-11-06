@@ -16,6 +16,10 @@ The application is ready for a single-instance launch: every flow has an end-to-
 | Uptime monitor | Owner (account) | Section 6 |
 | Error tracker (Sentry or GlitchTip) | Owner picks; agent integrates | Section 6, `docs/roadmap.md` (Error tracking) |
 | First run of the CI workflow on GitHub (`.github/workflows/ci.yml`, written but never run there) | Owner approves a push; agent fixes what fails | `docs/roadmap.md` (CI/CD) |
+| The site's name: "VEDEV" is taken as a trademark, so pick the brand before launch and run the official IP India search on it | Owner | `docs/business/launch-and-growth-plan.md` (section 2) |
+| Operator details for the legal pages (`OPERATOR_NAME`, `OPERATOR_LOCATION`, `CONTACT_EMAIL`) and a mailbox on the site's domain | Owner | Section 4 |
+| Whether strangers can sign up and comment at launch (`SIGNUP_ENABLED`, `COMMENTS_ENABLED`) | Owner decides | Section 4 |
+| A lawyer's read of `/terms`, `/privacy` and `/contact` before monetizing (written for India, not legal advice) | Owner | `docs/business/launch-and-growth-plan.md` (section 4) |
 | The real logo for the app icons (generated stand-ins until then) | Owner | `docs/roadmap.md` (PWA icons) |
 | Optional, not needed for launch: whether search needs typo tolerance (Atlas Search or Meilisearch) | Owner decides | `docs/roadmap.md` (Search at scale) |
 
@@ -52,17 +56,18 @@ Generate fresh values for this environment; never reuse local or staging ones. E
 - `AUTH_SECRET` (`openssl rand -base64 32`), `AUTH_URL` and `SITE_URL` = `https://your-domain`, `SITE_DOMAIN=your-domain`.
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`), `VAPID_CONTACT_EMAIL`.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`.
-- `PRIVACY_CONTACT_EMAIL` for the privacy page.
+- `OPERATOR_NAME`, `OPERATOR_LOCATION` (for example `Thane, Maharashtra, India`) and `CONTACT_EMAIL`: shown on `/about`, `/contact`, `/terms` and `/privacy`. The operator is the grievance officer India's IT Rules require, and the location names the courts in the terms. Use a mailbox on the site's domain and check it daily: complaints must be acknowledged within 24 hours.
+- `SIGNUP_ENABLED` and `COMMENTS_ENABLED`: `false` keeps strangers from creating accounts or commenting, which removes most duties of hosting other people's content. Recommended at launch while you publish alone. `npm run bootstrap-admin` promotes an existing account, so register your own account first with sign-up still open (section 5), then set `SIGNUP_ENABLED=false` and restart the app container. The switches are read on every request; a restart is only needed because Compose reads `.env` when the container starts.
 - `TRUSTED_PROXY_HOPS=1` behind the bundled Caddy (or `CLIENT_IP_HEADER` behind Cloudflare).
 - Store a copy of the file in a password manager: losing `AUTH_SECRET` signs everyone out, and losing the VAPID keys breaks every push subscription.
 
 ## 5. First start
 
 1. `git clone` the repository on the server, add `.env`, then `docker compose --profile proxy up -d --build`.
-2. Create the first admin: `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin` (from the checkout, with Node installed).
+2. Create the first admin: register your own account at `/auth/register`, then `MONGODB_URI=mongodb://127.0.0.1:27018/blog npm run bootstrap-admin -- you@your-domain` (from the checkout, with Node installed). If you launch with sign-up closed, set `SIGNUP_ENABLED=false` afterwards and `docker compose up -d app`.
 3. Download the IP geolocation database (`npm run geoip:download` in the checkout; Compose mounts `./data/geoip`) and schedule a monthly refresh, for example `0 4 2 * * cd /srv/vedev-blog && npm run geoip:download` (the app reloads the file on its own).
 4. Schedule backups and the offsite copy ([procedure](procedures/backup-restore.md)), then run one backup and one restore drill.
-5. Smoke test in a real browser: register (the email arrives and isn't in spam), verify, sign in, write a post, approve it as admin, comment from another account, enable push notifications, reset a password, download your data.
+5. Smoke test in a real browser: register (the email arrives and isn't in spam), verify, sign in, write a post, approve it as admin, comment from another account, enable push notifications, reset a password, download your data. Open About, Contact, Terms and Privacy from the footer and check the operator details. With sign-up or comments switched off, check that `/auth/register` says sign-up is closed and posts show no comment section.
 
 ## 6. Monitoring
 

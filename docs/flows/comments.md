@@ -48,6 +48,7 @@ Comments are stored flat with a `parentId` and built into a thread on the post p
 
 ## Rules and limits
 
+- `COMMENTS_ENABLED` (default on) switches comments off without a rebuild: post pages drop the comment section, and creating or editing a comment answers 403. Deleting still works, so moderators can remove what is already there. Tested by `src/app/api/posts/[slug]/comments/route.test.ts` and `src/app/api/comments/[id]/route.test.ts`.
 - Length: 1 to 5000 characters after trimming.
 - Rate limit: 10 new comments a minute per address.
 - Moderators and admins can delete any comment, also from `/dashboard/admin/comments` (see [moderation.md](moderation.md)).

@@ -12,18 +12,20 @@ Auth.js v5 with a credentials provider and JWT sessions (`src/app/api/auth/[...n
 
 **Preconditions:** logged out; SMTP configured.
 
-1. Opens `/auth/register`, enters username, email and a password of at least 8 characters. → "Check your email" message.
+1. Opens `/auth/register`, enters username, email and a password of at least 8 characters, and ticks "I am 18 or older and I accept the Terms of use and the Privacy policy". → "Check your email" message.
 2. Opens the emailed link. → The email is confirmed and they can sign in.
 
 **Extensions:**
 
 - 1a. Username or email already taken, or the password too short: the form says which field to fix.
 - 1b. Without SMTP: the account is usable at once (no verification step).
+- 1c. The age and terms box isn't ticked: the browser asks for it, and the server refuses the form without it.
+- 1d. Sign-up is closed (`SIGNUP_ENABLED=false`): `/auth/register` says so, the login page drops its "Sign up" link, and the server action refuses new accounts; existing accounts sign in as usual.
 - 2a. The link is used twice or after 24 hours: it no longer works; signing in offers to send a new one.
 
-**Side effects:** user record (role reader), sign-up address and approximate location recorded after the response; verification email.
+**Side effects:** user record (role reader, `termsAcceptedAt` set), sign-up address and approximate location recorded after the response; verification email.
 
-**Tested by:** `e2e/accounts.spec.ts` › "a new account confirms its email before it can sign in"; `e2e/account.spec.ts` › "registration asks for at least 8 characters".
+**Tested by:** `e2e/accounts.spec.ts` › "a new account confirms its email before it can sign in"; `e2e/account.spec.ts` › "registration asks for at least 8 characters"; `e2e/legal-and-private.spec.ts` › "sign-up asks for confirmation of age 18+ and acceptance of the terms"; `src/actions/register.test.ts` (closed sign-up, age and terms).
 
 ### 2. Sign in and out
 
@@ -61,6 +63,8 @@ Auth.js v5 with a credentials provider and JWT sessions (`src/app/api/auth/[...n
 ## Rules and limits
 
 - Passwords: at least 8 characters (`src/libs/password-policy.ts`).
+- Accounts are for people aged 18 or older (India's DPDP Act treats everyone under 18 as a child); sign-up records when the person confirmed it.
+- `SIGNUP_ENABLED` (default on) opens or closes sign-up without a rebuild (`signupEnabled()` in `src/libs/runtime-config.ts`).
 - Sign-in: 20 attempts per address and 5 per account and address in 15 minutes, 50 per account in an hour. Addresses that signed into the account in the last 24 days skip the account-wide limit, so an attacker can't lock the owner out of their usual network. The same exemption applies to the account-wide email limit.
 - Registration: 10 per address per hour. Verification and reset emails: 3 per account and address, 10 per address, 10 per account, each per hour.
 - Verification links last 24 hours, reset links 1 hour; both work once.

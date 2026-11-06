@@ -27,6 +27,8 @@ export interface IUser extends IUserWithSoftDelete {
   lastLogin: IpRecord | null;
   // null = awaiting verification; every account creation sets it.
   emailVerifiedAt: Date | null;
+  // When the person confirmed being 18 or older and accepted the terms at sign-up; null for accounts the seeder or bootstrap script made.
+  termsAcceptedAt: Date | null;
   passwordChangedAt: Date;
   // Per-category channel switches (src/libs/notification-types.ts); missing entries mean "on".
   notificationPrefs: Record<string, { inApp?: boolean; push?: boolean }>;
@@ -73,6 +75,7 @@ const schema = new Schema<IUser>(
     signup: { type: ipRecordSchema, default: null },
     lastLogin: { type: ipRecordSchema, default: null },
     emailVerifiedAt: { type: Date, default: null },
+    termsAcceptedAt: { type: Date, default: null },
     passwordChangedAt: Date,
     notificationPrefs: { type: Schema.Types.Mixed, default: undefined },
   },

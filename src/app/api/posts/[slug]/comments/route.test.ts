@@ -66,6 +66,17 @@ describe("POST /api/posts/[slug]/comments", () => {
         notifyMock.mockReset();
     });
 
+    it("refuses new comments when COMMENTS_ENABLED=false", async () => {
+        vi.stubEnv("COMMENTS_ENABLED", "false");
+        try {
+            const response = await POST(commentRequest({ content: "Nice post!" }), context("some-slug"));
+            expect(response.status).toBe(403);
+            expect(createCommentMock).not.toHaveBeenCalled();
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
     it("notifies the post's author on a top-level comment", async () => {
         const response = await POST(commentRequest({ content: "Nice post!" }), context("some-slug"));
 

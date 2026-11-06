@@ -82,7 +82,7 @@ test("a user changes their password, is signed out, and only the new password wo
 
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Password").fill(PASSWORD);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
     await expect(page.getByText("Invalid email or password")).toBeVisible();
     await login(page, user.email, "brand-new-pass", "/dashboard/account");
     await expect(page).toHaveURL(/\/dashboard\/account/);

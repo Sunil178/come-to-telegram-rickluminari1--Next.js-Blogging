@@ -16,6 +16,7 @@ import { consentedVisitorId } from "@/libs/visitor";
 import { stitchVisitor } from "@/libs/visitor-events";
 import { PASSWORD_RULE } from "@/libs/password-policy";
 import { recordSignupIp } from "@/libs/ip-history";
+import { signupEnabled } from "@/libs/runtime-config";
 
 // Define the state type for better TypeScript support
 export type RegisterState = {
@@ -25,6 +26,9 @@ export type RegisterState = {
 };
 
 export async function registerAction(initialState: RegisterState, formData: FormData): Promise<RegisterState> {
+    if (!signupEnabled()) {
+        return { error: "Sign-up is closed." };
+    }
     const body = Object.fromEntries(formData.entries());
 
     // 1. Validation Rules
@@ -34,9 +38,12 @@ export async function registerAction(initialState: RegisterState, formData: Form
         lastName: "required",
         email: "required|email",
         password: PASSWORD_RULE, // Requires password_confirmation field in UI
+        ageConfirmed: "accepted",
     };
 
-    const validation = new Validator(body, rules);
+    const validation = new Validator(body, rules, {
+        "accepted.ageConfirmed": "Confirm that you are 18 or older and accept the Terms of use.",
+    });
 
     if (validation.fails()) {
         return {
@@ -72,6 +79,7 @@ export async function registerAction(initialState: RegisterState, formData: Form
             password: await hash(body.password as string, 10),
             // Without SMTP there's no way to verify, so accounts start verified.
             emailVerifiedAt: mustVerify ? null : new Date(),
+            termsAcceptedAt: new Date(),
         });
         after(() => recordSignupIp(user.id, ip));
         const visitorId = consentedVisitorId(await cookies());

@@ -11,6 +11,7 @@ async function register(page: Page, id: string) {
     await page.getByLabel("Email").fill(`newbie${id}@example.com`);
     await page.locator("#password").fill(PASSWORD);
     await page.locator("#password_confirmation").fill(PASSWORD);
+    await page.getByRole("checkbox", { name: /I am 18 or older/ }).check();
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(page).toHaveURL(/\/auth\/login\?registered=verify$/);
     return `newbie${id}@example.com`;
@@ -19,7 +20,7 @@ async function register(page: Page, id: string) {
 async function submitLogin(page: Page, email: string, password = PASSWORD) {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByRole("button", { name: "Log in" }).click();
 }
 
 test("a new account confirms its email before it can sign in", async ({ page, request }) => {

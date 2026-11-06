@@ -1,37 +1,30 @@
 import Link from "next/link";
-import { runtimeEnv } from "@/libs/runtime-config";
+import { LegalPage, LegalSection as Section, ContactEmail, operatorLabel } from "@/components/legal/LegalPage";
 import { readTtlDays } from "@/libs/notification-ttl";
 import { VISITOR_EVENT_TTL_DAYS } from "@/models/VisitorEvent";
 
 export const metadata = { title: "Privacy policy" };
 
 // Bump when the policy's substance changes.
-const LAST_UPDATED = "31 October 2026";
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-        <section className="flex flex-col gap-3">
-            <h2 className="font-heading text-xl font-semibold text-foreground">{title}</h2>
-            {children}
-        </section>
-    );
-}
+const LAST_UPDATED = "4 November 2026";
 
 export default function PrivacyPage() {
-    const contact = runtimeEnv("PRIVACY_CONTACT_EMAIL");
     const ttlDays = readTtlDays();
 
     return (
-        <article className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12 text-sm leading-relaxed text-muted-foreground [&_li]:ml-5 [&_li]:list-disc [&_strong]:text-foreground">
-            <header>
-                <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">Privacy policy</h1>
-                <p className="mt-2">Last updated {LAST_UPDATED}.</p>
-            </header>
-
+        <LegalPage title="Privacy policy" updated={LAST_UPDATED}>
             <p>
                 Vedev.Guru is a blog where people read, write and discuss posts. This page explains what we store, why, for how long, and how you can
-                see or delete it. We don&apos;t sell data, show ads, or use third-party analytics or trackers.
+                see or delete it. We don&apos;t sell data, show ads, or use third-party analytics or trackers. It is written to meet India&apos;s Digital
+                Personal Data Protection Act, 2023.
             </p>
+
+            <Section title="Who is responsible">
+                <p>
+                    {operatorLabel()} decides why and how this data is used (the &ldquo;data fiduciary&rdquo;) and answers for it. Contact: <ContactEmail />. The
+                    grievance officer is named on the <Link href="/contact" className="text-primary hover:underline">Contact</Link> page.
+                </p>
+            </Section>
 
             <Section title="What we store">
                 <ul className="flex flex-col gap-2">
@@ -41,6 +34,7 @@ export default function PrivacyPage() {
                     <li><strong>Where you sign in from:</strong> the IP address and its approximate location (country, region, city) when you create your account, when you last signed in and when you ask to publish. Only admins see them, to judge requests to publish and to spot abuse. They&apos;re kept for as long as your account exists.</li>
                     <li><strong>Images you upload:</strong> who uploaded each one, when, and what the original file said about itself (camera, lens, editing software, when and where it was taken, if your device recorded it). Only you, in your data export, and the site&apos;s admins see this. The copy served to readers has all of that removed, so a photo never reveals where it was taken.</li>
                     <li><strong>What you write and do:</strong> posts and their earlier revisions, comments, and votes. Posts and comments are public once published; votes are not shown individually.</li>
+                    <li><strong>Your agreement:</strong> when you confirmed being 18 or older and accepted the terms at sign-up.</li>
                     <li><strong>Notifications:</strong> the in-app notifications you receive and your notification settings. {ttlDays > 0 ? `Read notifications are deleted after ${ttlDays} days.` : "Notifications are kept while your account exists."}</li>
                     <li><strong>Push notifications:</strong> if you turn them on, the delivery address your browser gives us. It&apos;s removed when you sign out or turn push off. Push messages travel through your browser maker&apos;s push service (for example Google or Mozilla).</li>
                     <li><strong>Reading history, only if you accept cookies:</strong> which posts this browser read, kept for {VISITOR_EVENT_TTL_DAYS} days and linked to your account when you sign in, to suggest posts you&apos;ll like. Declining, or withdrawing consent later, deletes this browser&apos;s history.</li>
@@ -60,13 +54,38 @@ export default function PrivacyPage() {
                 <p>You can change your choice at any time with &ldquo;Cookie preferences&rdquo; at the bottom of every page.</p>
             </Section>
 
+            <Section title="Why we use it">
+                <ul className="flex flex-col gap-2">
+                    <li><strong>To run your account and show what you publish:</strong> you give this data to use the service, and you can withdraw by deleting your account.</li>
+                    <li><strong>Reading history:</strong> only with your consent, which you can withdraw at any time.</li>
+                    <li><strong>Security and abuse prevention:</strong> sign-in addresses, rate limits and logs, to keep accounts and the site safe.</li>
+                    <li>We don&apos;t use your data for anything else, and we don&apos;t sell or share it except with the services named on this page that help run the site.</li>
+                </ul>
+            </Section>
+
+            <Section title="Children">
+                <p>
+                    Accounts are for people aged 18 or older; sign-up asks you to confirm it. We don&apos;t knowingly collect children&apos;s data, track children or
+                    show them targeted content. If we learn an account belongs to a child, we delete it. Parents or guardians can ask us to.
+                </p>
+            </Section>
+
             <Section title="Your choices and rights">
                 <ul className="flex flex-col gap-2">
                     <li><strong>See your data:</strong> download everything we store about your account from <Link href="/dashboard/account" className="text-primary hover:underline">Account</Link>.</li>
                     <li><strong>Correct it:</strong> edit your profile, posts and comments, or contact us for anything else.</li>
                     <li><strong>Delete it:</strong> delete your account from <Link href="/dashboard/account" className="text-primary hover:underline">Account</Link>. Your account, posts, votes, notifications and reading history are removed permanently; your comments on other people&apos;s posts are replaced by &ldquo;[deleted]&rdquo; so replies to them still make sense. Backups containing it are overwritten within our backup retention period.</li>
-                    <li><strong>Withdraw consent:</strong> use &ldquo;Cookie preferences&rdquo; to stop reading history.</li>
+                    <li><strong>Withdraw consent:</strong> use &ldquo;Cookie preferences&rdquo; to stop reading history. Withdrawing is as easy as giving consent and doesn&apos;t affect anything before it.</li>
+                    <li><strong>Nominate someone:</strong> you can name a person to use these rights for you if you die or can&apos;t act yourself; write to us with their details.</li>
+                    <li><strong>Complain:</strong> write to the grievance officer first. We answer within 15 days; if you aren&apos;t satisfied, you can complain to the Data Protection Board of India.</li>
                 </ul>
+            </Section>
+
+            <Section title="Security and breaches">
+                <p>
+                    Passwords are stored only as one-way hashes, connections use HTTPS, and access to the server is restricted. If a breach affects your data, we tell
+                    you and the Data Protection Board without delay, with what happened and what you can do.
+                </p>
             </Section>
 
             <Section title="Credits">
@@ -78,10 +97,10 @@ export default function PrivacyPage() {
 
             <Section title="Contact">
                 <p>
-                    Questions or requests about your data:{" "}
-                    {contact ? <a href={`mailto:${contact}`} className="text-primary hover:underline">{contact}</a> : "contact the site administrator"}.
+                    Questions or requests about your data: <ContactEmail />. See the <Link href="/contact" className="text-primary hover:underline">Contact</Link> page for
+                    the grievance officer.
                 </p>
             </Section>
-        </article>
+        </LegalPage>
     );
 }

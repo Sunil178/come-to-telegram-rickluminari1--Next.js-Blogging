@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let clientIp = "10.9.0.1";
 let cookieJar: Record<string, string> = {};
@@ -29,7 +29,7 @@ const { registerAction } = await import("@/actions/register");
 
 function form(overrides: Record<string, string> = {}) {
     const data = new FormData();
-    const fields = { username: "newuser", firstName: "New", lastName: "User", email: "new@example.com", password: "secret123", password_confirmation: "secret123", ...overrides };
+    const fields = { username: "newuser", firstName: "New", lastName: "User", email: "new@example.com", password: "secret123", password_confirmation: "secret123", ageConfirmed: "on", ...overrides };
     for (const [key, value] of Object.entries(fields)) data.set(key, value);
     return data;
 }
@@ -60,6 +60,43 @@ describe("registerAction rate limiting", () => {
 
         expect(state.error).toMatch(/Too many registration attempts/);
         expect(createMock).toHaveBeenCalledTimes(10);
+    });
+});
+
+describe("registerAction when sign-up is closed", () => {
+    beforeEach(() => {
+        findOneMock.mockReset().mockResolvedValue(null);
+        createMock.mockReset().mockResolvedValue({});
+        clientIp = "10.9.3.1";
+    });
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("refuses to create an account when SIGNUP_ENABLED=false", async () => {
+        vi.stubEnv("SIGNUP_ENABLED", "false");
+        const state = await registerAction({}, form({ email: "closed@example.com", username: "closed", ageConfirmed: "on" }));
+        expect(state.error).toMatch(/Sign-up is closed/);
+        expect(createMock).not.toHaveBeenCalled();
+    });
+});
+
+describe("registerAction age and terms", () => {
+    beforeEach(() => {
+        findOneMock.mockReset().mockResolvedValue(null);
+        createMock.mockReset().mockResolvedValue({ id: "u-age", email: "a@example.com", username: "ageok" });
+        clientIp = "10.9.4.1";
+    });
+
+    it("requires confirming age 18+ and accepting the terms", async () => {
+        const data = form({ email: "minor@example.com", username: "minor" });
+        data.delete("ageConfirmed");
+        const state = await registerAction({}, data);
+        expect(state.validationErrors?.ageConfirmed).toBeDefined();
+        expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it("records when the terms were accepted", async () => {
+        await registerAction({}, form({ email: "a@example.com", username: "ageok" }));
+        expect(createMock.mock.calls[0][0].termsAcceptedAt).toBeInstanceOf(Date);
     });
 });
 

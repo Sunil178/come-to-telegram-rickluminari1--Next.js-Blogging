@@ -88,7 +88,7 @@ export default function MobileNav({ links, user }: MobileNavProps) {
                     ) : (
                         <SheetClose asChild>
                             <Button asChild className="w-full">
-                                <Link href="/auth/login">Login</Link>
+                                <Link href="/auth/login">Log in</Link>
                             </Button>
                         </SheetClose>
                     )}

@@ -57,7 +57,8 @@ To make an existing account the first admin (or create one), run `npm run bootst
 | `GEOIP_DB_PATH` | no | DB-IP City Lite database (`npm run geoip:download`, refresh monthly) used to show admins the approximate location of sign-up, sign-in and publish-request addresses; unset, locations are off. Loaded into memory on first use (about 130 MB) and reloaded when the file changes. Compose mounts `./data/geoip` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` | for email | SMTP server for account emails. With `SMTP_HOST` set, new accounts confirm their email before logging in and password reset is available; without it, accounts start verified and reset is off |
 | `NOTIFICATION_READ_TTL_DAYS` | no | Days read notifications are kept before MongoDB's TTL monitor deletes them (default 90; `0` keeps them forever). Applied at server start; unread notifications never expire |
-| `PRIVACY_CONTACT_EMAIL` | no | Address shown on `/privacy` for data requests; without it the page says to contact the site administrator |
+| `OPERATOR_NAME`, `OPERATOR_LOCATION`, `CONTACT_EMAIL` | for launch | Who runs the site, where, and how to reach them: shown on `/about`, `/contact` (as the grievance officer), `/terms` (which courts) and `/privacy` (the data fiduciary). Unset, the pages use neutral wording |
+| `SIGNUP_ENABLED`, `COMMENTS_ENABLED` | no | Feature switches (default on; `false`, `0`, `off` or `no` turns one off). Closed sign-up shows a notice on `/auth/register` and refuses new accounts; comments off hides them on posts and refuses new ones and edits |
 | `MONGODB_POOL_SIZE` | no | Size of the MongoDB connection pool (default 10), filled from server start. Fixed-size because a connection opened on demand during a request keeps that request's memory alive (Node 24 async context) |
 | `LOG_LEVEL`, `LOG_FORMAT` | no | Log level (`debug`/`info`/`warn`/`error`); `LOG_FORMAT=json` forces JSON lines outside production |
 

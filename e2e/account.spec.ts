@@ -79,7 +79,7 @@ test("deleting an account removes its content, keeps reply threads and corrects 
     await expect(leaverPage).toHaveURL(/\/auth\/login/);
     await leaverPage.getByLabel("Email").fill(leaver.email);
     await leaverPage.getByLabel("Password").fill(PASSWORD);
-    await leaverPage.getByRole("button", { name: "Login" }).click();
+    await leaverPage.getByRole("button", { name: "Log in" }).click();
     await expect(leaverPage).toHaveURL(/\/auth\/login/);
     // Streamed pages can't change the status once the loading shell is sent; Next marks them noindex instead.
     await leaverPage.goto(`/posts/${leaverPost.slug}`);

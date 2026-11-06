@@ -6,6 +6,9 @@ import CookiePreferencesButton from "@/components/consent/CookiePreferencesButto
 const FOOTER_LINKS = [
     { href: "/", label: "Home" },
     { href: "/posts", label: "Posts" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
+    { href: "/terms", label: "Terms" },
     { href: "/privacy", label: "Privacy" },
 ];
 
@@ -21,7 +24,7 @@ export default function Footer() {
                         Essays and notes on technology, culture, and the questions in between.
                     </p>
                 </div>
-                <nav className="flex items-center gap-6 font-mono text-xs tracking-widest uppercase">
+                <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 font-mono text-xs tracking-widest uppercase">
                     {FOOTER_LINKS.map((link) => (
                         <Link
                             key={link.href}
