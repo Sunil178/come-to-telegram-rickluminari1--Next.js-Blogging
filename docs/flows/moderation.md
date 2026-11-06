@@ -4,7 +4,7 @@
 
 ## How it works
 
-A post's `approval` is Pending, Approved or Rejected. Submitting or resubmitting a post notifies every moderator and admin (`notifyPostSubmitted()` in `src/libs/review-notifications.ts`); a decision through `PATCH /api/posts/[slug]/approval` notifies the author and marks the staff's review notifications for that post as read, so the bell doesn't keep showing handled work. Approval publishes the post at the later of the approval and the author's scheduled time.
+A post's `approval` is Pending, Approved or Rejected. Private posts (see [writing.md](writing.md) › "Keep a post private") never reach moderation: they aren't listed, can't be opened, approved, edited or deleted by staff, and making a waiting post private marks its review notifications read. Submitting or resubmitting a post notifies every moderator and admin (`notifyPostSubmitted()` in `src/libs/review-notifications.ts`); a decision through `PATCH /api/posts/[slug]/approval` notifies the author and marks the staff's review notifications for that post as read, so the bell doesn't keep showing handled work. Approval publishes the post at the later of the approval and the author's scheduled time.
 
 ```mermaid
 stateDiagram-v2

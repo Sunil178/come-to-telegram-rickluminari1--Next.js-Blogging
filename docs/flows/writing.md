@@ -23,7 +23,7 @@ The editor (`src/components/posts/PostForm.tsx`, Plate.js) creates posts through
 - 3a. Missing title, slug or body, a category that isn't offered, or a publish time that isn't within a year: the message says what to fix.
 - 3b. A slug another post already uses: "A post with this slug already exists. Please choose a different slug."
 
-**Side effects:** post record (approval Pending); moderators get a "post waiting for review" notification; upload records with private metadata.
+**Side effects:** post record (approval Pending); moderators get a "post waiting for review" notification; upload records with private metadata. A new image is a `draft` (loads by its address, never kept by shared caches) until a post is saved with it, then `public` once a shared post by its uploader uses it.
 
 **Tested by:** `e2e/publishing.spec.ts` › "an author's post goes live only after a moderator approves it"; `e2e/uploads.spec.ts` › "an author's uploaded image is served back from /uploads", "a photo's location never reaches readers; its metadata stays private with the upload record".
 
@@ -32,7 +32,7 @@ The editor (`src/components/posts/PostForm.tsx`, Plate.js) creates posts through
 1. Types in the editor, then reloads or closes the tab. → Reopening the editor offers the autosaved draft.
 2. Logs out. → Every draft in this browser is cleared, so the next person on a shared computer doesn't see it.
 
-**Tested by:** `e2e/content.spec.ts` › "the editor autosaves a draft that survives a reload".
+**Tested by:** `e2e/content.spec.ts` › "the editor autosaves a draft, including its privacy, that survives a reload".
 
 ### 3. Schedule a post
 
@@ -69,8 +69,30 @@ The editor (`src/components/posts/PostForm.tsx`, Plate.js) creates posts through
 
 **Tested by:** `e2e/moderation.spec.ts` › "an author deletes their own post, but not anyone else's".
 
+### 6. Keep a post private
+
+**Preconditions:** signed in as an author or above.
+
+1. Ticks "Private: only I can see this post" in the editor and saves ("Save privately"). → The post is in My Posts with a "Private" badge; opening it shows "Private post: only you can see it."
+2. Later unticks it and saves (a restored draft keeps the box as it was). → The post goes to review like a new one, even if it was approved before it was made private: its content wasn't checked while private.
+
+**Extensions:**
+
+- 1a. A moderator or admin opens the post, its editor or its revisions: not found. It isn't in the review queue, the all-posts list or the admin comment list, and moderators can't approve, edit or delete it, or delete comments under it.
+- 1b. Someone else requests one of its images: not found; the author gets them with `Cache-Control: private, no-store`. Admins see such files in Uploads only as "Private", without preview, details or download.
+- 1c. A public post is made private: it disappears for readers at once, and its pending review notifications are marked read. Copies already saved can't be recalled: browsers, a CDN and the server's image-resizing cache can keep an image served while the post was public for up to a year.
+- 1d. A private post shows no comment section; comments are for shared posts.
+- 1e. Its banner is loaded directly, not through the image optimizer, whose server-side fetch carries no session and would be refused. The editor's banner preview is always loaded directly, so an image never lands in the optimizer's shared cache while its post is being written.
+- 2a. An admin edits someone else's shared post: the checkbox isn't offered; only the author changes a post's privacy.
+- 2b. A rejected post edited while it stays private keeps its rejection and the moderator's reason; nothing goes to review until it's shared.
+
+**Side effects:** `visibility: false` on the post; its images' upload records set to `access: private` while only its author's private posts use them, recomputed for every image the post used before and after each save, restore or delete (`src/libs/upload-privacy.ts`). Someone else referencing a file can't make it public. No review notifications.
+
+**Tested by:** `e2e/legal-and-private.spec.ts` › "a private post is visible only to its author, not to admins or the review queue", "a private post's banner and inline images reach only its author, and become public when it is shared"; `src/libs/post-page.test.ts`, `src/libs/upload-privacy.test.ts`, `src/app/uploads/[...path]/route.test.ts`, `src/app/api/uploads/download/route.test.ts`, `src/app/api/comments/[id]/route.test.ts`, `src/app/api/posts/[slug]/route.test.ts` › "private posts".
+
 ## Rules and limits
 
+- Private posts: `visibility: false`. `SHARED_POST` and `manageablePostFilter()` in `src/libs/post-visibility.ts` keep them out of every moderator and admin query; a private post never matches `publicPostFilter()`, even when approved.
 - Images: JPEG, PNG, WebP, GIF; `UPLOAD_MAX_FILE_MB` per file (5), `UPLOAD_DAILY_LIMIT` per user per day (50), `UPLOAD_STORAGE_LIMIT_MB` per user (500), `UPLOAD_RATE_LIMIT_PER_HOUR` per address (30). Images over 50 megapixels are refused.
 - Reading time: 200 words a minute.
 - Loading states: the editor, edit, revisions and dashboard pages stream their own skeletons (`e2e/content.spec.ts` › "the editor and dashboard pages stream their own loading skeletons, not the posts grid").

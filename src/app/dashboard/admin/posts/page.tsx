@@ -3,6 +3,7 @@ import { FilterQuery } from "mongoose";
 import Post, { IPost, ApprovalStatus } from "@/models/Post";
 import User from "@/models/User";
 import Category from "@/models/Category";
+import { SHARED_POST } from "@/libs/post-visibility";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import PostApprovalActions from "@/components/dashboard/admin/PostApprovalActions";
@@ -28,7 +29,7 @@ export default async function AdminPostsPage({ searchParams }: AdminPostsPagePro
     const { approval: approvalParam } = await searchParams;
     const approval = APPROVAL_OPTIONS.includes(approvalParam as ApprovalStatus) ? (approvalParam as ApprovalStatus) : ApprovalStatus.Pending;
 
-    const filter: FilterQuery<IPost> = { approval };
+    const filter: FilterQuery<IPost> = { approval, ...SHARED_POST };
 
     const posts = await Post.find(filter)
         .populate({ path: "userId", model: User, select: "email username" })

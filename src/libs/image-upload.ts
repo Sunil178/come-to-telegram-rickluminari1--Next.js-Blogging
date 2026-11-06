@@ -138,6 +138,7 @@ export async function saveUploadedImage(file: FormDataEntryValue | null, owner: 
             url,
             userId: owner.userId,
             purpose: owner.purpose,
+            access: owner.purpose === "post" ? "draft" : "public",
             mimeType: file.type,
             size: output.length,
             originalSize: input.length,

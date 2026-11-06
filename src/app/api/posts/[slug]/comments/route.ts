@@ -43,7 +43,7 @@ export const POST = withApiGuard<RouteContext>(async (request, { params, session
 
         const isOwner = post.userId?.toString() === session.user.id;
         const isPublic = isPubliclyVisible(post);
-        if (!isPublic && !isOwner) {
+        if (!post.visibility || (!isPublic && !isOwner)) {
             return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });
         }
 

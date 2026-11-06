@@ -98,7 +98,7 @@ export interface UploadFile {
     used: boolean;
     // Unused but under a day old: kept, as it may be in a post that isn't saved yet.
     recent: boolean;
-    record: (Pick<IUpload, "purpose" | "width" | "height" | "originalSize" | "metadata" | "createdAt"> & { uploader: string | null }) | null;
+    record: (Pick<IUpload, "purpose" | "width" | "height" | "originalSize" | "metadata" | "createdAt"> & { private: boolean; uploader: string | null }) | null;
 }
 
 const uploadedAt = (file: UploadFile) => new Date(file.record?.createdAt ?? file.modifiedAt);
@@ -123,7 +123,7 @@ export async function listUploads(): Promise<UploadFile[]> {
                 used: used.has(url),
                 recent: !used.has(url) && isRecent(modifiedAt),
                 record: record
-                    ? { purpose: record.purpose, width: record.width, height: record.height, originalSize: record.originalSize, metadata: record.metadata, createdAt: record.createdAt, uploader: record.userId?.username ?? null }
+                    ? { purpose: record.purpose, private: record.access === "private", width: record.width, height: record.height, originalSize: record.originalSize, metadata: record.metadata, createdAt: record.createdAt, uploader: record.userId?.username ?? null }
                     : null,
             };
         })

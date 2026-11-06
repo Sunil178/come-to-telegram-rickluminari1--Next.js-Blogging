@@ -42,6 +42,7 @@ Admin pages sit under `/dashboard/admin/`, gated by role in `src/proxy.ts` befor
 **Extensions:**
 
 - 1a. "All": every file, with in-use ones marked "In use".
+- 1b. An image only private posts use: shown as "Private" with its size and uploader, without preview, link or photo details, and left out of downloads (see [writing.md](writing.md) › "Keep a post private").
 - 3a. A file in use (post, deleted post, revision or profile photo): never deleted, even if selected; it's reported as kept.
 - 3b. An unused file under a day old: marked "New" and kept, since it may be in a post that isn't saved yet.
 

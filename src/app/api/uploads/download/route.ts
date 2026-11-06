@@ -7,6 +7,7 @@ import { withApiGuard } from "@/libs/api-guard";
 import { ROLES } from "@/libs/roles";
 import { UPLOAD_CONTENT_TYPES, UPLOAD_URL_PREFIX } from "@/libs/uploads";
 import { listUploads, uploadFiles } from "@/libs/upload-cleanup";
+import Upload from "@/models/Upload";
 
 const MAX_URLS = 1000;
 
@@ -41,7 +42,10 @@ export const GET = withApiGuard(async (request) => {
     const urls = params.get("scope") === "unused"
         ? (await listUploads()).filter((file) => !file.used && !file.recent).map((file) => file.url)
         : params.getAll("url").slice(0, MAX_URLS);
-    const files = uploadFiles(urls).filter(({ target }) => fs.existsSync(target));
+    // A private post's images stay with their uploader, admins included; checked on the canonical address.
+    const candidates = uploadFiles(urls);
+    const privateUrls = new Set<string>(await Upload.distinct("url", { url: { $in: candidates.map((file) => file.url) }, access: "private" }));
+    const files = candidates.filter(({ url, target }) => !privateUrls.has(url) && fs.existsSync(target));
     if (files.length === 0) return NextResponse.json({ data: null, message: "No files to download" }, { status: 404 });
 
     if (files.length === 1) {

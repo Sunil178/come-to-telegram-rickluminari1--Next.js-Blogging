@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const updateManyMock = vi.fn();
-vi.mock("@/models/Notification", () => ({ default: { updateMany: (...args: unknown[]) => updateManyMock(...args) } }));
+const deleteManyMock = vi.fn();
+vi.mock("@/models/Notification", () => ({ default: { updateMany: (...args: unknown[]) => updateManyMock(...args), deleteMany: (...args: unknown[]) => deleteManyMock(...args) } }));
 const staffMock = vi.fn();
 vi.mock("@/models/User", () => ({ default: { find: (...args: unknown[]) => ({ select: () => ({ lean: () => staffMock(...args) }) }) } }));
 const postStatusMock = vi.fn();
@@ -12,15 +13,16 @@ const warnMock = vi.fn();
 const errorMock = vi.fn();
 vi.mock("@/libs/logger", () => ({ logger: { warn: (...args: unknown[]) => warnMock(...args), error: (...args: unknown[]) => errorMock(...args) } }));
 
-const { markRequestNotificationsRead, markPostReviewNotificationsRead, notifyPostSubmitted } = await import("@/libs/review-notifications");
+const { markRequestNotificationsRead, markPostReviewNotificationsRead, notifyPostSubmitted, removePostReviewNotifications } = await import("@/libs/review-notifications");
 
 describe("review notifications", () => {
     beforeEach(() => {
         updateManyMock.mockReset();
+        deleteManyMock.mockReset();
         notifyMock.mockReset();
         warnMock.mockReset();
         staffMock.mockResolvedValue([{ _id: "staff-a" }, { _id: "staff-b" }]);
-        postStatusMock.mockResolvedValue({ approval: "Pending" });
+        postStatusMock.mockResolvedValue({ approval: "Pending", visibility: true });
     });
 
     it("marks every admin's unread notification of a publish request read", async () => {
@@ -72,5 +74,16 @@ describe("review notifications", () => {
 
         expect(updateManyMock).toHaveBeenCalledWith(expect.objectContaining({ type: "post_submitted", postId: "post1" }), expect.anything());
         expect(updateManyMock).toHaveBeenCalledWith(expect.objectContaining({ type: "post_submitted", postId: "post2" }), expect.anything());
+    });
+
+    it("removes them at once when the post was made private meanwhile, so no moderator keeps its title", async () => {
+        postStatusMock.mockResolvedValue({ approval: "Pending", visibility: false });
+        await notifyPostSubmitted({ id: "post3", title: "Mine", slug: "mine" }, { id: "author1", username: "writer" });
+        expect(deleteManyMock).toHaveBeenCalledWith({ type: "post_submitted", postId: "post3" });
+    });
+
+    it("removes every staff notification about a post that became private", async () => {
+        await removePostReviewNotifications("post4");
+        expect(deleteManyMock).toHaveBeenCalledWith({ type: "post_submitted", postId: "post4" });
     });
 });

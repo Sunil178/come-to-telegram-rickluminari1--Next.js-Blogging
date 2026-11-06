@@ -19,6 +19,10 @@ function formatSize(bytes: number): string {
 
 function toRow(file: UploadFile): UploadRow {
     const record = file.record;
+    // A private post's image: admins see that it exists and its size, nothing of its content.
+    if (record?.private) {
+        return { url: file.url, size: formatSize(file.size), date: `${dateFormat.format(new Date(record.createdAt))} UTC`, used: file.used, recent: file.recent, uploader: record.uploader, details: [["Used for", "Private post image"]], mapUrl: null, private: true };
+    }
     const meta = record?.metadata;
     const details: [string, string | undefined | false][] = [
         ["Used for", record?.purpose === "avatar" ? "Profile photo" : record?.purpose === "post" ? "Post image" : undefined],
@@ -38,6 +42,7 @@ function toRow(file: UploadFile): UploadRow {
         recent: file.recent,
         uploader: record?.uploader ?? null,
         details: details.filter((entry): entry is [string, string] => Boolean(entry[1])),
+        private: false,
         mapUrl: meta?.gps ? `https://www.openstreetmap.org/?mlat=${meta.gps.latitude}&mlon=${meta.gps.longitude}#map=15/${meta.gps.latitude}/${meta.gps.longitude}` : null,
     };
 }

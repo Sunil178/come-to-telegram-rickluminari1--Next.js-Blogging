@@ -22,6 +22,7 @@ interface InitialPost {
     contentHtml: string;
     publishAt: string | null;
     categoryId: string | null;
+    isPrivate: boolean;
 }
 
 export interface CategoryOption {
@@ -45,10 +46,12 @@ interface PostFormProps {
     initialPost?: InitialPost;
     // Already public: its publish time can no longer be changed (that would take a live post down unmoderated).
     isLive?: boolean;
+    // Only the author makes a post private or shares it again.
+    canChangePrivacy?: boolean;
     categories: CategoryOption[];
 }
 
-export default function PostForm({ mode, userId, initialPost, isLive = false, categories }: PostFormProps) {
+export default function PostForm({ mode, userId, initialPost, isLive = false, canChangePrivacy = true, categories }: PostFormProps) {
     const router = useRouter();
     const editor = usePostEditor(initialPost?.contentHtml);
 
@@ -65,6 +68,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
     // Filled after mount: the local-time value depends on the browser's timezone, not the server's.
     // The field stays disabled until then, so an edit made earlier can't be overwritten by it.
     const [publishAt, setPublishAt] = useState("");
+    const [isPrivate, setIsPrivate] = useState(initialPost?.isPrivate ?? false);
     const [publishAtReady, setPublishAtReady] = useState(false);
     useEffect(() => {
         const initial = toLocalInputValue(initialPost?.publishAt);
@@ -102,6 +106,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
             JSON.stringify(draft.tags) === JSON.stringify(initialPost?.tags ?? []) &&
             draft.bannerImage === (initialPost?.bannerImage ?? "") &&
             draft.publishAt === toLocalInputValue(initialPost?.publishAt) &&
+            Boolean(draft.isPrivate) === (initialPost?.isPrivate ?? false) &&
             JSON.stringify(withoutNodeIds(draft.content)) === JSON.stringify(withoutNodeIds(editor.children));
         if (unchanged) return;
         // Parked under its own key until the author decides, so autosaves meanwhile can't overwrite it.
@@ -116,11 +121,11 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
         if (!userEdited.current) return;
         const timer = setTimeout(() => {
             if (saved.current) return;
-            const draft: Draft = { savedAt: Date.now(), title, titleDescription, slug, tags, bannerImage, publishAt, content: editor.children };
+            const draft: Draft = { savedAt: Date.now(), title, titleDescription, slug, tags, bannerImage, publishAt, isPrivate, content: editor.children };
             if (writeDraft(draftKey, draft)) setDraftSavedAt(draft.savedAt);
         }, AUTOSAVE_DELAY_MS);
         return () => clearTimeout(timer);
-    }, [draftKey, title, titleDescription, slug, tags, bannerImage, publishAt, contentVersion, editor]);
+    }, [draftKey, title, titleDescription, slug, tags, bannerImage, publishAt, isPrivate, contentVersion, editor]);
 
     const restoreDraft = () => {
         if (!pendingDraft) return;
@@ -131,6 +136,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
         setTags(pendingDraft.tags);
         setBannerImage(pendingDraft.bannerImage);
         setPublishAt(pendingDraft.publishAt);
+        setIsPrivate(Boolean(pendingDraft.isPrivate));
         editor.tf.setValue(pendingDraft.content);
         // Saved back under the main key right away, so a reload before the next autosave keeps it.
         writeDraft(draftKey, { ...pendingDraft, savedAt: Date.now() });
@@ -171,6 +177,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
             formData.set("postBannerPath", bannerImage);
             formData.set("post_data", JSON.stringify(editor.children));
             formData.set("publishAt", publishAt ? new Date(publishAt).toISOString() : "");
+            formData.set("private", String(isPrivate));
 
             const url = mode === "create" ? "/api/posts" : `/api/posts/${initialPost!.slug}`;
             const response = await fetch(url, {
@@ -278,6 +285,18 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
                 <TagInput id="post-tags" value={tags} onChange={setTags} />
             </div>
 
+            {canChangePrivacy && (
+                <div className="flex flex-col gap-1">
+                    <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <input id="post-private" type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} className="size-4 accent-primary" />
+                        Private: only I can see this post
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                        A private post skips review and never reaches readers; moderators and admins can&apos;t open it, and its images are served only to you. Untick it to send the post for review, even if it was approved before.
+                    </p>
+                </div>
+            )}
+
             <div className="flex flex-col gap-2">
                 <Label htmlFor="post-publish-at">Publish at (optional)</Label>
                 <Input
@@ -309,7 +328,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
                     </span>
                 )}
                 <Button type="submit" size="lg" disabled={submitting}>
-                    {submitting ? "Publishing…" : mode === "create" ? "Publish" : "Save changes"}
+                    {submitting ? "Saving…" : mode === "create" ? (isPrivate ? "Save privately" : "Publish") : "Save changes"}
                 </Button>
             </div>
         </form>

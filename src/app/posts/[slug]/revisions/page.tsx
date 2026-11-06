@@ -7,6 +7,7 @@ import PostRevision from "@/models/PostRevision";
 import User from "@/models/User";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
+import { manageablePostFilter } from "@/libs/post-visibility";
 import { MAX_REVISIONS_PER_POST } from "@/libs/post-revisions";
 import RestoreRevisionButton from "@/components/posts/RestoreRevisionButton";
 import LocalDateTime from "@/components/LocalDateTime";
@@ -24,7 +25,7 @@ export default async function RevisionsPage({ params, searchParams }: RevisionsP
     // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
-    const post = await Post.findOne(isAdmin ? { slug } : { slug, userId: session.user.id }).select("_id slug title").lean();
+    const post = await Post.findOne({ slug, ...manageablePostFilter(session.user.id, isAdmin) }).select("_id slug title").lean();
     if (!post) notFound();
 
     const revisions = await PostRevision.find({ postId: post._id })

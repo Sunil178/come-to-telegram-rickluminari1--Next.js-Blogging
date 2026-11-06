@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Comment from "@/models/Comment";
 import User from "@/models/User";
-import Post from "@/models/Post";
+import Post, { type IPost } from "@/models/Post";
+import type { SoftDeleteModel } from "mongoose-delete";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import RemoveCommentButton from "@/components/dashboard/admin/RemoveCommentButton";
 import PostsSearch from "@/components/posts/PostsSearch";
@@ -22,7 +23,9 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
     const params = await searchParams;
     const q = firstParam(params.q);
     const page = parsePageParam(params.page);
-    const filter = q ? { content: { $regex: escapeRegExp(q), $options: "i" } } : {};
+    // Comments on a private post belong to that post's author alone, like the post.
+    const privatePostIds = (await (Post as unknown as SoftDeleteModel<IPost>).findWithDeleted({ visibility: false }).select("_id").lean<{ _id: unknown }[]>()).map((post) => post._id);
+    const filter = { postId: { $nin: privatePostIds }, ...(q ? { content: { $regex: escapeRegExp(q), $options: "i" } } : {}) };
     const [total, comments] = await Promise.all([
         Comment.countDocuments(filter),
         Comment.find(filter)

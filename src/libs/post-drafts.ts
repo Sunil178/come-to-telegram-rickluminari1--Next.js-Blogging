@@ -12,6 +12,8 @@ export interface Draft {
     tags: string[];
     bannerImage: string;
     publishAt: string;
+    // Restored with the draft, so a private post can't come back as one sent for review.
+    isPrivate: boolean;
     content: Value;
 }
 

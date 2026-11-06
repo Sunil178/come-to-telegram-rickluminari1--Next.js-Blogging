@@ -18,7 +18,7 @@ export const getViewablePost = cache(async (slug: string) => {
     if (isPublic) return post;
 
     const session = await getSession();
-    if (hasRole(session?.user?.role, ROLES.MODERATOR)) return post;
+    if (post.visibility && hasRole(session?.user?.role, ROLES.MODERATOR)) return post;
 
     const owner = post.userId as unknown as { _id?: { toString(): string } } | null;
     if (session?.user?.id && owner?._id && owner._id.toString() === session.user.id) {

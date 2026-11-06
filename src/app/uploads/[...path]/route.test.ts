@@ -4,7 +4,21 @@ import path from "path";
 import { NextRequest } from "next/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: vi.fn() }));
+const authMock = vi.fn();
+vi.mock("@/app/api/auth/[...nextauth]/auth", () => ({ auth: () => authMock() }));
+// The file named PRIVATE_UUID is a private post's image of user "owner-1"; DRAFT_UUID is in no saved post yet.
+const PRIVATE_UUID = "1f8fad5b-d9cb-469f-a165-70867728950e";
+const DRAFT_UUID = "2f8fad5b-d9cb-469f-a165-70867728950e";
+vi.mock("@/models/Upload", () => ({
+    default: {
+        findOne: (filter: { url: string }) => ({
+            select: () => ({
+                lean: async () =>
+                    filter.url.includes(PRIVATE_UUID) ? { userId: "owner-1", access: "private" } : filter.url.includes(DRAFT_UUID) ? { userId: "owner-1", access: "draft" } : null,
+            }),
+        }),
+    },
+}));
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "uploads-test-"));
 const UUID = "0f8fad5b-d9cb-469f-a165-70867728950e";
@@ -21,6 +35,8 @@ describe("GET /uploads/[...path]", () => {
         vi.stubEnv("UPLOAD_DIR", root);
         fs.mkdirSync(path.join(root, "2026-10-31"));
         fs.writeFileSync(path.join(root, "2026-10-31", `${UUID}.png`), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+        fs.writeFileSync(path.join(root, "2026-10-31", `${PRIVATE_UUID}.png`), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+        fs.writeFileSync(path.join(root, "2026-10-31", `${DRAFT_UUID}.png`), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
         fs.mkdirSync(path.join(root, "seed"));
         fs.writeFileSync(path.join(root, "seed", "hello-world.jpg"), Buffer.from([0xff, 0xd8, 0xff]));
         fs.mkdirSync(path.join(root, "folder.png"));
@@ -49,6 +65,26 @@ describe("GET /uploads/[...path]", () => {
         expect(response.status).toBe(200);
         expect(response.headers.get("content-type")).toBe("image/jpeg");
         expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+    });
+
+    it("serves a private post's image only to its uploader, never cached by shared caches", async () => {
+        authMock.mockResolvedValue(null);
+        expect((await get(["2026-10-31", `${PRIVATE_UUID}.png`])).status).toBe(404);
+
+        authMock.mockResolvedValue({ user: { id: "someone-else", role: "admin" } });
+        expect((await get(["2026-10-31", `${PRIVATE_UUID}.png`])).status).toBe(404);
+
+        authMock.mockResolvedValue({ user: { id: "owner-1", role: "author" } });
+        const response = await get(["2026-10-31", `${PRIVATE_UUID}.png`]);
+        expect(response.status).toBe(200);
+        expect(response.headers.get("cache-control")).toBe("private, no-store");
+    });
+
+    it("serves a draft's image by its address but keeps it out of shared caches", async () => {
+        authMock.mockResolvedValue(null);
+        const response = await get(["2026-10-31", `${DRAFT_UUID}.png`]);
+        expect(response.status).toBe(200);
+        expect(response.headers.get("cache-control")).toBe("private, max-age=3600");
     });
 
     it("returns 404 for a directory with an image-like name", async () => {

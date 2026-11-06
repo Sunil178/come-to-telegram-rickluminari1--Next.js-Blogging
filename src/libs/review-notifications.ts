@@ -33,6 +33,15 @@ export function markPostReviewNotificationsRead(postId: Id): Promise<void> {
     return markHandled(ROLES.MODERATOR, { type: "post_submitted", postId });
 }
 
+// A private post belongs to its author alone, so staff lose even the notification that named it.
+export async function removePostReviewNotifications(postId: Id): Promise<void> {
+    try {
+        await Notification.deleteMany({ type: "post_submitted", postId });
+    } catch (error) {
+        logger.warn("Failed to remove review notifications of a private post", { error });
+    }
+}
+
 /** Tells every moderator and admin (except the author) that a post is waiting for review. */
 export async function notifyPostSubmitted(post: { id: string; title: string; slug: string }, author: { id: string; username?: string | null }): Promise<void> {
     try {
@@ -48,9 +57,10 @@ export async function notifyPostSubmitted(post: { id: string; title: string; slu
                 postSlug: post.slug,
             })
         ));
-        // A moderator may have reviewed (or the author deleted) the post before these notifications existed.
-        const current = await Post.findById(post.id).select("approval").lean<{ approval: string }>();
-        if (!current || current.approval !== "Pending") await markPostReviewNotificationsRead(post.id);
+        // A moderator may have reviewed (or the author deleted or made private) the post before these notifications existed.
+        const current = await Post.findById(post.id).select("approval visibility").lean<{ approval: string; visibility: boolean }>();
+        if (current?.visibility === false) await removePostReviewNotifications(post.id);
+        else if (!current || current.approval !== "Pending") await markPostReviewNotificationsRead(post.id);
     } catch (error) {
         logger.error("Failed to notify moderators of a submitted post", { error });
     }

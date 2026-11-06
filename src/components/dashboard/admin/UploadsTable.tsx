@@ -19,6 +19,7 @@ export interface UploadRow {
     uploader: string | null;
     details: [string, string][];
     mapUrl: string | null;
+    private: boolean;
 }
 
 const downloadHref = (urls: string[]) => `/api/uploads/download?${new URLSearchParams(urls.map((url) => ["url", url])).toString()}`;
@@ -130,12 +131,20 @@ export default function UploadsTable({ rows, deletableCount }: { rows: UploadRow
                                 </TableCell>
                                 <TableCell className="align-top">
                                     <div className="flex items-start gap-3">
-                                        {/* eslint-disable-next-line @next/next/no-img-element -- small admin preview of a local upload */}
-                                        <img src={row.url} alt="" loading="lazy" className="size-12 shrink-0 rounded object-cover ring-1 ring-border" />
+                                        {row.private ? (
+                                            <span className="flex size-12 shrink-0 items-center justify-center rounded bg-muted text-[10px] text-muted-foreground ring-1 ring-border">Private</span>
+                                        ) : (
+                                            // eslint-disable-next-line @next/next/no-img-element -- small admin preview of a local upload
+                                            <img src={row.url} alt="" loading="lazy" className="size-12 shrink-0 rounded object-cover ring-1 ring-border" />
+                                        )}
                                         <div className="min-w-0">
-                                            <a href={row.url} target="_blank" rel="noreferrer" className="block max-w-xs truncate font-mono text-xs text-primary hover:underline">
-                                                {row.url}
-                                            </a>
+                                            {row.private ? (
+                                                <span className="block max-w-xs truncate font-mono text-xs">{row.url}</span>
+                                            ) : (
+                                                <a href={row.url} target="_blank" rel="noreferrer" className="block max-w-xs truncate font-mono text-xs text-primary hover:underline">
+                                                    {row.url}
+                                                </a>
+                                            )}
                                             {row.details.length > 0 && (
                                                 <details className="mt-1 text-xs text-muted-foreground">
                                                     <summary className="cursor-pointer">Details</summary>

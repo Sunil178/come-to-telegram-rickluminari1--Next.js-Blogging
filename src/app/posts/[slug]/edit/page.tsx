@@ -6,7 +6,7 @@ import Post from "@/models/Post";
 import { getSession, type AuthenticatedSession } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import PostForm from "@/components/posts/PostForm";
-import { isPubliclyVisible } from "@/libs/post-visibility";
+import { isPubliclyVisible, manageablePostFilter } from "@/libs/post-visibility";
 import { categoryOptions } from "@/libs/post-category";
 
 interface EditPostPageProps {
@@ -18,7 +18,7 @@ const getEditablePost = cache(async (slug: string) => {
     // proxy.ts (isGatedPath) redirects unauthenticated requests before this renders.
     const session = (await getSession()) as AuthenticatedSession;
     const isAdmin = hasRole(session.user.role, ROLES.ADMIN);
-    const post = await Post.findOne(isAdmin ? { slug } : { slug, userId: session.user.id }).lean();
+    const post = await Post.findOne({ slug, ...manageablePostFilter(session.user.id, isAdmin) }).lean();
     return { session, post };
 });
 
@@ -64,7 +64,9 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
                     contentHtml: post.content,
                     publishAt: post.publishAt ? new Date(post.publishAt).toISOString() : null,
                     categoryId: post.categoryId ? post.categoryId.toString() : null,
+                    isPrivate: !post.visibility,
                 }}
+                canChangePrivacy={post.userId?.toString() === session.user.id}
             />
         </>
     );

@@ -31,7 +31,8 @@ export default function PostBannerUpload({ value, onChange }: PostBannerUploadPr
                 value && "border-solid"
             )}
         >
-            {value && <Image src={value} alt="" fill className="object-cover" />}
+            {/* Loaded directly: through the optimizer, a draft's image would land in its shared cache before the post is saved as private. */}
+            {value && <Image src={value} alt="" fill className="object-cover" unoptimized />}
 
             <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 

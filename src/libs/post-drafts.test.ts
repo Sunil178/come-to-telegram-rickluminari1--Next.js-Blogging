@@ -20,7 +20,7 @@ describe("post drafts", () => {
     });
 
     it("round-trips a draft", () => {
-        const draft = { savedAt: 1, title: "T", titleDescription: "", slug: "t", tags: [], bannerImage: "", publishAt: "", content: [] };
+        const draft = { savedAt: 1, title: "T", titleDescription: "", slug: "t", tags: [], bannerImage: "", publishAt: "", isPrivate: true, content: [] };
         writeDraft("post-draft:u1:new", draft);
         expect(readDraft("post-draft:u1:new")).toEqual(draft);
     });

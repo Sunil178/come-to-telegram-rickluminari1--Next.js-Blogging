@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import Post from "@/models/Post";
+import type { Types } from "mongoose";
+import type { SoftDeleteModel } from "mongoose-delete";
+import Post, { type IPost } from "@/models/Post";
 import Comment from "@/models/Comment";
 import { withApiGuard } from "@/libs/api-guard";
 import { hasRole, ROLES } from "@/libs/roles";
 import { logger } from "@/libs/logger";
 import { commentsEnabled } from "@/libs/runtime-config";
+
+// A private post's comments are its author's alone, like the post (deleted posts included).
+async function underOthersPrivatePost(postId: Types.ObjectId, userId: string): Promise<boolean> {
+    const post = await (Post as unknown as SoftDeleteModel<IPost>).findOneWithDeleted({ _id: postId }).select("visibility userId").lean<{ visibility: boolean; userId?: { toString(): string } }>();
+    return post?.visibility === false && post.userId?.toString() !== userId;
+}
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -25,11 +33,10 @@ export const PATCH = withApiGuard<RouteContext>(async (request, { params, sessio
             return NextResponse.json({ data: null, message: "Comment is too long (max 5000 characters)" }, { status: 400 });
         }
 
-        const comment = await Comment.findOneAndUpdate(
-            { _id: id, userId: session.user.id },
-            { content, editedAt: new Date() },
-            { returnDocument: "after" }
-        );
+        const own = await Comment.findOne({ _id: id, userId: session.user.id }).select("postId").lean<{ postId: Types.ObjectId }>();
+        const comment = own && !(await underOthersPrivatePost(own.postId, session.user.id))
+            ? await Comment.findOneAndUpdate({ _id: id, userId: session.user.id }, { content, editedAt: new Date() }, { returnDocument: "after" })
+            : null;
 
         if (!comment) {
             return NextResponse.json({ data: null, message: "Comment not found" }, { status: 404 });
@@ -51,7 +58,8 @@ export const DELETE = withApiGuard<RouteContext>(async (request, { params, sessi
         const filter = hasRole(session.user.role, ROLES.MODERATOR) ? { _id: id } : { _id: id, userId: session.user.id };
 
         const comment = await Comment.findOne(filter);
-        if (!comment) {
+        const othersComment = comment && comment.userId?.toString() !== session.user.id;
+        if (!comment || (othersComment && (await underOthersPrivatePost(comment.postId, session.user.id)))) {
             return NextResponse.json({ data: null, message: "Comment not found" }, { status: 404 });
         }
 

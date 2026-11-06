@@ -67,7 +67,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
 
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-            { slug: "some-slug" },
+            { slug: "some-slug", visibility: true },
             [{ $set: expect.objectContaining({
                 approval: "Approved",
                 approvedAt: expect.any(Date),
@@ -84,7 +84,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
 
         expect(response.status).toBe(200);
         expect(findOneAndUpdateMock).toHaveBeenCalledWith(
-            { slug: "some-slug" },
+            { slug: "some-slug", visibility: true },
             [{ $set: expect.objectContaining({ approval: "Rejected", approvedAt: null }) }],
             { returnDocument: "before", updatePipeline: true }
         );
@@ -146,7 +146,7 @@ describe("PATCH /api/posts/[slug]/approval", () => {
 
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ data: { slug: "some-slug", approval: "Approved" } });
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, [{ $set: expect.objectContaining({ published: true }) }], { returnDocument: "before", updatePipeline: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug", visibility: true }, [{ $set: expect.objectContaining({ published: true }) }], { returnDocument: "before", updatePipeline: true });
         expect(notifyMock).not.toHaveBeenCalled();
     });
 

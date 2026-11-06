@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import PostsSearch from "@/components/posts/PostsSearch";
 import PostsPagination from "@/components/posts/PostsPagination";
 import DeletePostButton from "@/components/posts/DeletePostButton";
-import { isScheduled } from "@/libs/post-visibility";
+import { isScheduled, SHARED_POST } from "@/libs/post-visibility";
 
 const PAGE_SIZE = 10;
 
@@ -90,7 +90,7 @@ export default async function PostsManageView({
     const sortField: SortField = SORTABLE_FIELDS.includes(sort as SortField) ? (sort as SortField) : "createdAt";
     const sortOrder = order === "asc" ? 1 : -1;
 
-    const filter: FilterQuery<IPost> = scopeUserId ? { userId: scopeUserId } : {};
+    const filter: FilterQuery<IPost> = scopeUserId ? { userId: scopeUserId } : { ...SHARED_POST };
     if (q) filter.title = { $regex: escapeRegExp(q), $options: "i" };
     if (approval && APPROVAL_OPTIONS.includes(approval as (typeof APPROVAL_OPTIONS)[number])) filter.approval = approval;
     if (published === "true" || published === "false") filter.published = published === "true";
@@ -163,6 +163,7 @@ export default async function PostsManageView({
                                         <Badge variant="secondary" className={APPROVAL_STYLES[post.approval] || ""}>
                                             {post.approval}
                                         </Badge>
+                                        {!post.visibility && <Badge variant="outline" className="ml-2">Private</Badge>}
                                     </TableCell>
                                     <TableCell>
                                         {post.published ? (

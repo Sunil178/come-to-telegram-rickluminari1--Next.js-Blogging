@@ -5,6 +5,7 @@ import { ROLES } from "@/libs/roles";
 import { notify } from "@/libs/notify";
 import { logger } from "@/libs/logger";
 import { markPostReviewNotificationsRead } from "@/libs/review-notifications";
+import { SHARED_POST } from "@/libs/post-visibility";
 
 const MAX_REASON_LENGTH = 1000;
 
@@ -44,7 +45,7 @@ export const PATCH = withApiGuard<RouteContext>(
 
             // Returns the pre-update document, so a repeat click (or a second moderator) still applies
             // the update (re-approving publishes) but doesn't re-notify the author.
-            const post = await Post.findOneAndUpdate({ slug }, [{ $set: update }], { returnDocument: "before", updatePipeline: true });
+            const post = await Post.findOneAndUpdate({ slug, ...SHARED_POST }, [{ $set: update }], { returnDocument: "before", updatePipeline: true });
 
             if (!post) {
                 return NextResponse.json({ data: null, message: "Post not found" }, { status: 404 });

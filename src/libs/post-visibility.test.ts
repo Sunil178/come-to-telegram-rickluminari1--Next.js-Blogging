@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPubliclyVisible, isScheduled, publicPostFilter } from "@/libs/post-visibility";
+import { isPubliclyVisible, isScheduled, manageablePostFilter, publicPostFilter, SHARED_POST } from "@/libs/post-visibility";
 
 const now = new Date("2026-10-31T12:00:00Z");
 const live = { approval: "Approved", published: true, visibility: true, publishedAt: new Date("2026-10-30T12:00:00Z") };
@@ -25,5 +25,17 @@ describe("post visibility", () => {
 
     it("builds the matching query", () => {
         expect(publicPostFilter(now)).toEqual({ approval: "Approved", published: true, visibility: true, publishedAt: { $lte: now } });
+    });
+});
+
+describe("private posts", () => {
+    it("are never publicly visible, even when approved and published", () => {
+        expect(isPubliclyVisible({ ...live, visibility: false }, now)).toBe(false);
+    });
+
+    it("are left out of what moderators and admins manage", () => {
+        expect(SHARED_POST).toEqual({ visibility: true });
+        expect(manageablePostFilter("u1", true)).toEqual({ $or: [{ visibility: true }, { userId: "u1" }] });
+        expect(manageablePostFilter("u1", false)).toEqual({ userId: "u1" });
     });
 });

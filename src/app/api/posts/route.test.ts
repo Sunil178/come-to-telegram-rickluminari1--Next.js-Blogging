@@ -106,6 +106,16 @@ describe("POST /api/posts categories and review", () => {
 
         expect(notifySubmittedMock).toHaveBeenCalledWith({ id: "p1", title: "New post", slug: "new-post" }, { id: "u1", username: "writer" });
     });
+
+    it("saves a private post without sending it for review", async () => {
+        parseCategoryMock.mockResolvedValue({ ok: true, value: null });
+        createMock.mockResolvedValue({ _id: "p2", slug: "diary", title: "Diary", visibility: false });
+
+        await POST(postRequest({ title: "Diary", post_data: "{}", private: "true" }), {});
+
+        expect(createMock.mock.calls.at(-1)?.[0].visibility).toBe(false);
+        expect(notifySubmittedMock).not.toHaveBeenCalled();
+    });
 });
 
 describe("GET /api/posts", () => {

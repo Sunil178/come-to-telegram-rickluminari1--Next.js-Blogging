@@ -32,13 +32,20 @@ vi.mock("@/libs/post-editor-serialize", () => ({
     serializePostContent: async () => "<p>content</p>",
 }));
 
+const syncMock = vi.fn();
+vi.mock("@/libs/upload-privacy", async () => {
+    const actual = await vi.importActual<typeof import("@/libs/upload-privacy")>("@/libs/upload-privacy");
+    return { postUploadUrls: actual.postUploadUrls, syncUploadPrivacy: (...args: unknown[]) => syncMock(...args) };
+});
 const parseCategoryMock = vi.fn();
 vi.mock("@/libs/post-category", () => ({ parseCategoryId: (...args: unknown[]) => parseCategoryMock(...args) }));
 const notifySubmittedMock = vi.fn();
 const markReviewedMock = vi.fn();
+const removeReviewMock = vi.fn();
 vi.mock("@/libs/review-notifications", () => ({
     notifyPostSubmitted: (...args: unknown[]) => notifySubmittedMock(...args),
     markPostReviewNotificationsRead: (...args: unknown[]) => markReviewedMock(...args),
+    removePostReviewNotifications: (...args: unknown[]) => removeReviewMock(...args),
 }));
 
 const { PATCH, DELETE } = await import("@/app/api/posts/[slug]/route");
@@ -75,7 +82,7 @@ describe("PATCH /api/posts/[slug]", () => {
     });
 
     it("sends the owner's edit of a rejected post back for review and tells the moderators", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1", visibility: true });
         await PATCH(patchRequest({ title: "Fixed", post_data: "[]" }), context("some-slug"));
 
         const $set = findOneAndUpdateMock.mock.calls[0][1][0].$set;
@@ -85,10 +92,10 @@ describe("PATCH /api/posts/[slug]", () => {
     });
 
     it("doesn't resubmit an approved post or another author's rejected post edited by an admin", async () => {
-        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Approved", userId: "6500000000000000000000a1" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Approved", userId: "6500000000000000000000a1", visibility: true });
         await PATCH(patchRequest({ title: "T", post_data: "[]" }), context("some-slug"));
         authMock.mockResolvedValue({ user: { id: "6500000000000000000000b2", role: "admin", username: "boss" } });
-        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1" });
+        findOneAndUpdateMock.mockResolvedValue({ _id: "p1", slug: "some-slug", title: "Old", approval: "Rejected", userId: "6500000000000000000000a1", visibility: true });
         await PATCH(patchRequest({ title: "T", post_data: "[]" }), context("some-slug"));
 
         expect(notifySubmittedMock).not.toHaveBeenCalled();
@@ -110,7 +117,7 @@ describe("PATCH /api/posts/[slug]", () => {
         findOneAndUpdateMock.mockResolvedValue({ slug: "some-slug" });
         await PATCH(patchRequest({ title: "New title", post_data: "{}" }), context("some-slug"));
 
-        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug" }, expect.anything(), { returnDocument: "before", updatePipeline: true });
+        expect(findOneAndUpdateMock).toHaveBeenCalledWith({ slug: "some-slug", $or: [{ visibility: true }, { userId: "6500000000000000000000c3" }] }, expect.anything(), { returnDocument: "before", updatePipeline: true });
     });
 
     it("normalizes a client-supplied slug instead of trusting it verbatim", async () => {
@@ -122,6 +129,69 @@ describe("PATCH /api/posts/[slug]", () => {
             [{ $set: expect.objectContaining({ slug: { $literal: "foobar" } }) }],
             { returnDocument: "before", updatePipeline: true }
         );
+    });
+});
+
+describe("PATCH /api/posts/[slug] private posts", () => {
+    beforeEach(() => {
+        authMock.mockResolvedValue({ user: { id: "6500000000000000000000a1", role: "author", username: "writer" } });
+        notifySubmittedMock.mockReset();
+        markReviewedMock.mockReset();
+        recordRevisionMock.mockReset().mockResolvedValue(undefined);
+    });
+
+    it("only lets the author change a post's privacy", async () => {
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Pending", visibility: true });
+        await PATCH(patchRequest({ title: "T", post_data: "[]", private: "true" }), context("some-slug"));
+        const [, pipeline] = findOneAndUpdateMock.mock.calls[0];
+        expect(pipeline[0].$set.visibility).toEqual({ $cond: [{ $eq: ["$userId", expect.anything()] }, false, "$visibility"] });
+    });
+
+    it("recomputes image access only when the images or the privacy change", async () => {
+        const banner = "/uploads/2026-11-04/b.png";
+        syncMock.mockReset();
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Approved", visibility: true, bannerImage: banner, content: "<p>content</p>" });
+        await PATCH(patchRequest({ title: "T", post_data: "[]", postBannerPath: banner }), context("some-slug"));
+        expect(syncMock).not.toHaveBeenCalled();
+
+        await PATCH(patchRequest({ title: "T", post_data: "[]", postBannerPath: banner, private: "true" }), context("some-slug"));
+        expect(syncMock).toHaveBeenCalledWith([banner, banner]);
+
+        syncMock.mockReset();
+        await PATCH(patchRequest({ title: "T", post_data: "[]", postBannerPath: "/uploads/2026-11-04/new.png" }), context("some-slug"));
+        expect(syncMock).toHaveBeenCalledWith([banner, "/uploads/2026-11-04/new.png"]);
+    });
+
+    it("keeps a rejected post's rejection and reason while the author edits it privately", async () => {
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Rejected", visibility: false });
+        await PATCH(patchRequest({ title: "T", post_data: "[]", private: "true" }), context("some-slug"));
+        const [, pipeline] = findOneAndUpdateMock.mock.calls[0];
+        expect(pipeline[0].$set.approval.$cond[0]).toEqual({ $or: [false, false] });
+        expect(pipeline[0].$set.rejectionReason.$cond[0]).toEqual({ $or: [false, false] });
+        expect(notifySubmittedMock).not.toHaveBeenCalled();
+    });
+
+    it("takes a post made private out of the review queue and out of the staff's notifications", async () => {
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Pending", visibility: true });
+        await PATCH(patchRequest({ title: "T", post_data: "[]", private: "true" }), context("some-slug"));
+        expect(removeReviewMock).toHaveBeenCalledWith("p1");
+        expect(notifySubmittedMock).not.toHaveBeenCalled();
+    });
+
+    it("sends a private post back to review when it is shared again, even if it was approved", async () => {
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Approved", visibility: false });
+        await PATCH(patchRequest({ title: "Shared", post_data: "[]" }), context("some-slug"));
+        const [, pipeline] = findOneAndUpdateMock.mock.calls[0];
+        const toReview = pipeline[0].$set.approval.$cond[0];
+        expect(pipeline[0].$set.approval.$cond[1]).toBe("Pending");
+        expect(toReview.$or[1]).toEqual({ $and: [{ $eq: ["$visibility", false] }, { $eq: ["$userId", expect.anything()] }] });
+        expect(notifySubmittedMock).toHaveBeenCalled();
+    });
+
+    it("sends a waiting private post to review once it is shared", async () => {
+        findOneAndUpdateMock.mockReset().mockResolvedValue({ _id: "p1", userId: "6500000000000000000000a1", approval: "Pending", visibility: false });
+        await PATCH(patchRequest({ title: "Shared", post_data: "[]" }), context("some-slug"));
+        expect(notifySubmittedMock).toHaveBeenCalledWith({ id: "p1", title: "Shared", slug: "shared" }, { id: "6500000000000000000000a1", username: "writer" });
     });
 });
 
@@ -151,7 +221,8 @@ describe("PATCH /api/posts/[slug] revisions and scheduling", () => {
         // One atomic update: the edit, and the go-live time of an already-approved post.
         const [, pipeline, options] = findOneAndUpdateMock.mock.calls[0];
         expect(pipeline[0].$set.publishAt).toEqual({ $literal: new Date(at) });
-        expect(pipeline[0].$set.publishedAt.$cond[0]).toEqual({ $eq: ["$approval", "Approved"] });
+        // Approved and not sent back to review by this edit.
+        expect(pipeline[0].$set.publishedAt.$cond[0].$and[0]).toEqual({ $eq: ["$approval", "Approved"] });
         expect(pipeline[0].$set.publishedAt.$cond[1].$cond[1].$cond[1]).toEqual(new Date(at));
         expect(options).toEqual({ returnDocument: "before", updatePipeline: true });
         expect(updateOneMock).not.toHaveBeenCalled();
@@ -187,7 +258,7 @@ describe("DELETE /api/posts/[slug]", () => {
         softDeleteMock.mockResolvedValue({ matchedCount: 1 });
         await DELETE(new NextRequest("http://localhost/api/posts/some-slug", { method: "DELETE" }), context("some-slug"));
 
-        expect(softDeleteMock).toHaveBeenCalledWith({ slug: "some-slug" }, "admin1");
+        expect(softDeleteMock).toHaveBeenCalledWith({ slug: "some-slug", $or: [{ visibility: true }, { userId: "admin1" }] }, "admin1");
         // A deleted post stops waiting for review in the moderators' bells.
         expect(markReviewedMock).toHaveBeenCalledWith("p1");
     });

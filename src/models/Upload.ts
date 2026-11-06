@@ -2,6 +2,9 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 
 export type UploadPurpose = "post" | "avatar";
 
+// Who may load a post image; the states and their rules are in src/libs/upload-privacy.ts.
+export type UploadAccess = "draft" | "public" | "private";
+
 // What the original file's EXIF said. The served copy has it stripped; this stays private (uploader, admins).
 export interface UploadMetadata {
     make?: string;
@@ -22,6 +25,7 @@ export interface IUpload extends Document {
     width: number;
     height: number;
     metadata: UploadMetadata | null;
+    access: UploadAccess;
     // Set when the file is deleted; the record lingers so the day's upload count still includes it.
     removedAt: Date | null;
     createdAt: Date;
@@ -38,6 +42,7 @@ const schema = new Schema<IUpload>(
         width: Number,
         height: Number,
         metadata: { type: Schema.Types.Mixed, default: null },
+        access: { type: String, enum: ["draft", "public", "private"], default: "public" },
         removedAt: { type: Date, default: null },
     },
     { timestamps: { createdAt: true, updatedAt: false } }

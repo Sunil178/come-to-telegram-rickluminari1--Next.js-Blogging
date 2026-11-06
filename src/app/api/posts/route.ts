@@ -11,6 +11,8 @@ import { logger } from "@/libs/logger";
 import { parsePublishAt } from "@/libs/post-schedule";
 import { parseCategoryId } from "@/libs/post-category";
 import { notifyPostSubmitted } from "@/libs/review-notifications";
+import { SHARED_POST } from "@/libs/post-visibility";
+import { postUploadUrls, syncUploadPrivacy } from "@/libs/upload-privacy";
 
 // The moderation listing: every post in any state, with author emails, so moderators only.
 export const GET = withApiGuard(async (request: NextRequest) => {
@@ -24,7 +26,7 @@ export const GET = withApiGuard(async (request: NextRequest) => {
     const approval = searchParams.get("approval");
     const published = searchParams.get("published");
 
-    const filter: any = {};
+    const filter: any = { ...SHARED_POST };
 
     if (search) {
         filter.title = { $regex: escapeRegExp(search), $options: "i" };
@@ -81,6 +83,7 @@ export const POST = withApiGuard(async (request, { session }) => {
         if (!category.ok) {
             return NextResponse.json({ data: null, message: 'Choose one of the listed categories' }, { status: 400 });
         }
+        const isPrivate = body.get('private') === 'true';
         const post = await Post.create({
             'userId': session.user.id,
             'slug': slug,
@@ -91,9 +94,14 @@ export const POST = withApiGuard(async (request, { session }) => {
             'content': await serializePostContent(value),
             'publishAt': publishAt.value,
             'categoryId': category.value,
+            'visibility': !isPrivate,
         })
-        const submitted = { id: post._id.toString(), title: post.title, slug: post.slug };
-        after(() => notifyPostSubmitted(submitted, { id: session.user.id, username: session.user.username }));
+        after(() => syncUploadPrivacy(postUploadUrls(post)));
+        // A private post never enters the review queue.
+        if (!isPrivate) {
+            const submitted = { id: post._id.toString(), title: post.title, slug: post.slug };
+            after(() => notifyPostSubmitted(submitted, { id: session.user.id, username: session.user.username }));
+        }
         return NextResponse.json({ data: { slug: post.slug }, message: 'Success' });
     } catch (error) {
         if ((error as { code?: number }).code === 11000) {

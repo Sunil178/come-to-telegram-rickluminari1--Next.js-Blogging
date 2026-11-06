@@ -96,7 +96,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const session = await getSession();
     const myVote = await getMyPostVote(post._id.toString(), session?.user?.id);
-    const showComments = commentsEnabled();
+    const showComments = commentsEnabled() && post.visibility;
     const [comments, related] = await Promise.all([
         showComments ? getComments(post._id.toString(), session?.user?.id) : [],
         // categoryId is populated above; relate by its id.
@@ -117,6 +117,11 @@ export default async function PostPage({ params }: PostPageProps) {
             <ReadingProgress />
             <ViewTracker slug={post.slug} />
 
+            {!post.visibility && (
+                <p role="status" className="mx-auto mt-6 max-w-3xl rounded-md border border-border bg-muted px-4 py-2 text-center text-sm text-muted-foreground">
+                    Private post: only you can see it. Moderators and admins can&apos;t open it, and it never appears in lists, search or feeds.
+                </p>
+            )}
             <div className="mx-auto max-w-3xl px-6 pt-16 text-center">
                 {category?.title &&
                     // Only a listed category filters the posts page; any other shows as a plain label.
@@ -161,6 +166,7 @@ export default async function PostPage({ params }: PostPageProps) {
                         priority
                         sizes="(max-width: 1024px) 100vw, 900px"
                         className="rounded-md"
+                        unoptimized={!post.visibility}
                     />
                 </div>
             )}

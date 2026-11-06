@@ -72,15 +72,19 @@ test("an edit keeps the previous version, which can be restored from the revisio
     await expect(page.getByRole("link", { name: /A temporarily renamed post/ })).toBeVisible();
 });
 
-test("the editor autosaves a draft that survives a reload", async ({ page }) => {
+test("the editor autosaves a draft, including its privacy, that survives a reload", async ({ page }) => {
     await login(page, USERS.author.email, undefined, "/posts/add");
     await page.getByLabel("Title").fill("Unsaved thoughts");
+    await page.getByRole("checkbox", { name: "Private: only I can see this post" }).check();
     await expect(page.getByText(/Draft saved at/)).toBeVisible();
 
     await page.reload();
     await expect(page.getByText("You have an unsaved draft")).toBeVisible();
     await page.getByRole("button", { name: "Restore draft" }).click();
     await expect(page.getByLabel("Title")).toHaveValue("Unsaved thoughts");
+    // A private draft comes back private, so it can't be sent for review by mistake.
+    await expect(page.getByRole("checkbox", { name: "Private: only I can see this post" })).toBeChecked();
+    await expect(page.getByRole("button", { name: "Save privately" })).toBeVisible();
 
     await page.reload();
     await page.getByRole("button", { name: "Discard" }).click();

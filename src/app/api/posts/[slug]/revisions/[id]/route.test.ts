@@ -47,14 +47,15 @@ describe("POST /api/posts/[slug]/revisions/[id]", () => {
         expect(postFindOneMock).toHaveBeenCalledWith({ slug: "p", userId: "author1" });
         expect(revisionFindOneMock).toHaveBeenCalledWith({ _id: REVISION_ID, postId: "post-1" });
         const restored = { title: "Old", titleDescription: "d", tags: ["a"], bannerImage: "", content: "<p>old</p>" };
-        expect(postUpdateOneMock).toHaveBeenCalledWith({ _id: "post-1" }, { $set: restored }, { returnDocument: "before" });
+        // The update repeats the ownership filter, so a post made private meanwhile can't be overwritten.
+        expect(postUpdateOneMock).toHaveBeenCalledWith({ _id: "post-1", userId: "author1" }, { $set: restored }, { returnDocument: "before" });
         expect(recordRevisionMock).toHaveBeenCalledWith(expect.objectContaining({ title: "Current" }), restored, "author1");
     });
 
     it("lets an admin restore any post's revision", async () => {
         authMock.mockResolvedValue({ user: { id: "admin1", role: "admin" } });
         await restore();
-        expect(postFindOneMock).toHaveBeenCalledWith({ slug: "p" });
+        expect(postFindOneMock).toHaveBeenCalledWith({ slug: "p", $or: [{ visibility: true }, { userId: "admin1" }] });
     });
 
     it("404s for someone else's post or a revision of another post", async () => {
