@@ -13,18 +13,18 @@ The account page (`src/app/dashboard/account/page.tsx`) shows one card per secti
 **Preconditions:** signed in.
 
 1. Opens Account, uploads a photo. → "Photo updated."; the avatar changes everywhere.
-2. Fills in the public profile (headline, bio, country, city, website, other links, expertise, topics, education) and private details (date of birth, gender, phone, address), saves. → "Profile saved."
+2. Fills in the public profile (headline, bio, country, city, website, other links, expertise, topics, education) and private details (date of birth, gender from a list, phone, address), saves. → "Profile saved."
 3. Opens their author page. → The public part shows; the private part doesn't.
 
 **Extensions:**
 
 - 1a. Not an image, a forged type or over the size limit: a toast says why; nothing changes.
 - 1b. "Remove photo": the photo goes, and its file is deleted once nothing else uses it.
-- 2a. A website or link that isn't a full `http(s)://` address, a phone with letters, a date of birth under 13 or impossible (2001-02-30), or text over its limit: the form shows what to fix and nothing is saved.
+- 2a. A website or link that isn't a full `http(s)://` address, a phone with letters, a date of birth for someone under 18, in the future or impossible (2001-02-30), a gender not on the list, or text over its limit: the form shows what to fix and nothing is saved. The date picker offers only dates for ages 18 to 120.
 
 **Side effects:** profile fields on the user record; replaced photos removed from disk.
 
-**Tested by:** `e2e/profile.spec.ts` › "a user fills in their profile; the public part shows on their author page and the private part doesn't".
+**Tested by:** `e2e/profile.spec.ts` › "a user fills in their profile; the public part shows on their author page and the private part doesn't"; `e2e/contact-and-users.spec.ts` › "gender is picked from a list and the date picker only offers dates for people 18 or older".
 
 ### 2. Change password
 

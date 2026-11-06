@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
 import { hashSync } from "bcrypt";
 import type { HydratedDocument, Types } from "mongoose";
 import dbConnect from "@/libs/db-connect";
@@ -8,6 +11,9 @@ import Comment from "@/models/Comment";
 import PostVote from "@/models/PostVote";
 import CommentVote from "@/models/CommentVote";
 import UserVote from "@/models/UserVote";
+import Upload from "@/models/Upload";
+import { uploadFiles } from "@/libs/upload-cleanup";
+import { UPLOAD_CONTENT_TYPES } from "@/libs/uploads";
 import { toggleVote, type VoteResult } from "@/libs/toggle-vote";
 import { downloadSeedImage } from "@/libs/download-seed-image";
 import { loadSeedPosts } from "@/libs/load-seed-posts";
@@ -46,10 +52,15 @@ async function seedDemoUsers(): Promise<UserDoc[]> {
             user = await User.create({ ...raw, password: hashSync(DEMO_PASSWORD, 10), emailVerifiedAt: new Date() });
             console.log(`👤 Demo user created: ${raw.username}`);
         } else {
-            if (user.role !== raw.role) {
-                user.role = raw.role;
-                await user.save();
+            user.role = raw.role;
+            // Fills profile fields the demo user left empty; never overwrites what they changed.
+            for (const [group, values] of [["profile", raw.profile], ["privateDetails", raw.privateDetails]] as const) {
+                for (const [field, value] of Object.entries(values)) {
+                    const current = user.get(`${group}.${field}`);
+                    if (current === undefined || current === null || current === "" || (Array.isArray(current) && current.length === 0)) user.set(`${group}.${field}`, value);
+                }
             }
+            if (user.isModified()) await user.save();
             console.log(`👤 Demo user exists: ${raw.username}`);
         }
         users.push(user);
@@ -85,6 +96,28 @@ async function seedOwnerPosts(ownerId: Types.ObjectId, categories: Record<string
         posts.push(post);
     }
     return posts;
+}
+
+// Seed banners are written straight to disk, so they get the upload record a real upload would, naming the post's owner as uploader.
+async function recordSeedUploads(posts: PostDoc[]): Promise<void> {
+    for (const post of posts) {
+        const [file] = uploadFiles(post.bannerImage ? [post.bannerImage] : []);
+        if (!file || !fs.existsSync(file.target) || (await Upload.exists({ url: file.url }))) continue;
+        const { size } = fs.statSync(file.target);
+        const { width, height } = await sharp(file.target).metadata();
+        await Upload.create({
+            url: file.url,
+            userId: post.userId,
+            purpose: "post",
+            mimeType: UPLOAD_CONTENT_TYPES[path.extname(file.target).toLowerCase()] ?? "image/jpeg",
+            size,
+            originalSize: size,
+            width,
+            height,
+            access: post.visibility === false ? "private" : "public",
+        });
+        console.log(`🗂️  Upload recorded: ${file.url}`);
+    }
 }
 
 // Skips voters who already voted — toggleVote() would flip an existing vote off,
@@ -231,6 +264,7 @@ async function main() {
         }
 
         const posts = await seedOwnerPosts(owner._id, categories);
+        await recordSeedUploads(posts);
         await seedEngagement(owner, demoUsers, posts);
         await seedProfileVotes(owner, demoUsers);
 

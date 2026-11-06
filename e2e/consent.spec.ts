@@ -40,5 +40,21 @@ test("declining sets no visitor cookie and records nothing, and the choice can b
 
     await page.goto("/");
     await page.getByRole("button", { name: "Cookie preferences" }).click();
-    await expect(page.getByRole("dialog", { name: "Cookie consent" })).toBeVisible();
+    const banner = page.getByRole("dialog", { name: "Cookie consent" });
+    await expect(banner).toBeVisible();
+    // Reopened, it shows the stored choice and closes without asking again.
+    await expect(banner).toContainText("Your current choice: declined");
+    await banner.getByRole("button", { name: "Close" }).click();
+    await expect(banner).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Cookie preferences" }).click();
+    await banner.getByRole("button", { name: "Accept" }).click();
+    await expect(banner).toHaveCount(0);
+    await page.reload();
+    await expect(banner).toHaveCount(0);
+    await page.getByRole("button", { name: "Cookie preferences" }).click();
+    await expect(banner).toContainText("Your current choice: accepted");
+    await expect(banner.getByRole("button", { name: "Keep accepted" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(banner).toHaveCount(0);
 });

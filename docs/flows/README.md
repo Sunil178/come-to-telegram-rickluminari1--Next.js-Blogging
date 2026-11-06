@@ -15,6 +15,6 @@ The format follows the flow document standard in [docs/kits/flow-qa/flow-doc-sta
 | Votes | Post, comment and profile votes, toggling, counts, logged out | [votes.md](votes.md) |
 | Publish requests | Application, admin review with addresses and profile, approval, decline and re-apply | [publish-requests.md](publish-requests.md) |
 | Notifications | Bell, notifications page, preferences, push, staff notifications, expiry | [notifications.md](notifications.md) |
-| Administration | Users and roles, categories, uploads report, admin-only access | [administration.md](administration.md) |
-| Privacy and consent | Consent banner, reading history, identity stitching, withdrawal | [privacy-and-consent.md](privacy-and-consent.md) |
+| Administration | Users, their details and roles, contact messages, categories, uploads report, admin-only access | [administration.md](administration.md) |
+| Privacy and consent | Consent banner, reading history, identity stitching, withdrawal, policies, contact form and reports | [privacy-and-consent.md](privacy-and-consent.md) |
 | Platform | Gated routes, CSP, loading and not-found states, theme, phone layout, manifest, health | [platform.md](platform.md) |

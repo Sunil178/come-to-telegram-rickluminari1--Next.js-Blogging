@@ -29,11 +29,11 @@ Requirements: Node.js 20.9+ (the minimum for Next.js 16), npm, and a MongoDB ser
 ```bash
 npm install
 cp .env.example .env        # then fill in the values (see below)
-npm run seed                # optional: demo users, categories, posts and comments
+npm run seed                # optional: demo users with full profiles, categories, posts and comments
 npm run dev -- --port=5000  # http://localhost:5000
 ```
 
-Seeded demo users all use the password `Passw0rd!` (see `src/seeds/users.json` for emails and roles).
+Seeded demo users all use the password `Passw0rd!` (see `src/seeds/users.json` for emails, roles and profiles). Running the seeder again fills profile fields a demo user left empty without overwriting their own edits, and records an upload (owned by the posts' owner) for every demo banner.
 
 To make an existing account the first admin (or create one), run `npm run bootstrap-admin`.
 

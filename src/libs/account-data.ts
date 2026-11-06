@@ -13,6 +13,7 @@ import AuthToken from "@/models/AuthToken";
 import PublishRequest from "@/models/PublishRequest";
 import VisitorEvent from "@/models/VisitorEvent";
 import Upload from "@/models/Upload";
+import ContactMessage from "@/models/ContactMessage";
 import { ROLES } from "@/libs/roles";
 import { UPLOAD_URL_PREFIX } from "@/libs/uploads";
 import { removeUploadIfUnused, uploadUrlsIn } from "@/libs/upload-cleanup";
@@ -28,7 +29,7 @@ type Id = Types.ObjectId | string;
 /** Everything stored about the user, for the "Download my data" export. */
 export async function exportAccountData(userId: string) {
     const ownPostIds = (await SoftPost.findWithDeleted({ userId }).select("_id").lean<{ _id: Types.ObjectId }[]>()).map((p) => p._id);
-    const [profile, posts, revisions, comments, postVotes, commentVotes, userVotes, notifications, pushSubscriptions, publishRequests, readingHistory, uploads] = await Promise.all([
+    const [profile, posts, revisions, comments, postVotes, commentVotes, userVotes, notifications, pushSubscriptions, publishRequests, readingHistory, uploads, contactMessages] = await Promise.all([
         User.findById(userId).select("-password -__v").lean(),
         SoftPost.findWithDeleted({ userId }).select("-__v").lean(),
         // Earlier versions of their posts, and the versions their edits replaced on anyone's post.
@@ -43,6 +44,7 @@ export async function exportAccountData(userId: string) {
         PublishRequest.find({ userId }).select("status motivation writingSample requestedFrom createdAt reviewedAt").lean(),
         VisitorEvent.find({ userId }).select("postId type createdAt").lean(),
         Upload.find({ userId, removedAt: null }).select("url purpose mimeType size originalSize width height metadata createdAt").lean(),
+        ContactMessage.find({ userId }).select("reference topic name email url message status createdAt resolvedAt").lean(),
     ]);
     return {
         exportedAt: new Date().toISOString(),
@@ -56,6 +58,7 @@ export async function exportAccountData(userId: string) {
         publishRequests,
         readingHistory,
         uploads,
+        contactMessages,
     };
 }
 
@@ -117,6 +120,8 @@ export async function deleteAccount(userId: string): Promise<void> {
         AuthToken.deleteMany({ userId }),
         PublishRequest.deleteMany({ userId }),
         VisitorEvent.deleteMany({ userId }),
+        // A complaint stays on record until it expires (ContactMessage), no longer tied to the deleted account.
+        ContactMessage.updateMany({ userId }, { $set: { userId: null } }),
     ]);
     await Post.deleteMany({ _id: { $in: postIds } });
     const avatar = (await User.findById(userId).select("avatar").lean<{ avatar?: string }>())?.avatar;

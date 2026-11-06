@@ -18,7 +18,8 @@ Reading history is recorded only with consent. The banner (`src/components/conse
 ### 2. Decline, and change one's mind
 
 1. Chooses "Decline". → The banner closes; no `vid` cookie, and reads aren't recorded.
-2. Later chooses "Cookie preferences" in the footer. → The banner reopens and the choice can be changed either way.
+2. Later chooses "Cookie preferences" in the footer. → The banner reopens showing the current choice ("Your current choice: declined, nothing is remembered"), with "Accept" and "Keep declined" (after accepting: "Decline" and "Keep accepted").
+3. Changes the choice, keeps it, or closes the banner (× or Escape). → The banner closes; only a change of choice changes anything.
 
 **Extensions:**
 
@@ -32,11 +33,27 @@ Reading history is recorded only with consent. The banner (`src/components/conse
 
 **Extensions:**
 
-- 1a. `OPERATOR_NAME`, `OPERATOR_LOCATION` or `CONTACT_EMAIL` unset: the pages say "the site's operator" or "the site administrator" instead, and Contact says the address isn't set up yet.
+- 1a. `OPERATOR_NAME`, `OPERATOR_LOCATION` or `CONTACT_EMAIL` unset: the pages say "the site's operator" or "the site administrator" instead, and Contact points to its form.
 
 **Side effects:** none.
 
 **Tested by:** `e2e/legal-and-private.spec.ts` › "the footer links to the About, Contact, Terms and Privacy pages".
+
+### 4. Write to the site, or report content
+
+1. Opens Contact, or "Report it" under a post (someone else's shared post). → The contact form; from "Report it" the topic is "Report a post, comment or image" and the link is the post's address. A signed-in visitor's name and email are filled in.
+2. Chooses a topic (a question or feedback, report a post, comment or image, copyright complaint, my personal data, another complaint), fills in name, email, link and message, sends. → "Thanks, your message is on its way." with a reference such as `C-7K2Q9MXA`.
+3. Checks their inbox. → "We received your message (C-…)", with the topic, the reference and the response times, and nothing the sender typed (not even their name), so the form can't send someone else text of the sender's choosing.
+
+**Extensions:**
+
+- 2a. A report or copyright complaint without a link, an invalid email, a link that isn't `http(s)://`, or a message under 20 or over 5000 characters: the form says what to fix and nothing is sent.
+- 2b. More than 5 messages an hour from one address: "You've sent several messages already. Please wait an hour, or email us directly."
+- 2c. Without SMTP: the message is stored and admins see it under "Messages"; no emails go out.
+
+**Side effects:** a `ContactMessage` record (with the sender's account when signed in, and their IP address); a notification to every admin; with SMTP, an email to `CONTACT_EMAIL` (reply goes to the sender) and the acknowledgement. Admins answer them as in [administration.md](administration.md) › "Answer contact messages".
+
+**Tested by:** `e2e/contact-and-users.spec.ts` › "a visitor reports a post through the contact form, gets a reference by email, and an admin resolves it", "a signed-in reader's name and email are filled in, and the form explains what it needs".
 
 ## Rules and limits
 

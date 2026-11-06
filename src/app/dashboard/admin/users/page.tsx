@@ -36,7 +36,7 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
         <div className="mx-auto max-w-6xl px-6 py-10">
             <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">Users</h1>
             <p className="mt-2 text-muted-foreground">
-                Manage what every account can do. {total} account{total === 1 ? "" : "s"}.
+                Manage what every account can do; open one to see all its details. {total} account{total === 1 ? "" : "s"}.
             </p>
             <div className="mt-6">
                 <PostsSearch label="Search users" placeholder="Search by username or email..." />
@@ -56,15 +56,16 @@ export default async function AdminUsersPage({ searchParams }: AdminUsersPagePro
                         {users.map((user) => (
                             <TableRow key={String(user._id)}>
                                 <TableCell>
-                                    <Link href={`/users/${encodeURIComponent(user.username)}`} className="text-primary hover:underline">
+                                    <Link href={`/dashboard/admin/users/${String(user._id)}`} className="text-primary hover:underline">
                                         {user.username}
                                     </Link>
                                 </TableCell>
                                 <TableCell>{user.email}</TableCell>
-                                <TableCell className="font-mono text-xs">{new Date(user.createdAt).toLocaleDateString("en-US")}</TableCell>
+                                <TableCell className="font-mono text-xs">{new Date(user.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}</TableCell>
                                 <TableCell className="text-right">
                                     <RoleSelect
                                         userId={String(user._id)}
+                                        username={user.username}
                                         currentRole={(user.role ?? ROLES.READER) as RoleName}
                                         disabled={String(user._id) === session.user.id}
                                     />

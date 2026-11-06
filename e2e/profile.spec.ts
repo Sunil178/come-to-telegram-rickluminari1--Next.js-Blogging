@@ -126,9 +126,10 @@ test("an applicant's form saves to their profile, and the admin reviews the full
     if (GEOIP) await expect(addresses).toContainText("United States");
     await expect(adminPage.getByRole("region", { name: "Public profile" })).toContainText("performance, caching");
     await expect(adminPage.getByRole("region", { name: "Private details" })).toContainText("+1 555 0100");
-    await expect(adminPage.getByRole("region", { name: "Account and activity" })).toContainText("Verified");
+    await expect(adminPage.getByRole("region", { name: "Account and activity" })).toContainText("(verified ");
 
     await adminPage.getByRole("button", { name: "Approve request" }).click();
+    await adminPage.getByRole("alertdialog").getByRole("button", { name: "Approve" }).click();
     await expect(adminPage.getByText("Request approved — user is now an Author.")).toBeVisible();
     await expect(adminPage.getByText(/^Approved/)).toBeVisible();
     await expect(adminPage.getByRole("button", { name: "Approve request" })).toHaveCount(0);

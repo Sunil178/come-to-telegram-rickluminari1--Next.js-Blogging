@@ -23,11 +23,13 @@ interface ConfirmIconButtonProps {
     description: string;
     confirmLabel: string;
     disabled?: boolean;
+    // "default" for a confirmed action that isn't destructive, like approving.
+    tone?: "destructive" | "default";
     onConfirm: () => void;
 }
 
-/** An icon button for a destructive action that asks before doing it. */
-export default function ConfirmIconButton({ icon, label, showLabel, title, description, confirmLabel, disabled, onConfirm }: ConfirmIconButtonProps) {
+/** An icon button for a destructive or hard-to-undo action that asks before doing it. */
+export default function ConfirmIconButton({ icon, label, showLabel, title, description, confirmLabel, disabled, tone = "destructive", onConfirm }: ConfirmIconButtonProps) {
     const [open, setOpen] = useState(false);
 
     const confirm = (event: MouseEvent) => {
@@ -58,7 +60,7 @@ export default function ConfirmIconButton({ icon, label, showLabel, title, descr
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" onClick={confirm}>
+                    <AlertDialogAction variant={tone} onClick={confirm}>
                         {confirmLabel}
                     </AlertDialogAction>
                 </AlertDialogFooter>

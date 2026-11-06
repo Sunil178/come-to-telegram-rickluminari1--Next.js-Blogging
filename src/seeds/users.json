@@ -7,7 +7,31 @@
         "email": "ananya@example.com",
         "profile": {
             "headline": "Mathematician turned software person.",
-            "bio": "Writes about the history and theory of computing when not arguing on the internet."
+            "bio": "Writes about the history and theory of computing when not arguing on the internet.",
+            "country": "India",
+            "city": "Chennai",
+            "website": "https://ananya.example.dev",
+            "links": [
+                "https://github.com/ananya-iyer-example",
+                "https://www.linkedin.com/in/ananya-iyer-example"
+            ],
+            "expertise": [
+                "Algorithms",
+                "Type theory",
+                "History of computing"
+            ],
+            "topics": [
+                "Computer science",
+                "Mathematics",
+                "Programming languages"
+            ],
+            "education": "M.Sc. Mathematics, Chennai Mathematical Institute"
+        },
+        "privateDetails": {
+            "dateOfBirth": "1991-03-14",
+            "gender": "Female",
+            "phone": "+91 98400 11223",
+            "address": "12 Kamarajar Salai, Mylapore, Chennai 600004"
         }
     },
     {
@@ -18,7 +42,28 @@
         "email": "aarav@example.com",
         "profile": {
             "headline": "Breaks things to see how they work.",
-            "bio": "Interested in machine intelligence, cryptography, and long walks."
+            "bio": "Interested in machine intelligence, cryptography, and long walks.",
+            "country": "India",
+            "city": "Pune",
+            "website": "https://aarav.example.dev",
+            "links": [
+                "https://github.com/aarav-mehta-example"
+            ],
+            "expertise": [
+                "Security",
+                "Cryptography"
+            ],
+            "topics": [
+                "Machine learning",
+                "Privacy"
+            ],
+            "education": "B.E. Computer Engineering, College of Engineering Pune"
+        },
+        "privateDetails": {
+            "dateOfBirth": "1998-08-02",
+            "gender": "Male",
+            "phone": "+91 98220 44556",
+            "address": "Flat 4B, Sunshine Heights, Baner, Pune 411045"
         }
     },
     {
@@ -29,7 +74,29 @@
         "email": "sunil@example.com",
         "profile": {
             "headline": "Builder of this blog.",
-            "bio": "Ships fast, reviews carefully, and reads every PR before merging."
+            "bio": "Ships fast, reviews carefully, and reads every PR before merging.",
+            "country": "India",
+            "city": "Thane",
+            "website": "https://sunil.example.dev",
+            "links": [
+                "https://github.com/sunil-thakur-example"
+            ],
+            "expertise": [
+                "Full-stack development",
+                "Next.js",
+                "MongoDB"
+            ],
+            "topics": [
+                "Web development",
+                "Engineering practice"
+            ],
+            "education": "Diploma in Software Engineering"
+        },
+        "privateDetails": {
+            "dateOfBirth": "1990-01-20",
+            "gender": "Male",
+            "phone": "+91 98190 77889",
+            "address": "Kalwa, Thane, Maharashtra 400605"
         }
     },
     {
@@ -40,7 +107,28 @@
         "email": "arjun@example.com",
         "profile": {
             "headline": "Opinionated about tabs vs. spaces.",
-            "bio": "Reads every changelog. Comments on maybe a third of them."
+            "bio": "Reads every changelog. Comments on maybe a third of them.",
+            "country": "India",
+            "city": "Kochi",
+            "website": "https://arjun.example.dev",
+            "links": [
+                "https://github.com/arjun-nair-example"
+            ],
+            "expertise": [
+                "Code review",
+                "Developer tooling"
+            ],
+            "topics": [
+                "Open source",
+                "Software craftsmanship"
+            ],
+            "education": "B.Tech. Information Technology, CUSAT"
+        },
+        "privateDetails": {
+            "dateOfBirth": "1987-11-30",
+            "gender": "Male",
+            "phone": "+91 94470 33445",
+            "address": "MG Road, Ernakulam, Kochi 682016"
         }
     },
     {
@@ -51,7 +139,29 @@
         "email": "priya@example.com",
         "profile": {
             "headline": "Systems thinker.",
-            "bio": "Cares more about reliability than features. Always asks about the failure modes."
+            "bio": "Cares more about reliability than features. Always asks about the failure modes.",
+            "country": "India",
+            "city": "Nagpur",
+            "website": "https://priya.example.dev",
+            "links": [
+                "https://github.com/priya-deshmukh-example",
+                "https://www.linkedin.com/in/priya-deshmukh-example"
+            ],
+            "expertise": [
+                "Distributed systems",
+                "Site reliability"
+            ],
+            "topics": [
+                "Reliability",
+                "Cloud infrastructure"
+            ],
+            "education": "M.Tech. Computer Science, VNIT Nagpur"
+        },
+        "privateDetails": {
+            "dateOfBirth": "1993-06-09",
+            "gender": "Female",
+            "phone": "+91 97300 66778",
+            "address": "Civil Lines, Nagpur 440001"
         }
     }
 ]

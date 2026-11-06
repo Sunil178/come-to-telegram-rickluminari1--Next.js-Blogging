@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageOn, parseProfileInput, PRIVATE_PROFILE_FIELDS, profileLinks, PUBLIC_PROFILE_FIELDS } from "@/libs/profile";
+import { ageOn, birthDateBounds, parseProfileInput, PRIVATE_PROFILE_FIELDS, profileLinks, PUBLIC_PROFILE_FIELDS } from "@/libs/profile";
 
 const ALL = [...PUBLIC_PROFILE_FIELDS, ...PRIVATE_PROFILE_FIELDS];
 
@@ -34,17 +34,33 @@ describe("parseProfileInput", () => {
         expect(parseProfileInput({ bio: { $gt: "" } }, ALL)).toMatchObject({ ok: false });
     });
 
-    it("accepts a date of birth for someone at least 13, and nothing in the future", () => {
+    it("accepts only a gender from the list", () => {
+        expect(parseProfileInput({ gender: "Female" }, ALL)).toEqual({ ok: true, set: { "privateDetails.gender": "Female" } });
+        expect(parseProfileInput({ gender: "" }, ALL)).toEqual({ ok: true, set: { "privateDetails.gender": null } });
+        expect(parseProfileInput({ gender: "anything typed" }, ALL)).toMatchObject({ ok: false });
+    });
+
+    it("accepts a date of birth for someone at least 18, and nothing in the future", () => {
         const set = parseProfileInput({ dateOfBirth: "1990-05-17" }, ALL);
         expect(set).toEqual({ ok: true, set: { "privateDetails.dateOfBirth": new Date("1990-05-17T00:00:00Z") } });
         const tooYoung = new Date();
-        tooYoung.setUTCFullYear(tooYoung.getUTCFullYear() - 10);
+        tooYoung.setUTCFullYear(tooYoung.getUTCFullYear() - 17);
         expect(parseProfileInput({ dateOfBirth: tooYoung.toISOString().slice(0, 10) }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ dateOfBirth: "2999-01-01" }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ dateOfBirth: "17/05/1990" }, ALL)).toMatchObject({ ok: false });
         // Date would roll these over into the next month.
         expect(parseProfileInput({ dateOfBirth: "2001-02-30" }, ALL)).toMatchObject({ ok: false });
         expect(parseProfileInput({ dateOfBirth: "2001-04-31" }, ALL)).toMatchObject({ ok: false });
+    });
+});
+
+describe("birthDateBounds", () => {
+    it("matches the server's age range exactly at both ends", () => {
+        const today = new Date("2026-11-05T10:00:00Z");
+        expect(birthDateBounds(today)).toEqual({ min: "1905-11-06", max: "2008-11-05" });
+        const { min, max } = birthDateBounds(new Date());
+        expect(parseProfileInput({ dateOfBirth: max }, ALL)).toMatchObject({ ok: true });
+        expect(parseProfileInput({ dateOfBirth: min }, ALL)).toMatchObject({ ok: true });
     });
 });
 

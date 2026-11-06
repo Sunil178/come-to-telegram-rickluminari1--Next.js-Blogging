@@ -39,10 +39,10 @@ export default async function AdminRequestsPage() {
                                             {requester?.email || requester?.username || "—"}
                                         </Link>
                                     </TableCell>
-                                    <TableCell className="font-mono text-xs">{new Date(req.createdAt).toLocaleDateString("en-US")}</TableCell>
+                                    <TableCell className="font-mono text-xs">{new Date(req.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}</TableCell>
                                     <TableCell className="text-sm">{req.requestedFrom ? formatLocation((req.requestedFrom as IpRecord).location) : "Not recorded"}</TableCell>
                                     <TableCell className="text-right">
-                                        <PublishRequestActions id={String(req._id)} />
+                                        <PublishRequestActions id={String(req._id)} requester={requester?.username || requester?.email || "this user"} />
                                     </TableCell>
                                 </TableRow>
                             );

@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = [
     "publish_request",
     "publish_request_approved",
     "publish_request_rejected",
+    "contact_message",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -23,6 +24,7 @@ export const NOTIFICATION_CATEGORIES = {
     publishing: { label: "Answers to your request to publish", types: ["publish_request_approved", "publish_request_rejected"] },
     requests: { label: "New requests to publish (admins)", types: ["publish_request"] },
     reviews: { label: "Posts waiting for review (moderators)", types: ["post_submitted"] },
+    messages: { label: "New contact messages and complaints (admins)", types: ["contact_message"] },
 } as const satisfies Record<string, { label: string; types: readonly NotificationType[] }>;
 export type NotificationCategory = keyof typeof NOTIFICATION_CATEGORIES;
 export const NOTIFICATION_CATEGORY_KEYS = Object.keys(NOTIFICATION_CATEGORIES) as NotificationCategory[];
@@ -56,6 +58,7 @@ export const NOTIFICATION_TITLES: Record<NotificationType, string> = {
     publish_request: "New request to publish",
     publish_request_approved: "You can publish now",
     publish_request_rejected: "Request to publish declined",
+    contact_message: "New contact message",
 };
 
 // Types notified at most once per actor and target (enforced by a unique partial index on Notification).
@@ -102,6 +105,8 @@ export function describeNotification(n: NotificationView): string {
             return "Your request to publish was approved. You can write posts now";
         case "publish_request_rejected":
             return "Your request to publish was declined";
+        case "contact_message":
+            return "Someone wrote through the contact form";
     }
 }
 
@@ -117,6 +122,8 @@ export function notificationLink(n: Pick<NotificationView, "type" | "postSlug" |
             return "/posts/add";
         case "publish_request_rejected":
             return "/dashboard/posts";
+        case "contact_message":
+            return "/dashboard/admin/messages";
         default:
             if (!n.postSlug) return "#";
             return n.commentId ? `/posts/${n.postSlug}#comment-${n.commentId}` : `/posts/${n.postSlug}`;

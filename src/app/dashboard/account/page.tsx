@@ -6,7 +6,7 @@ import ProfileForm from "@/components/account/ProfileForm";
 import ChangePasswordForm from "@/components/account/ChangePasswordForm";
 import AccountCard from "@/components/account/AccountCard";
 import { toProfileFormValues } from "@/libs/profile-view";
-import type { PrivateDetails, PublicProfile } from "@/libs/profile";
+import { birthDateBounds, type PrivateDetails, type PublicProfile } from "@/libs/profile";
 
 export const metadata = { title: "Account" };
 
@@ -28,7 +28,7 @@ export default async function AccountPage() {
                 </p>
             </div>
 
-            <ProfileForm initial={toProfileFormValues(user)} />
+            <ProfileForm initial={toProfileFormValues(user)} birthDateRange={birthDateBounds(new Date())} />
 
             <AccountCard title="Change password" description="Changing it signs you out everywhere, this browser included.">
                 <ChangePasswordForm email={user.email} />

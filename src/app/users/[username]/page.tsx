@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { profileLinks, type PublicProfile } from "@/libs/profile";
 import { publicPostFilter } from "@/libs/post-visibility";
 import { getProfileUser } from "@/libs/profile-page";
+import { hasRole, ROLES } from "@/libs/roles";
+import Link from "next/link";
 
 interface ProfilePageProps {
     params: Promise<{ username: string }>;
@@ -54,6 +56,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     {profileUser.username}
                 </h1>
                 <ProfileDetails profile={profileUser.profile ?? {}} />
+                {hasRole(session?.user?.role, ROLES.ADMIN) && (
+                    <Link href={`/dashboard/admin/users/${profileUser._id.toString()}`} className="mt-4 text-sm text-primary hover:underline">
+                        All account details (admin only)
+                    </Link>
+                )}
 
                 {!isOwnProfile && (
                     <div className="mt-6">

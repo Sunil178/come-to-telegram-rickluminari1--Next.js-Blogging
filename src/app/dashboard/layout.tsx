@@ -27,6 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             label: "Admin",
             links: hasRole(role, ROLES.ADMIN)
                 ? [
+                      { href: "/dashboard/admin/messages", label: "Messages" },
                       { href: "/dashboard/admin/requests", label: "Publish Requests" },
                       { href: "/dashboard/admin/all-posts", label: "All Posts" },
                       { href: "/dashboard/admin/users", label: "Users" },

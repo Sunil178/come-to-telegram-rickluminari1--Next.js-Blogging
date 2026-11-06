@@ -173,11 +173,11 @@ export default async function PostsManageView({
                                         )}
                                     </TableCell>
                                     <TableCell className="font-mono text-xs">
-                                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US") : "—"}
+                                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}
                                         {isScheduled(post) && <Badge variant="outline" className="ml-2 font-sans">Scheduled</Badge>}
                                         {post.approval === "Pending" && post.publishAt && new Date(post.publishAt) > new Date() && (
                                             <span className="ml-2 font-sans text-muted-foreground">
-                                                (scheduled for {new Date(post.publishAt).toLocaleDateString("en-US")})
+                                                (scheduled for {new Date(post.publishAt).toLocaleDateString("en-US", { dateStyle: "medium" })})
                                             </span>
                                         )}
                                     </TableCell>
@@ -194,7 +194,7 @@ export default async function PostsManageView({
                                     </TableCell>
                                     <TableCell className="font-mono text-xs">{post.commentCount ?? 0}</TableCell>
                                     <TableCell className="font-mono text-xs">
-                                        {new Date(post.createdAt).toLocaleDateString("en-US")}
+                                        {new Date(post.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">

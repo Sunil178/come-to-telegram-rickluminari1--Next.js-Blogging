@@ -43,6 +43,7 @@ Readers only ever see public posts: approved, published, visible and past their 
 
 - 1a. An unknown slug or a deleted post: the not-found page. A post that isn't public (pending, rejected, hidden, scheduled): the not-found page for readers; its author and moderators and admins can still open it.
 - 1b. Related posts: shared tags first, then the same category, then newest; deleted and non-public posts never appear.
+- 1c. Under someone else's shared post: "Something wrong with this post? Report it", which opens the contact form with the post filled in (see [privacy-and-consent.md](privacy-and-consent.md) › "Write to the site, or report content").
 
 **Tested by:** `e2e/content.spec.ts` › "a post lists related posts that share its tags"; `e2e/reading.spec.ts` › "unknown, deleted and non-public posts show readers the not-found page with a 404 status", "related posts put shared tags before the same category, and never show a deleted post", "a post's visitor count goes up once per visitor address, not on every reload".
 

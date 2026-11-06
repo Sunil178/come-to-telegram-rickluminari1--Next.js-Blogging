@@ -6,6 +6,8 @@ export interface MailMessage {
     subject: string;
     text: string;
     html: string;
+    // Where a reply goes, e.g. the visitor who wrote through the contact form.
+    replyTo?: string;
 }
 
 // Email features (verification, password reset) switch on with SMTP_HOST; without it they're off.

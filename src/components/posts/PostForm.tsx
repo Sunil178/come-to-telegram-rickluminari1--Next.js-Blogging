@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import NativeSelect from "@/components/NativeSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -224,7 +225,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
 
             {pendingDraft && (
                 <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
-                    <span>You have an unsaved draft from {new Date(pendingDraft.savedAt).toLocaleString("en-US")}.</span>
+                    <span>You have an unsaved draft from {new Date(pendingDraft.savedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}.</span>
                     <span className="flex gap-2">
                         <Button type="button" size="sm" onClick={restoreDraft}>Restore draft</Button>
                         <Button type="button" size="sm" variant="outline" onClick={discardDraft}>Discard</Button>
@@ -265,11 +266,10 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
 
             <div className="flex flex-col gap-2">
                 <Label htmlFor="post-category">Category</Label>
-                <select
+                <NativeSelect
                     id="post-category"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                 >
                     <option value="">No category</option>
                     {categories.map((category) => (
@@ -277,7 +277,7 @@ export default function PostForm({ mode, userId, initialPost, isLive = false, ca
                             {category.title}
                         </option>
                     ))}
-                </select>
+                </NativeSelect>
             </div>
 
             <div className="flex flex-col gap-2">

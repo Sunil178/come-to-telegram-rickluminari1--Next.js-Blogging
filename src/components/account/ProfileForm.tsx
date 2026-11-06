@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NativeSelect from "@/components/NativeSelect";
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/account/AccountCard";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,8 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
     );
 }
 
-export default function ProfileForm({ initial }: { initial: ProfileFormValues }) {
+// Computed by the server page (today's date), so server and client render the same limits.
+export default function ProfileForm({ initial, birthDateRange }: { initial: ProfileFormValues; birthDateRange: { min: string; max: string } }) {
     const router = useRouter();
     const [avatar, setAvatar] = useState(initial.avatar);
     const [saving, setSaving] = useState(false);
@@ -180,16 +182,20 @@ export default function ProfileForm({ initial }: { initial: ProfileFormValues })
 
             <AccountCard as="fieldset" title="Private details" description="Only you and the site's admins see these. Everything is optional.">
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <Field id="private-dob" label="Date of birth">
-                        <Input id="private-dob" name="dateOfBirth" type="date" defaultValue={initial.dateOfBirth} autoComplete="bday" />
+                    <Field id="private-dob" label="Date of birth" hint="You must be 18 or older.">
+                        <Input id="private-dob" name="dateOfBirth" type="date" defaultValue={initial.dateOfBirth} min={birthDateRange.min} max={birthDateRange.max} autoComplete="bday" />
                     </Field>
                     <Field id="private-gender" label="Gender">
-                        <Input id="private-gender" name="gender" list="gender-options" defaultValue={initial.gender} maxLength={40} />
-                        <datalist id="gender-options">
+                        <NativeSelect
+                            id="private-gender"
+                            name="gender"
+                            defaultValue={initial.gender}
+                        >
+                            <option value="">Not specified</option>
                             {GENDER_OPTIONS.map((option) => (
-                                <option key={option} value={option} />
+                                <option key={option} value={option}>{option}</option>
                             ))}
-                        </datalist>
+                        </NativeSelect>
                     </Field>
                 </div>
                 <Field id="private-phone" label="Phone">

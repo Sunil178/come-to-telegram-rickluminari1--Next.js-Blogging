@@ -17,11 +17,12 @@ const { log, data, model } = vi.hoisted(() => {
         deleteMany: async (filter: unknown) => log.push([name, "deleteMany", filter]),
         deleteOne: async (filter: unknown) => log.push([name, "deleteOne", filter]),
         updateOne: async (filter: unknown, update: unknown) => log.push([name, "updateOne", filter, update]),
+        updateMany: async (filter: unknown, update: unknown) => log.push([name, "updateMany", filter, update]),
     });
     return { log, data, model };
 });
 
-for (const [path, name] of [["User", "User"], ["Post", "Post"], ["Comment", "Comment"], ["PostVote", "PostVote"], ["CommentVote", "CommentVote"], ["UserVote", "UserVote"], ["PostRevision", "PostRevision"], ["Notification", "Notification"], ["PushSubscription", "PushSubscription"], ["AuthToken", "AuthToken"], ["PublishRequest", "PublishRequest"], ["VisitorEvent", "VisitorEvent"], ["Upload", "Upload"]]) {
+for (const [path, name] of [["User", "User"], ["Post", "Post"], ["Comment", "Comment"], ["PostVote", "PostVote"], ["CommentVote", "CommentVote"], ["UserVote", "UserVote"], ["PostRevision", "PostRevision"], ["Notification", "Notification"], ["PushSubscription", "PushSubscription"], ["AuthToken", "AuthToken"], ["PublishRequest", "PublishRequest"], ["VisitorEvent", "VisitorEvent"], ["Upload", "Upload"], ["ContactMessage", "ContactMessage"]]) {
     vi.doMock(`@/models/${path}`, () => ({ default: model(name) }));
 }
 const unlinkMock = vi.fn(async (_path: string) => {});
@@ -86,6 +87,11 @@ describe("deleteAccount", () => {
         await deleteAccount("u1");
         expect(unlinkMock.mock.calls.map(([path]) => path)).toContain("/data/never-used.png");
         expect(log).toContainEqual(["Upload", "deleteMany", { userId: "u1" }]);
+    });
+
+    it("keeps the user's contact messages on record but no longer tied to the account", async () => {
+        await deleteAccount("u1");
+        expect(log).toContainEqual(["ContactMessage", "updateMany", { userId: "u1" }, { $set: { userId: null } }]);
     });
 
     it("removes the profile photo too, unless another account uses the same file", async () => {

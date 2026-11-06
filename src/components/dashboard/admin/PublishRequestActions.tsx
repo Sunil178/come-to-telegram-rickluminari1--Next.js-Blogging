@@ -4,9 +4,10 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import ConfirmIconButton from "@/components/ConfirmIconButton";
 
-export default function PublishRequestActions({ id }: { id: string }) {
+// Approving changes the person's role, so both answers ask first.
+export default function PublishRequestActions({ id, requester }: { id: string; requester: string }) {
     const router = useRouter();
     const [pending, startTransition] = useTransition();
 
@@ -33,14 +34,25 @@ export default function PublishRequestActions({ id }: { id: string }) {
 
     return (
         <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="icon-sm" onClick={() => review("approve")} disabled={pending}>
-                <CheckCircle2 className="text-emerald-600 dark:text-emerald-400" />
-                <span className="sr-only">Approve request</span>
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => review("reject")} disabled={pending}>
-                <XCircle className="text-destructive" />
-                <span className="sr-only">Reject request</span>
-            </Button>
+            <ConfirmIconButton
+                icon={<CheckCircle2 className="text-emerald-600 dark:text-emerald-400" />}
+                label="Approve request"
+                title={`Make ${requester} an author?`}
+                description="They can write posts right away; each post still goes to a moderator for review. They're told by notification."
+                confirmLabel="Approve"
+                tone="default"
+                disabled={pending}
+                onConfirm={() => review("approve")}
+            />
+            <ConfirmIconButton
+                icon={<XCircle className="text-destructive" />}
+                label="Reject request"
+                title={`Reject ${requester}'s request to publish?`}
+                description="They stay a reader and are told by notification. They can ask again later."
+                confirmLabel="Reject"
+                disabled={pending}
+                onConfirm={() => review("reject")}
+            />
         </div>
     );
 }

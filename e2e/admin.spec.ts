@@ -74,6 +74,13 @@ test("an admin finds a user, changes their role, and the user's access follows",
     await expect(adminPage.getByRole("row")).toHaveCount(2);
     await row.getByRole("button", { name: /Reader/ }).click();
     await adminPage.getByRole("menuitemradio", { name: "Moderator" }).click();
+    // Nothing changes until the admin confirms; cancelling keeps the old role.
+    const confirm = adminPage.getByRole("alertdialog", { name: `Change ${user.username}'s role from Reader to Moderator?` });
+    await confirm.getByRole("button", { name: "Cancel" }).click();
+    expect(await withDb(async (db) => (await db.collection("users").findOne({ _id: user.id }))!.role)).toBe("reader");
+    await row.getByRole("button", { name: /Reader/ }).click();
+    await adminPage.getByRole("menuitemradio", { name: "Moderator" }).click();
+    await confirm.getByRole("button", { name: "Change role" }).click();
     await expect(adminPage.getByText("Role updated to Moderator.")).toBeVisible();
     expect(await withDb(async (db) => (await db.collection("users").findOne({ _id: user.id }))!.role)).toBe("moderator");
 

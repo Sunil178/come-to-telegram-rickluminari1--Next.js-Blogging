@@ -29,13 +29,14 @@ The application form (`src/components/dashboard/RequestPublishButton.tsx`) is pr
 **Preconditions:** signed in as an admin; a pending request.
 
 1. Opens "Publish Requests". → Pending requests with where each came from; each row links to its review page.
-2. Opens a request. → Application, account and activity (age, email verification, comments and votes, earlier requests), addresses with locations, public profile and private details.
-3. Approves. → The user becomes an author. On My Posts the reader sees "Your request was approved. Writing unlocks within a minute; reload then." (the session picks up the new role at its next check).
+2. Opens a request. → Application, then the same details as the user's page under "Users": account and activity (email verification, terms acceptance, posts, comments and votes, uploads, earlier requests), addresses with locations, public profile and private details (age).
+3. Approves and confirms "Make <username> an author?". → The user becomes an author. On My Posts the reader sees "Your request was approved. Writing unlocks within a minute; reload then." (the session picks up the new role at its next check).
 
 **Extensions:**
 
 - 2a. A non-admin opens a review page: redirected away (the role gate runs before the page).
 - 2b. An address with no location (private network, or no geolocation file): "Unknown location"; nothing recorded: "Not recorded".
+- 3a. "Cancel" in the confirmation: nothing changes.
 
 **Side effects:** role change; the reader is notified; admins' notifications about the request are marked read.
 
@@ -43,7 +44,7 @@ The application form (`src/components/dashboard/RequestPublishButton.tsx`) is pr
 
 ### 3. Decline, and apply again
 
-1. The admin rejects the request. → "Request rejected."
+1. The admin rejects the request and confirms. → "Request rejected."
 2. The reader is notified and opens My Posts. → "Your last request was declined." and a "Request again" button.
 3. Applies again. → Pending again.
 

@@ -82,6 +82,7 @@ test("a reader's request to publish reaches the admins, and the approval reaches
     await adminPage.goto("/dashboard/admin/requests");
     const row = adminPage.getByRole("row").filter({ hasText: newbie.email });
     await row.getByRole("button", { name: "Approve request" }).click();
+    await adminPage.getByRole("alertdialog").getByRole("button", { name: "Approve" }).click();
     await expect(adminPage.getByText("Request approved — user is now an Author.")).toBeVisible();
     // Handled requests stop counting as unread in every admin's bell.
     expect(await withDb(async (db) => {
@@ -150,6 +151,7 @@ test("a declined reader is told, sees why the button changed, and can ask again"
     const adminPage = await newPage(browser);
     await login(adminPage, USERS.admin.email, undefined, "/dashboard/admin/requests");
     await adminPage.getByRole("row").filter({ hasText: reader.email }).getByRole("button", { name: "Reject request" }).click();
+    await adminPage.getByRole("alertdialog").getByRole("button", { name: "Reject" }).click();
     await expect(adminPage.getByText("Request rejected.")).toBeVisible();
     await adminPage.context().close();
 

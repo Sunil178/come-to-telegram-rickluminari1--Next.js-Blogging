@@ -27,7 +27,16 @@ export interface PrivateDetails {
 }
 
 export const GENDER_OPTIONS = ["Female", "Male", "Non-binary", "Prefer not to say"] as const;
-export const MIN_AGE = 13;
+// Matches the Terms of use: the site is for people 18 or older.
+export const MIN_AGE = 18;
+export const MAX_AGE = 120;
+
+/** The oldest and youngest allowed birth dates (YYYY-MM-DD) on `today`, for the date picker's min and max. */
+export function birthDateBounds(today: Date): { min: string; max: string } {
+    const shift = (years: number, days = 0) => new Date(Date.UTC(today.getUTCFullYear() - years, today.getUTCMonth(), today.getUTCDate() + days)).toISOString().slice(0, 10);
+    // The day after someone would turn MAX_AGE + 1.
+    return { min: shift(MAX_AGE + 1, 1), max: shift(MIN_AGE) };
+}
 
 const TEXT_LIMITS: Partial<Record<ProfileField, number>> = {
     headline: 120,
@@ -35,7 +44,6 @@ const TEXT_LIMITS: Partial<Record<ProfileField, number>> = {
     country: 80,
     city: 80,
     education: 300,
-    gender: 40,
     address: 300,
 };
 const LIST_LIMITS: Partial<Record<ProfileField, { items: number; length: number }>> = {
@@ -117,9 +125,13 @@ export function parseProfileInput(input: unknown, fields: readonly ProfileField[
             // The round trip catches days Date would roll over, like 2001-02-30.
             if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text) return { ok: false, message: "Date of birth is invalid" };
             const age = ageOn(date, new Date());
-            if (age < MIN_AGE || age > 120) return { ok: false, message: `Date of birth must make you at least ${MIN_AGE}` };
+            if (date > new Date()) return { ok: false, message: "Date of birth can't be in the future" };
+            if (age < MIN_AGE) return { ok: false, message: `You must be at least ${MIN_AGE} to use this site` };
+            if (age > MAX_AGE) return { ok: false, message: "Date of birth is too far in the past" };
             set[path] = date;
             continue;
+        } else if (field === "gender") {
+            if (!(GENDER_OPTIONS as readonly string[]).includes(text)) return { ok: false, message: `Gender must be one of: ${GENDER_OPTIONS.join(", ")}` };
         } else if (TEXT_LIMITS[field] && text.length > TEXT_LIMITS[field]!) {
             return { ok: false, message: `${label}: at most ${TEXT_LIMITS[field]} characters` };
         }

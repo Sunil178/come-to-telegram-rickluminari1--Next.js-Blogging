@@ -17,6 +17,7 @@ import ReadingProgress from "@/components/posts/ReadingProgress";
 import TableOfContents from "@/components/posts/TableOfContents";
 import ViewTracker from "@/components/posts/ViewTracker";
 import VoteButtons from "@/components/votes/VoteButtons";
+import { SITE_URL } from "@/libs/site-url";
 import CommentSection from "@/components/comments/CommentSection";
 import { getViewablePost } from "@/libs/post-page";
 import { commentsEnabled } from "@/libs/runtime-config";
@@ -105,7 +106,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
     const { html, toc, readingTime } = renderPostContent(post.content || "");
 
-    const author = post.userId as unknown as { username?: string } | null;
+    const author = post.userId as unknown as { _id?: Types.ObjectId; username?: string } | null;
     const category = post.categoryId as unknown as { title?: string; slug?: string; visibility?: boolean } | null;
     const authorLabel = author?.username;
     const dateLabel = post.publishedAt
@@ -204,6 +205,15 @@ export default async function PostPage({ params }: PostPageProps) {
                         </Badge>
                     ))}
                 </div>
+            )}
+
+            {post.visibility && session?.user?.id !== author?._id?.toString() && (
+                <p className="mx-auto mt-8 max-w-6xl px-6 text-xs text-muted-foreground">
+                    Something wrong with this post?{" "}
+                    <Link href={`/contact?topic=report&url=${encodeURIComponent(`${SITE_URL}/posts/${post.slug}`)}`} className="text-primary hover:underline">
+                        Report it
+                    </Link>
+                </p>
             )}
 
             {related.length > 0 && (

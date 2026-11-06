@@ -18,6 +18,7 @@ const ROLE_REQUIREMENTS: { prefix: string; minimum: RoleName }[] = [
     { prefix: "/dashboard/admin/requests", minimum: ROLES.ADMIN },
     { prefix: "/dashboard/admin/all-posts", minimum: ROLES.ADMIN },
     { prefix: "/dashboard/admin/uploads", minimum: ROLES.ADMIN },
+    { prefix: "/dashboard/admin/messages", minimum: ROLES.ADMIN },
     { prefix: "/dashboard/admin/posts", minimum: ROLES.MODERATOR },
     { prefix: "/dashboard/admin/comments", minimum: ROLES.MODERATOR },
 ];
